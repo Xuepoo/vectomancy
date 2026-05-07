@@ -1,0 +1,10 @@
+.git
+.gitignore
+.github
+target/
+tests/
+docs/
+benches/
+*.md
+Dockerfile
+flake.nix

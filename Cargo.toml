@@ -1,0 +1,26 @@
+[package]
+name = "vectomancy"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { version = "4.4", features = ["derive"] }
+env_logger = "0.11"
+log = "0.4"
+directories = "5.0"
+thiserror = "1.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+rayon = "1.8"
+tera = "1.19"
+image = "0.24"
+usvg = "0.38"
+rustfft = "6.1"
+serde = { version = "1.0.228", features = ["derive"] }
+
+[dev-dependencies]
+criterion = "0.5"
+
+[[bench]]
+name = "math_benchmarks"
+harness = false

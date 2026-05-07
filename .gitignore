@@ -1,0 +1,15 @@
+# Generated files
+target/
+**/*.rs.bk
+Cargo.lock
+
+# Test artifacts
+tests/data/*
+tests/data/.gitkeep
+
+# IDEs and OS
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
