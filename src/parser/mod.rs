@@ -12,8 +12,8 @@ pub fn parse_file(path: &Path) -> Result<ParserOutput, VectomancyError> {
         .unwrap_or_default();
     match ext_str.to_lowercase().as_str() {
         "png" | "jpg" | "jpeg" | "webp" => {
-            let points = raster::process_raster_image(path)?;
-            Ok(ParserOutput::Points(points))
+            let paths = raster::process_raster_image(path)?;
+            Ok(ParserOutput::Paths(paths))
         }
         "svg" => {
             let segments = vector::process_svg(path)?;

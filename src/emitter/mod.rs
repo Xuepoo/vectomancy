@@ -49,8 +49,8 @@ pub fn emit_file(
 
     let mut context = Context::new();
     match ast {
-        MathExpressionAST::Fourier { terms } => {
-            context.insert("terms", terms);
+        MathExpressionAST::Fourier { strokes } => {
+            context.insert("strokes", strokes);
         }
         MathExpressionAST::Spline { equations } => {
             context.insert("equations", equations);

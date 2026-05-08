@@ -34,12 +34,12 @@ pub struct SplineEquation {
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "type")]
 pub enum MathExpressionAST {
-    Fourier { terms: Vec<FourierTerm> },
+    Fourier { strokes: Vec<Vec<FourierTerm>> },
     Spline { equations: Vec<SplineEquation> },
 }
 
 #[derive(Debug, Clone)]
 pub enum ParserOutput {
-    Points(Vec<Point2D>),
+    Paths(Vec<Vec<Point2D>>),
     Segments(Vec<BezierSegment>),
 }

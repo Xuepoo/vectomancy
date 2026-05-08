@@ -5,17 +5,19 @@ import matplotlib.pyplot as plt
 
 def render():
     t = np.linspace(0, 2 * np.pi, 10000)
+    plt.figure(figsize=(8, 8))
     
+    {% for stroke in strokes %}
     x = np.zeros_like(t)
     y = np.zeros_like(t)
     
-    {% for term in terms %}
+    {% for term in stroke %}
     x += {{ term.amplitude }} * np.cos({{ term.frequency }} * t + {{ term.phase }})
     y += {{ term.amplitude }} * np.sin({{ term.frequency }} * t + {{ term.phase }})
     {% endfor %}
-
-    plt.figure(figsize=(8, 8))
     plt.plot(x, y, 'b-', linewidth=0.5)
+    {% endfor %}
+
     plt.axis('equal')
     plt.axis('off')
     plt.show()

@@ -1,7 +1,7 @@
 pub mod spline;
 
 use crate::error::VectomancyError;
-use crate::models::{MathExpressionAST, Point2D};
+use crate::models::Point2D;
 use rustfft::{num_complex::Complex, FftPlanner};
 use tracing::info;
 
@@ -112,7 +112,10 @@ pub fn solve_tsp_nearest_neighbor(points: Vec<Point2D>) -> Vec<Point2D> {
     ordered
 }
 
-pub fn perform_fft(points: &[Point2D], terms: usize) -> Result<MathExpressionAST, VectomancyError> {
+pub fn perform_fft(
+    points: &[Point2D],
+    terms: usize,
+) -> Result<Vec<crate::models::FourierTerm>, VectomancyError> {
     info!("Performing FFT. Terms: {}", terms);
     let mut planner = FftPlanner::new();
     let fft = planner.plan_fft_forward(points.len());
@@ -158,5 +161,5 @@ pub fn perform_fft(points: &[Point2D], terms: usize) -> Result<MathExpressionAST
         }
     }
 
-    Ok(MathExpressionAST::Fourier { terms: terms_vec })
+    Ok(terms_vec)
 }

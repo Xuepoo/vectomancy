@@ -15,7 +15,7 @@ const NEIGHBORS: [(i32, i32); 8] = [
     (-1, 1),  // Bottom-Left
 ];
 
-pub fn process_raster_image(path: &Path) -> Result<Vec<Point2D>, VectomancyError> {
+pub fn process_raster_image(path: &Path) -> Result<Vec<Vec<Point2D>>, VectomancyError> {
     info!("Processing raster image: {:?}", path);
     let img = image::open(path).map_err(|e| VectomancyError::ImageProcessing(e.to_string()))?;
 
@@ -94,7 +94,9 @@ pub fn process_raster_image(path: &Path) -> Result<Vec<Point2D>, VectomancyError
                 // Found a new component!
                 // 1. Trace its boundary
                 let boundary = trace_boundary(x, y, &binarized, width, height);
-                all_boundaries.extend(boundary);
+                if boundary.len() >= 3 {
+                    all_boundaries.push(boundary);
+                }
 
                 // 2. Flood fill to mark the whole component as visited
                 flood_fill(x, y, &binarized, &mut visited, width, height);
@@ -102,13 +104,14 @@ pub fn process_raster_image(path: &Path) -> Result<Vec<Point2D>, VectomancyError
         }
     }
 
+    let total_pts: usize = all_boundaries.iter().map(|b| b.len()).sum();
     info!(
-        "Extracted {} boundary points from image",
-        all_boundaries.len()
+        "Extracted {} boundary paths (total {} points) from image",
+        all_boundaries.len(), total_pts
     );
+
     Ok(all_boundaries)
 }
-
 fn trace_boundary(
     start_x: u32,
     start_y: u32,
