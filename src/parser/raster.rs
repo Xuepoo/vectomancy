@@ -1,19 +1,8 @@
 use crate::error::VectomancyError;
 use crate::models::Point2D;
-use image::{ImageBuffer, Luma};
+use image::Luma;
 use std::path::Path;
 use tracing::{debug, info};
-
-const NEIGHBORS: [(i32, i32); 8] = [
-    (-1, 0),  // Left
-    (-1, -1), // Top-Left
-    (0, -1),  // Top
-    (1, -1),  // Top-Right
-    (1, 0),   // Right
-    (1, 1),   // Bottom-Right
-    (0, 1),   // Bottom
-    (-1, 1),  // Bottom-Left
-];
 
 pub fn process_raster_image(path: &Path) -> Result<Vec<Vec<Point2D>>, VectomancyError> {
     info!("Processing raster image: {:?}", path);
@@ -71,155 +60,299 @@ pub fn process_raster_image(path: &Path) -> Result<Vec<Vec<Point2D>>, Vectomancy
 
     info!("Otsu calculated threshold: {}", threshold);
 
-    let mut binarized = ImageBuffer::new(width, height);
+    // Create a padded grid for thinning (true = foreground/black, false = background/white)
+    let padded_width = width as usize + 2;
+    let padded_height = height as usize + 2;
+    let mut grid = vec![vec![false; padded_width]; padded_height];
+
     for (x, y, pixel) in grayscale.enumerate_pixels() {
         let Luma([luma]) = *pixel;
-        let new_pixel = if luma > threshold {
-            Luma([255u8])
-        } else {
-            Luma([0u8])
-        };
-        binarized.put_pixel(x, y, new_pixel);
+        if luma <= threshold {
+            grid[y as usize + 1][x as usize + 1] = true;
+        }
     }
 
-    // 3. Extract points using Moore-Neighbor contour tracing
-    debug!("Extracting points using Moore-Neighbor tracing");
-    let mut all_boundaries = Vec::new();
-    let mut visited = vec![false; (width * height) as usize];
+    // 3. Zhang-Suen Thinning
+    debug!("Applying Zhang-Suen thinning");
+    zhang_suen_thinning(&mut grid, padded_width, padded_height);
 
-    for y in 0..height {
-        for x in 0..width {
-            let idx = (y * width + x) as usize;
-            if !visited[idx] && binarized.get_pixel(x, y).0[0] == 0 {
-                // Found a new component!
-                // 1. Trace its boundary
-                let boundary = trace_boundary(x, y, &binarized, width, height);
-                if boundary.len() >= 3 {
-                    all_boundaries.push(boundary);
+    // 4. Extract paths using graph traversal
+    debug!("Extracting paths from thinned skeleton");
+    let all_paths = extract_paths(&grid, padded_width, padded_height);
+
+    let total_pts: usize = all_paths.iter().map(|p| p.len()).sum();
+    info!(
+        "Extracted {} skeleton paths (total {} points) from image",
+        all_paths.len(),
+        total_pts
+    );
+
+    Ok(all_paths)
+}
+
+fn zhang_suen_thinning(grid: &mut [Vec<bool>], width: usize, height: usize) {
+    let mut changed = true;
+    while changed {
+        changed = false;
+        let mut to_delete = Vec::new();
+
+        // Step 1
+        for y in 1..height - 1 {
+            for x in 1..width - 1 {
+                if !grid[y][x] {
+                    continue;
+                }
+                let p2 = grid[y - 1][x] as u8;
+                let p3 = grid[y - 1][x + 1] as u8;
+                let p4 = grid[y][x + 1] as u8;
+                let p5 = grid[y + 1][x + 1] as u8;
+                let p6 = grid[y + 1][x] as u8;
+                let p7 = grid[y + 1][x - 1] as u8;
+                let p8 = grid[y][x - 1] as u8;
+                let p9 = grid[y - 1][x - 1] as u8;
+
+                let b = p2 + p3 + p4 + p5 + p6 + p7 + p8 + p9;
+                if !(2..=6).contains(&b) {
+                    continue;
                 }
 
-                // 2. Flood fill to mark the whole component as visited
-                flood_fill(x, y, &binarized, &mut visited, width, height);
+                let mut a = 0;
+                if p2 == 0 && p3 == 1 { a += 1; }
+                if p3 == 0 && p4 == 1 { a += 1; }
+                if p4 == 0 && p5 == 1 { a += 1; }
+                if p5 == 0 && p6 == 1 { a += 1; }
+                if p6 == 0 && p7 == 1 { a += 1; }
+                if p7 == 0 && p8 == 1 { a += 1; }
+                if p8 == 0 && p9 == 1 { a += 1; }
+                if p9 == 0 && p2 == 1 { a += 1; }
+
+                if a != 1 {
+                    continue;
+                }
+
+                if p2 * p4 * p6 != 0 {
+                    continue;
+                }
+                if p4 * p6 * p8 != 0 {
+                    continue;
+                }
+
+                to_delete.push((x, y));
+            }
+        }
+
+        if !to_delete.is_empty() {
+            changed = true;
+            for &(x, y) in &to_delete {
+                grid[y][x] = false;
+            }
+            to_delete.clear();
+        }
+
+        // Step 2
+        for y in 1..height - 1 {
+            for x in 1..width - 1 {
+                if !grid[y][x] {
+                    continue;
+                }
+                let p2 = grid[y - 1][x] as u8;
+                let p3 = grid[y - 1][x + 1] as u8;
+                let p4 = grid[y][x + 1] as u8;
+                let p5 = grid[y + 1][x + 1] as u8;
+                let p6 = grid[y + 1][x] as u8;
+                let p7 = grid[y + 1][x - 1] as u8;
+                let p8 = grid[y][x - 1] as u8;
+                let p9 = grid[y - 1][x - 1] as u8;
+
+                let b = p2 + p3 + p4 + p5 + p6 + p7 + p8 + p9;
+                if !(2..=6).contains(&b) {
+                    continue;
+                }
+
+                let mut a = 0;
+                if p2 == 0 && p3 == 1 { a += 1; }
+                if p3 == 0 && p4 == 1 { a += 1; }
+                if p4 == 0 && p5 == 1 { a += 1; }
+                if p5 == 0 && p6 == 1 { a += 1; }
+                if p6 == 0 && p7 == 1 { a += 1; }
+                if p7 == 0 && p8 == 1 { a += 1; }
+                if p8 == 0 && p9 == 1 { a += 1; }
+                if p9 == 0 && p2 == 1 { a += 1; }
+
+                if a != 1 {
+                    continue;
+                }
+
+                if p2 * p4 * p8 != 0 {
+                    continue;
+                }
+                if p2 * p6 * p8 != 0 {
+                    continue;
+                }
+
+                to_delete.push((x, y));
+            }
+        }
+
+        if !to_delete.is_empty() {
+            changed = true;
+            for &(x, y) in &to_delete {
+                grid[y][x] = false;
+            }
+        }
+    }
+}
+
+fn extract_paths(grid: &[Vec<bool>], width: usize, height: usize) -> Vec<Vec<Point2D>> {
+    let mut paths = Vec::new();
+    let mut visited = vec![vec![false; width]; height];
+
+    let get_neighbors = |x: usize, y: usize| -> Vec<(usize, usize)> {
+        let mut n = Vec::new();
+        for dy in -1..=1 {
+            for dx in -1..=1 {
+                if dx == 0 && dy == 0 {
+                    continue;
+                }
+                let nx = x as isize + dx;
+                let ny = y as isize + dy;
+                if nx >= 0 && nx < width as isize && ny >= 0 && ny < height as isize {
+                    let nx = nx as usize;
+                    let ny = ny as usize;
+                    if grid[ny][nx] {
+                        n.push((nx, ny));
+                    }
+                }
+            }
+        }
+        n
+    };
+
+    // Find endpoints (pixels with exactly 1 neighbor)
+    let mut endpoints = Vec::new();
+    for y in 1..height - 1 {
+        for x in 1..width - 1 {
+            if grid[y][x] && get_neighbors(x, y).len() == 1 {
+                endpoints.push((x, y));
             }
         }
     }
 
-    let total_pts: usize = all_boundaries.iter().map(|b| b.len()).sum();
-    info!(
-        "Extracted {} boundary paths (total {} points) from image",
-        all_boundaries.len(), total_pts
-    );
+    // Trace from endpoints
+    for &(start_x, start_y) in &endpoints {
+        if visited[start_y][start_x] {
+            continue;
+        }
 
-    Ok(all_boundaries)
-}
-fn trace_boundary(
-    start_x: u32,
-    start_y: u32,
-    img: &ImageBuffer<Luma<u8>, Vec<u8>>,
-    width: u32,
-    height: u32,
-) -> Vec<Point2D> {
-    let mut boundary = Vec::new();
-    let start_p = (start_x as i32, start_y as i32);
-    let mut b = start_p;
-    let mut c = (start_p.0 - 1, start_p.1); // The pixel to the left is guaranteed to be white or out of bounds
+        let mut path = Vec::new();
+        let mut curr_x = start_x;
+        let mut curr_y = start_y;
 
-    boundary.push(Point2D {
-        x: b.0 as f64,
-        y: b.1 as f64,
-    });
+        loop {
+            visited[curr_y][curr_x] = true;
+            path.push(Point2D {
+                x: (curr_x as f64) - 1.0,
+                y: (curr_y as f64) - 1.0,
+            });
 
-    let mut state_history = std::collections::HashSet::new();
-    state_history.insert((b, c));
+            let neighbors = get_neighbors(curr_x, curr_y);
+            let mut next = None;
 
-    loop {
-        let dx = c.0 - b.0;
-        let dy = c.1 - b.1;
+            for &(nx, ny) in &neighbors {
+                if !visited[ny][nx] {
+                    next = Some((nx, ny));
+                    break;
+                }
+            }
 
-        let start_idx = NEIGHBORS.iter().position(|&n| n == (dx, dy)).unwrap_or(0);
-
-        let mut found = false;
-        let mut next_b = b;
-        let mut next_c = c;
-
-        for i in 1..=8 {
-            let idx = (start_idx + i) % 8;
-            let nx = b.0 + NEIGHBORS[idx].0;
-            let ny = b.1 + NEIGHBORS[idx].1;
-
-            let is_black = if nx >= 0 && nx < width as i32 && ny >= 0 && ny < height as i32 {
-                img.get_pixel(nx as u32, ny as u32).0[0] == 0
+            if let Some((nx, ny)) = next {
+                curr_x = nx;
+                curr_y = ny;
             } else {
-                false
-            };
+                if path.len() >= 2 {
+                    let prev_x = (path[path.len() - 2].x + 1.0) as usize;
+                    let prev_y = (path[path.len() - 2].y + 1.0) as usize;
 
-            if is_black {
-                next_b = (nx, ny);
-                // next_c is the white pixel we examined just before next_b
-                let prev_idx = (start_idx + i - 1) % 8;
-                next_c = (b.0 + NEIGHBORS[prev_idx].0, b.1 + NEIGHBORS[prev_idx].1);
-                found = true;
+                    if let Some(&(nx, ny)) = neighbors.iter().find(|&&(nx, ny)| nx != prev_x || ny != prev_y) {
+                        path.push(Point2D {
+                            x: (nx as f64) - 1.0,
+                            y: (ny as f64) - 1.0,
+                        });
+                    }
+                } else if path.len() == 1 {
+                    if let Some(&(nx, ny)) = neighbors.first() {
+                        path.push(Point2D {
+                            x: (nx as f64) - 1.0,
+                            y: (ny as f64) - 1.0,
+                        });
+                    }
+                }
                 break;
             }
         }
 
-        if !found {
-            // Isolated pixel
-            break;
+        if path.len() > 1 {
+            paths.push(path);
         }
-
-        b = next_b;
-        c = next_c;
-
-        if !state_history.insert((b, c)) {
-            // State seen before, loop detected!
-            break;
-        }
-
-        boundary.push(Point2D {
-            x: b.0 as f64,
-            y: b.1 as f64,
-        });
     }
 
-    boundary
-}
+    // Trace remaining loops or isolated components
+    for y in 1..height - 1 {
+        for x in 1..width - 1 {
+            if grid[y][x] && !visited[y][x] {
+                let mut path = Vec::new();
+                let mut curr_x = x;
+                let mut curr_y = y;
 
-fn flood_fill(
-    start_x: u32,
-    start_y: u32,
-    img: &ImageBuffer<Luma<u8>, Vec<u8>>,
-    visited: &mut [bool],
-    width: u32,
-    height: u32,
-) {
-    let mut stack = vec![(start_x, start_y)];
-    while let Some((x, y)) = stack.pop() {
-        let idx = (y * width + x) as usize;
-        if visited[idx] {
-            continue;
-        }
-        visited[idx] = true;
+                loop {
+                    visited[curr_y][curr_x] = true;
+                    path.push(Point2D {
+                        x: (curr_x as f64) - 1.0,
+                        y: (curr_y as f64) - 1.0,
+                    });
 
-        // 8-way connectivity
-        let neighbors = [
-            (x.wrapping_sub(1), y.wrapping_sub(1)),
-            (x, y.wrapping_sub(1)),
-            (x + 1, y.wrapping_sub(1)),
-            (x.wrapping_sub(1), y),
-            (x + 1, y),
-            (x.wrapping_sub(1), y + 1),
-            (x, y + 1),
-            (x + 1, y + 1),
-        ];
+                    let neighbors = get_neighbors(curr_x, curr_y);
+                    let mut next = None;
 
-        for &(nx, ny) in &neighbors {
-            if nx < width && ny < height {
-                let n_idx = (ny * width + nx) as usize;
-                if !visited[n_idx] && img.get_pixel(nx, ny).0[0] == 0 {
-                    stack.push((nx, ny));
+                    for &(nx, ny) in &neighbors {
+                        if !visited[ny][nx] {
+                            next = Some((nx, ny));
+                            break;
+                        }
+                    }
+
+                    if let Some((nx, ny)) = next {
+                        curr_x = nx;
+                        curr_y = ny;
+                    } else {
+                        if path.len() >= 2 {
+                            let prev_x = (path[path.len() - 2].x + 1.0) as usize;
+                            let prev_y = (path[path.len() - 2].y + 1.0) as usize;
+
+                            if let Some(&(nx, ny)) = neighbors.iter().find(|&&(nx, ny)| nx != prev_x || ny != prev_y) {
+                                path.push(Point2D {
+                                    x: (nx as f64) - 1.0,
+                                    y: (ny as f64) - 1.0,
+                                });
+                            }
+                        } else if path.len() == 1 {
+                            if let Some(&(nx, ny)) = neighbors.first() {
+                                path.push(Point2D {
+                                    x: (nx as f64) - 1.0,
+                                    y: (ny as f64) - 1.0,
+                                });
+                            }
+                        }
+                        break;
+                    }
+                }
+
+                if path.len() > 1 {
+                    paths.push(path);
                 }
             }
         }
     }
+
+    paths
 }
