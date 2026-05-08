@@ -83,7 +83,31 @@ pub fn solve_tsp_nearest_neighbor(points: Vec<Point2D>) -> Vec<Point2D> {
         ordered.push(unvisited.remove(best_idx));
     }
 
-    // TODO: Implement 2-Opt optimization here for better results
+    info!("Applying 2-Opt optimization");
+    let mut improvement = true;
+    let n = ordered.len();
+    while improvement {
+        improvement = false;
+        for i in 0..n.saturating_sub(1) {
+            for j in i + 2..n {
+                let d_i = ordered[i];
+                let d_i1 = ordered[i + 1];
+                let d_j = ordered[j];
+                let d_j1 = ordered[(j + 1) % n];
+
+                let dist_i_i1 = (d_i.x - d_i1.x).powi(2) + (d_i.y - d_i1.y).powi(2);
+                let dist_j_j1 = (d_j.x - d_j1.x).powi(2) + (d_j.y - d_j1.y).powi(2);
+
+                let dist_i_j = (d_i.x - d_j.x).powi(2) + (d_i.y - d_j.y).powi(2);
+                let dist_i1_j1 = (d_i1.x - d_j1.x).powi(2) + (d_i1.y - d_j1.y).powi(2);
+
+                if dist_i_j + dist_i1_j1 < dist_i_i1 + dist_j_j1 {
+                    ordered[i + 1..=j].reverse();
+                    improvement = true;
+                }
+            }
+        }
+    }
 
     ordered
 }
@@ -104,8 +128,9 @@ pub fn perform_fft(points: &[Point2D], terms: usize) -> Result<MathExpressionAST
     let mut terms_vec = Vec::new();
 
     let n = buffer.len() as f64;
-    // Extract top N frequencies
-    for (i, val) in buffer.iter().take(terms.min(buffer.len())).enumerate() {
+
+    let mut all_terms = Vec::with_capacity(buffer.len());
+    for (i, val) in buffer.iter().enumerate() {
         let freq = if i <= buffer.len() / 2 {
             i as f64
         } else {
@@ -114,12 +139,22 @@ pub fn perform_fft(points: &[Point2D], terms: usize) -> Result<MathExpressionAST
         let magnitude = val.norm() / n;
         let phase = val.arg();
 
-        if magnitude > 0.001 {
-            terms_vec.push(crate::models::FourierTerm {
-                amplitude: magnitude,
-                frequency: freq,
-                phase: phase,
-            });
+        all_terms.push(crate::models::FourierTerm {
+            amplitude: magnitude,
+            frequency: freq,
+            phase,
+        });
+    }
+
+    all_terms.sort_by(|a, b| {
+        b.amplitude
+            .partial_cmp(&a.amplitude)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+
+    for term in all_terms.into_iter().take(terms) {
+        if term.amplitude > 0.001 {
+            terms_vec.push(term);
         }
     }
 

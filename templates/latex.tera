@@ -1,0 +1,8 @@
+\documentclass[tikz,border=2mm]{standalone}
+\begin{document}
+\begin{tikzpicture}
+{% for eq in equations %}
+\draw[domain=0:1, smooth, variable=\t] plot ({% for c in eq.x_poly %}{{ c }}{% if loop.index0 == 1 %}*\t{% elif loop.index0 > 1 %}*\t^{{ loop.index0 }}{% endif %}{% if not loop.last %} + {% endif %}{% endfor %}, {% for c in eq.y_poly %}{{ c }}{% if loop.index0 == 1 %}*\t{% elif loop.index0 > 1 %}*\t^{{ loop.index0 }}{% endif %}{% if not loop.last %} + {% endif %}{% endfor %});
+{% endfor %}
+\end{tikzpicture}
+\end{document}

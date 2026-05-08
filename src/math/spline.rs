@@ -109,3 +109,24 @@ pub fn build_splines(segments: &[BezierSegment]) -> Vec<SplineEquation> {
 
     equations
 }
+
+pub fn sample_segments(segments: &[BezierSegment], points_per_segment: usize) -> Vec<Point2D> {
+    let equations = build_splines(segments);
+    let mut points = Vec::new();
+
+    for eq in equations {
+        for i in 0..points_per_segment {
+            let t = i as f64 / points_per_segment as f64;
+            let x = eq.x_poly.first().copied().unwrap_or(0.0)
+                + eq.x_poly.get(1).copied().unwrap_or(0.0) * t
+                + eq.x_poly.get(2).copied().unwrap_or(0.0) * t * t
+                + eq.x_poly.get(3).copied().unwrap_or(0.0) * t * t * t;
+            let y = eq.y_poly.first().copied().unwrap_or(0.0)
+                + eq.y_poly.get(1).copied().unwrap_or(0.0) * t
+                + eq.y_poly.get(2).copied().unwrap_or(0.0) * t * t
+                + eq.y_poly.get(3).copied().unwrap_or(0.0) * t * t * t;
+            points.push(Point2D { x, y });
+        }
+    }
+    points
+}

@@ -1,0 +1,3 @@
+{% for eq in equations %}
+Curve({% for c in eq.x_poly %}{{ c }}{% if loop.index0 == 1 %}*t{% elif loop.index0 > 1 %}*t^{{ loop.index0 }}{% endif %}{% if not loop.last %} + {% endif %}{% endfor %}, {% for c in eq.y_poly %}{{ c }}{% if loop.index0 == 1 %}*t{% elif loop.index0 > 1 %}*t^{{ loop.index0 }}{% endif %}{% if not loop.last %} + {% endif %}{% endfor %}, t, 0, 1)
+{% endfor %}

@@ -6,10 +6,10 @@ use crate::models::ParserOutput;
 use std::path::Path;
 
 pub fn parse_file(path: &Path) -> Result<ParserOutput, VectomancyError> {
-    let ext_str = match path.extension().and_then(|s| s.to_str()) {
-        Some(s) => s,
-        None => "",
-    };
+    let ext_str = path
+        .extension()
+        .and_then(|s| s.to_str())
+        .unwrap_or_default();
     match ext_str.to_lowercase().as_str() {
         "png" | "jpg" | "jpeg" | "webp" => {
             let points = raster::process_raster_image(path)?;

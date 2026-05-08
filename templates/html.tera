@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Vectomancy Splines</title>
+</head>
+<body>
+    <canvas id="canvas" width="800" height="800"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        ctx.beginPath();
+        {% for eq in equations %}
+        {
+            let first = true;
+            for (let t = 0; t <= 1; t += 0.01) {
+                let x = {% for c in eq.x_poly %}{{ c }}{% if loop.index0 == 1 %}*t{% elif loop.index0 > 1 %}*Math.pow(t, {{ loop.index0 }}){% endif %}{% if not loop.last %} + {% endif %}{% endfor %};
+                let y = {% for c in eq.y_poly %}{{ c }}{% if loop.index0 == 1 %}*t{% elif loop.index0 > 1 %}*Math.pow(t, {{ loop.index0 }}){% endif %}{% if not loop.last %} + {% endif %}{% endfor %};
+                if (first) {
+                    ctx.moveTo(x, y);
+                    first = false;
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+        }
+        {% endfor %}
+        ctx.stroke();
+    </script>
+</body>
+</html>

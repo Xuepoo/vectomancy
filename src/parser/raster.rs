@@ -23,10 +23,54 @@ pub fn process_raster_image(path: &Path) -> Result<Vec<Point2D>, VectomancyError
     debug!("Converting to grayscale");
     let grayscale = img.into_luma8();
 
-    // 2. Otsu Binarization (simplified thresholding for now)
-    debug!("Applying binarization");
-    let threshold = 128u8; // A simple threshold. In a real app, calculate Otsu's.
+    // 2. Otsu Binarization
+    debug!("Applying Otsu binarization");
     let (width, height) = grayscale.dimensions();
+
+    let mut histogram = [0u32; 256];
+    for pixel in grayscale.pixels() {
+        histogram[pixel.0[0] as usize] += 1;
+    }
+
+    let total_pixels = width * height;
+    let mut sum = 0.0;
+    for (i, &count) in histogram.iter().enumerate() {
+        sum += i as f64 * count as f64;
+    }
+
+    let mut sum_b = 0.0;
+    let mut w_b = 0;
+    let mut w_f;
+
+    let mut var_max = 0.0;
+    let mut threshold = 0u8;
+
+    for (i, &count) in histogram.iter().enumerate() {
+        w_b += count;
+        if w_b == 0 {
+            continue;
+        }
+
+        w_f = total_pixels - w_b;
+        if w_f == 0 {
+            break;
+        }
+
+        sum_b += i as f64 * count as f64;
+
+        let m_b = sum_b / w_b as f64;
+        let m_f = (sum - sum_b) / w_f as f64;
+
+        let var_between = w_b as f64 * w_f as f64 * (m_b - m_f).powi(2);
+
+        if var_between > var_max {
+            var_max = var_between;
+            threshold = i as u8;
+        }
+    }
+
+    info!("Otsu calculated threshold: {}", threshold);
+
     let mut binarized = ImageBuffer::new(width, height);
     for (x, y, pixel) in grayscale.enumerate_pixels() {
         let Luma([luma]) = *pixel;
@@ -76,12 +120,14 @@ fn trace_boundary(
     let start_p = (start_x as i32, start_y as i32);
     let mut b = start_p;
     let mut c = (start_p.0 - 1, start_p.1); // The pixel to the left is guaranteed to be white or out of bounds
-    let c_start = c;
 
     boundary.push(Point2D {
         x: b.0 as f64,
         y: b.1 as f64,
     });
+
+    let mut state_history = std::collections::HashSet::new();
+    state_history.insert((b, c));
 
     loop {
         let dx = c.0 - b.0;
@@ -119,13 +165,14 @@ fn trace_boundary(
             break;
         }
 
-        // Jacob's stopping criterion
-        if next_b == start_p && next_c == c_start {
+        b = next_b;
+        c = next_c;
+
+        if !state_history.insert((b, c)) {
+            // State seen before, loop detected!
             break;
         }
 
-        b = next_b;
-        c = next_c;
         boundary.push(Point2D {
             x: b.0 as f64,
             y: b.1 as f64,

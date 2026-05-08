@@ -13,3 +13,5 @@ tests/data/.gitkeep
 *.swp
 *.swo
 .DS_Store
+perf.data
+tests/output/

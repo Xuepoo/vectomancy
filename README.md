@@ -1,58 +1,60 @@
-# Vectomancy
+# Vectomancy (矢量魔法)
 
-Vectomancy is a high-performance command-line interface (CLI) tool designed to deeply parse graphic files (raster and vector) and convert them into mathematical parametric equations and executable rendering scripts.
+Vectomancy is a high-performance command-line interface (CLI) tool designed to deeply parse various graphic files (both raster and vector) and convert them into mathematical parametric equations and executable rendering scripts. This allows seamless display in multi-language and multi-platform graphics engines.
 
-## Core Features
+## Features
 
-- **Polymorphic Input Processing**: 
-  - Raster Mode: Reads PNG, JPG, WEBP. Performs grayscale conversion, binarization, edge tracking, and point cloud reduction (RDP).
-  - Vector Mode: (Planned) Parses SVG paths and transforms them into normalized absolute coordinates.
-- **Mathematical Engine**:
-  - Fourier Approximation: Uses a Nearest Neighbor Traveling Salesperson Problem (TSP) solver to order discrete points, then performs Fast Fourier Transform (FFT) to generate parametric equations.
-- **Template-Driven Output**:
-  - Uses `tera` templates to generate outputs in various formats (Python Matplotlib, LaTeX, etc.).
+- **Input parsing & preprocessing:**
+  - **Vector (`.svg`):** Parses paths, transforms, and basic shapes into normalized absolute coordinates.
+  - **Raster (`.png`, `.jpg`, `.webp`):** Noise reduction, binarization, contour tracking, skeletonization, and point cloud reduction using the Ramer-Douglas-Peucker (RDP) algorithm.
+- **Mathematical Conversion Engine:**
+  - **Fourier Series Approximation (`--mode fourier`):** Uses TSP (Nearest Neighbor with 2-Opt) to find an optimal continuous path, then applies FFT to approximate the path with a configurable number of terms (`--terms`). Ideal for raster inputs or complex, non-parametric shapes.
+  - **Exact Parametric Splines (`--mode spline`):** Converts SVG Bezier curves into precise parametric polynomial equation groups.
+- **Template-Driven Output:** Generates outputs in various formats: LaTeX (`.tex`), Desmos HTML (`.html`), Python Matplotlib (`.py`), GeoGebra commands (`.ggb.txt`), and raw JSON (`.json`).
 
 ## Installation
 
-Ensure you have the Rust toolchain installed.
+You will need the Rust toolchain installed.
 
 ```bash
-git clone <repository_url>
-cd vectomancy/vectomancy
 cargo build --release
 ```
 
 ## Usage
 
-```bash
-vectomancy run <INPUT_FILE> [OPTIONS]
-```
+Vectomancy operates through the `run` command. 
 
-### Options
+### Fourier Mode (Raster Images)
 
-- `-o, --output <OUTPUT>`: Output file path.
-- `-f, --format <FORMAT>`: Output format (`python`, `latex`, `html`, `json`). Default is `python`.
-- `-m, --mode <MODE>`: Processing mode (`fourier`, `spline`).
-- `-n, --terms <TERMS>`: Number of Fourier terms to use. Default is `1000`.
-- `-v, --verbose`: Enable verbose logging.
-
-### Example
-
-Convert a raster image to a Python matplotlib script using 500 Fourier terms:
+Best used for raster graphics. The tool traces contours, reduces points via RDP, solves TSP to form a path, and performs an FFT.
 
 ```bash
-vectomancy run input.png --output output.py --format python --terms 500 --verbose
+cargo run --release -- run input.png --mode fourier --terms 1000 --format python --output output.py
 ```
 
-## Development Workflow
+### Spline Mode (Vector Images)
 
-This project adheres to Clean Code and Hexagonal Architecture principles. The core execution pipeline flows through:
+Best used for exact mapping of SVGs. This mode translates SVG paths directly into $t$-parameterized polynomials.
 
-1. **Initialization**: CLI parsing via `clap`.
-2. **Parser**: Polymorphic input handling (`src/parser/`).
-3. **Math Engine**: TSP ordering and FFT calculations (`src/math/`).
-4. **Emitter**: Tera template rendering (`src/emitter/`).
+```bash
+cargo run --release -- run input.svg --mode spline --format latex --output output.tex
+```
+
+## Mathematical Background
+
+### Fourier Pipeline (RDP -> TSP -> FFT)
+1. **RDP (Ramer-Douglas-Peucker):** Reduces the number of points extracted from the image contour by downsampling points that lie close to line segments.
+2. **TSP (Traveling Salesperson Problem):** Orders the points into a single continuous path suitable for 1D signal analysis.
+3. **FFT (Fast Fourier Transform):** Treats the 2D path as complex numbers and performs an FFT to extract frequency components, generating epicycle terms.
+
+### Spline Pipeline
+SVG paths consist of Line, Quadratic Bezier, and Cubic Bezier segments. Vectomancy maps these directly to parametric polynomials:
+- $x(t) = at^3 + bt^2 + ct + d$
+- $y(t) = et^3 + ft^2 + gt + h$
+for $t \in [0, 1]$.
+
+## Architecture
+Vectomancy uses a Hexagonal Architecture (Ports and Adapters) with a decoupled math engine and I/O handlers. It complies with the XDG Base Directory specification for configuration.
 
 ## License
-
-MIT License
+MIT

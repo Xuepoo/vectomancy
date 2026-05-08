@@ -23,7 +23,7 @@ pub struct RunArgs {
     #[arg(short, long)]
     pub output: PathBuf,
 
-    /// Output format (python, latex, html, json)
+    /// Output format (python, latex, html, json, geogebra)
     #[arg(short, long, default_value = "python")]
     pub format: OutputFormat,
 
@@ -46,6 +46,7 @@ pub enum OutputFormat {
     Latex,
     Html,
     Json,
+    Geogebra,
 }
 
 #[derive(ValueEnum, Clone, Debug)]
