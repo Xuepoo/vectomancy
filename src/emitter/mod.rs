@@ -44,6 +44,10 @@ pub fn emit_file(
             tera.add_template_file("templates/geogebra.tera", Some("geogebra"))?;
             "geogebra"
         }
+        OutputFormat::Wolfram => {
+            tera.add_template_file("templates/wolfram.tera", Some("wolfram"))?;
+            "wolfram"
+        }
         OutputFormat::Json => unreachable!(),
     };
 

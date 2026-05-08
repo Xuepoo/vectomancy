@@ -47,6 +47,7 @@ pub enum OutputFormat {
     Html,
     Json,
     Geogebra,
+    Wolfram,
 }
 
 #[derive(ValueEnum, Clone, Debug)]
