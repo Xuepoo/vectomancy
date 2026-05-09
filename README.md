@@ -1,6 +1,6 @@
-# Vectomancy (矢量魔法)
+# Vectomancy
 
-Vectomancy is a high-performance command-line interface (CLI) tool designed to deeply parse various graphic files (both raster and vector) and convert them into mathematical parametric equations and executable rendering scripts. This allows seamless display in multi-language and multi-platform graphics engines.
+Vectomancy is a high-performance command-line interface tool designed to parse graphic files and convert them into mathematical parametric equations and rendering scripts. It enables users to transform raster images and vector graphics into mathematical waveforms.
 
 ## Features
 
@@ -12,6 +12,57 @@ Vectomancy is a high-performance command-line interface (CLI) tool designed to d
   - **Exact Parametric Splines (`--mode spline`):** Converts SVG Bezier curves into precise parametric polynomial equation groups.
 - **Template-Driven Output:** Generates outputs in various formats: LaTeX (`.tex`), Desmos HTML (`.html`), Python Matplotlib (`.py`), GeoGebra commands (`.ggb.txt`), and raw JSON (`.json`).
 
+## Core Algorithms
+
+The engine employs several techniques to achieve precise conversion:
+
+- **Otsu Binarization**: Automatically determines the optimal threshold for image binarization.
+- **Moore Neighborhood Tracing**: Extracts contours from binary images.
+- **Ramer-Douglas-Peucker Reduction**: Simplifies paths by reducing the number of points while preserving shape.
+- **TSP Nearest Neighbor + 2-Opt**: Optimizes path continuity for Fourier series approximation.
+- **FFT (Fast Fourier Transform)**: Approximates paths using a configurable number of terms.
+
+## Example Showcases
+
+| Original Image                                     | Rendered Output                                            |
+| :------------------------------------------------- | :--------------------------------------------------------- |
+| ![Original Image](assets/Hatsune_miku_v2.png)      | ![Rendered Output](assets/Hatsune_miku_v2_render.png)      |
+| ![Original Image](assets/Tux.svg)                  | ![Rendered Output](assets/Tux_render.png)                  |
+| ![Original Image](assets/Cat_November_2010-1a.jpg) | ![Rendered Output](assets/Cat_November_2010-1a_render.png) |
+| ![Original Image](assets/01_khafre_north.jpg)      | ![Rendered Output](assets/01_khafre_north_render.png)      |
+
+### Image Sources
+
+- Miku: [https://storage.moegirl.org.cn/moegirl/commons/3/35/Hatsune_miku_v2.png](https://storage.moegirl.org.cn/moegirl/commons/3/35/Hatsune_miku_v2.png)
+- Tux: [https://en.wikipedia.org/wiki/File:Tux.svg](https://en.wikipedia.org/wiki/File:Tux.svg)
+- Cat: [https://en.wikipedia.org/wiki/Tabby_cat#/media/File:Cat_November_2010-1a.jpg](https://en.wikipedia.org/wiki/Tabby_cat#/media/File:Cat_November_2010-1a.jpg)
+- Pyramid: [https://en.wikipedia.org/wiki/Pyramid#/media/File:01_khafre_north.jpg](https://en.wikipedia.org/wiki/Pyramid#/media/File:01_khafre_north.jpg)
+
+## CLI Usage
+
+```bash
+vectomancy run [OPTIONS] --output <OUTPUT> <INPUT>
+```
+
+Options:
+
+- `-o, --output <OUTPUT>`: Path for the generated output file.
+- `-f, --format <FORMAT>`: Output format (python, latex, html, json, geogebra, wolfram).
+- `-m, --mode <MODE>`: Conversion mode (fourier, spline).
+- `-n, --terms <TERMS>`: Number of terms for Fourier approximation (default: 1000).
+
+Configuration loads from `~/.config/vectomancy/config.toml` following the XDG Base Directory specification.
+
+## Roadmap
+
+- GPU acceleration via Compute Shaders (wgpu and Vulkan).
+- Multi-threading improvements.
+- Colored terminal output.
+
+## License
+
+This project is licensed under the MIT License.
+
 ## Installation
 
 You will need the Rust toolchain installed.
@@ -19,42 +70,3 @@ You will need the Rust toolchain installed.
 ```bash
 cargo build --release
 ```
-
-## Usage
-
-Vectomancy operates through the `run` command. 
-
-### Fourier Mode (Raster Images)
-
-Best used for raster graphics. The tool traces contours, reduces points via RDP, solves TSP to form a path, and performs an FFT.
-
-```bash
-cargo run --release -- run input.png --mode fourier --terms 1000 --format python --output output.py
-```
-
-### Spline Mode (Vector Images)
-
-Best used for exact mapping of SVGs. This mode translates SVG paths directly into $t$-parameterized polynomials.
-
-```bash
-cargo run --release -- run input.svg --mode spline --format latex --output output.tex
-```
-
-## Mathematical Background
-
-### Fourier Pipeline (RDP -> TSP -> FFT)
-1. **RDP (Ramer-Douglas-Peucker):** Reduces the number of points extracted from the image contour by downsampling points that lie close to line segments.
-2. **TSP (Traveling Salesperson Problem):** Orders the points into a single continuous path suitable for 1D signal analysis.
-3. **FFT (Fast Fourier Transform):** Treats the 2D path as complex numbers and performs an FFT to extract frequency components, generating epicycle terms.
-
-### Spline Pipeline
-SVG paths consist of Line, Quadratic Bezier, and Cubic Bezier segments. Vectomancy maps these directly to parametric polynomials:
-- $x(t) = at^3 + bt^2 + ct + d$
-- $y(t) = et^3 + ft^2 + gt + h$
-for $t \in [0, 1]$.
-
-## Architecture
-Vectomancy uses a Hexagonal Architecture (Ports and Adapters) with a decoupled math engine and I/O handlers. It complies with the XDG Base Directory specification for configuration.
-
-## License
-MIT

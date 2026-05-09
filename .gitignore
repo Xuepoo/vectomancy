@@ -2,10 +2,17 @@
 target/
 **/*.rs.bk
 Cargo.lock
+.ruff_cache/
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
 
 # Test artifacts
-tests/data/*
-tests/data/.gitkeep
+tests
 
 # IDEs and OS
 .idea/

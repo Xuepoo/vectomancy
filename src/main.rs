@@ -70,7 +70,11 @@ fn main() -> Result<(), VectomancyError> {
             }
 
             // Render
-            emitter::emit_file(&ast, &args.format, &args.output)?;
+            emitter::emit_file(
+                &ast,
+                args.format.as_ref().unwrap_or(&cli::OutputFormat::Python),
+                &args.output,
+            )?;
             info!("Vectomancy execution completed successfully.");
         }
     }

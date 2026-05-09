@@ -1,8 +1,14 @@
 \documentclass[tikz,border=2mm]{standalone}
 \begin{document}
 \begin{tikzpicture}
+{% if equations %}
 {% for eq in equations %}
 \draw[domain=0:1, smooth, variable=\t] plot ({% for c in eq.x_poly %}{{ c }}{% if loop.index0 == 1 %}*\t{% elif loop.index0 > 1 %}*\t^{{ loop.index0 }}{% endif %}{% if not loop.last %} + {% endif %}{% endfor %}, {% for c in eq.y_poly %}{{ c }}{% if loop.index0 == 1 %}*\t{% elif loop.index0 > 1 %}*\t^{{ loop.index0 }}{% endif %}{% if not loop.last %} + {% endif %}{% endfor %});
 {% endfor %}
+{% elif strokes %}
+{% for stroke in strokes %}
+\draw[domain=0:6.28318, smooth, variable=\t, samples=100] plot ({% for term in stroke %}{% if not loop.first %} + {% endif %}{{ term.amplitude }}*cos(deg({{ term.frequency }}*\t + {{ term.phase }})){% endfor %}, {% for term in stroke %}{% if not loop.first %} + {% endif %}{{ term.amplitude }}*sin(deg({{ term.frequency }}*\t + {{ term.phase }})){% endfor %});
+{% endfor %}
+{% endif %}
 \end{tikzpicture}
 \end{document}

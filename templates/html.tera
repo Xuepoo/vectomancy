@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Vectomancy Splines</title>
+    <title>Vectomancy Output</title>
 </head>
 <body>
     <canvas id="canvas" width="800" height="800"></canvas>
@@ -10,6 +10,7 @@
         const ctx = canvas.getContext('2d');
         
         ctx.beginPath();
+        {% if equations %}
         {% for eq in equations %}
         {
             let first = true;
@@ -25,6 +26,27 @@
             }
         }
         {% endfor %}
+        {% elif strokes %}
+        {% for stroke in strokes %}
+        {
+            let first = true;
+            for (let t = 0; t <= Math.PI * 2; t += 0.01) {
+                let x = 0;
+                let y = 0;
+                {% for term in stroke %}
+                x += {{ term.amplitude }} * Math.cos({{ term.frequency }} * t + {{ term.phase }});
+                y += {{ term.amplitude }} * Math.sin({{ term.frequency }} * t + {{ term.phase }});
+                {% endfor %}
+                if (first) {
+                    ctx.moveTo(x, y);
+                    first = false;
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+        }
+        {% endfor %}
+        {% endif %}
         ctx.stroke();
     </script>
 </body>

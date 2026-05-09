@@ -1,3 +1,9 @@
+{% if equations %}
 {% for eq in equations %}
 Curve({% for c in eq.x_poly %}{{ c }}{% if loop.index0 == 1 %}*t{% elif loop.index0 > 1 %}*t^{{ loop.index0 }}{% endif %}{% if not loop.last %} + {% endif %}{% endfor %}, {% for c in eq.y_poly %}{{ c }}{% if loop.index0 == 1 %}*t{% elif loop.index0 > 1 %}*t^{{ loop.index0 }}{% endif %}{% if not loop.last %} + {% endif %}{% endfor %}, t, 0, 1)
 {% endfor %}
+{% elif strokes %}
+{% for stroke in strokes %}
+Curve({% for term in stroke %}{% if not loop.first %} + {% endif %}{{ term.amplitude }}*cos({{ term.frequency }}*t + {{ term.phase }}){% endfor %}, {% for term in stroke %}{% if not loop.first %} + {% endif %}{{ term.amplitude }}*sin({{ term.frequency }}*t + {{ term.phase }}){% endfor %}, t, 0, 6.28318)
+{% endfor %}
+{% endif %}

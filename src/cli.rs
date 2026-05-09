@@ -24,8 +24,8 @@ pub struct RunArgs {
     pub output: PathBuf,
 
     /// Output format (python, latex, html, json, geogebra)
-    #[arg(short, long, default_value = "python")]
-    pub format: OutputFormat,
+    #[arg(short, long)]
+    pub format: Option<OutputFormat>,
 
     /// Processing mode
     #[arg(short, long)]
@@ -40,7 +40,8 @@ pub struct RunArgs {
     pub verbose: bool,
 }
 
-#[derive(ValueEnum, Clone, Debug)]
+#[derive(ValueEnum, Clone, Debug, serde::Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum OutputFormat {
     Python,
     Latex,
@@ -50,7 +51,8 @@ pub enum OutputFormat {
     Wolfram,
 }
 
-#[derive(ValueEnum, Clone, Debug)]
+#[derive(ValueEnum, Clone, Debug, serde::Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum Mode {
     Fourier,
     Spline,

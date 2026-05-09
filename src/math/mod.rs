@@ -3,7 +3,7 @@ pub mod spline;
 use crate::error::VectomancyError;
 use crate::models::Point2D;
 use rustfft::{num_complex::Complex, FftPlanner};
-use tracing::info;
+use tracing::{debug, info};
 
 fn perpendicular_distance(pt: Point2D, line_start: Point2D, line_end: Point2D) -> f64 {
     let dx = line_end.x - line_start.x;
@@ -58,7 +58,7 @@ pub fn solve_tsp_nearest_neighbor(points: Vec<Point2D>) -> Vec<Point2D> {
         return Vec::new();
     }
 
-    info!("Solving TSP (Nearest Neighbor) for {} points", points.len());
+    debug!("Solving TSP (Nearest Neighbor) for {} points", points.len());
     let mut unvisited = points;
     let mut ordered = Vec::with_capacity(unvisited.len());
 
@@ -83,7 +83,7 @@ pub fn solve_tsp_nearest_neighbor(points: Vec<Point2D>) -> Vec<Point2D> {
         ordered.push(unvisited.remove(best_idx));
     }
 
-    info!("Applying 2-Opt optimization");
+    debug!("Applying 2-Opt optimization");
     let mut improvement = true;
     let n = ordered.len();
     while improvement {
@@ -116,7 +116,7 @@ pub fn perform_fft(
     points: &[Point2D],
     terms: usize,
 ) -> Result<Vec<crate::models::FourierTerm>, VectomancyError> {
-    info!("Performing FFT. Terms: {}", terms);
+    debug!("Performing FFT. Terms: {}", terms);
     let mut planner = FftPlanner::new();
     let fft = planner.plan_fft_forward(points.len());
 
@@ -155,10 +155,12 @@ pub fn perform_fft(
             .unwrap_or(std::cmp::Ordering::Equal)
     });
 
-    for term in all_terms.into_iter().take(terms) {
-        if term.amplitude > 0.001 {
-            terms_vec.push(term);
-        }
+    for term in all_terms
+        .into_iter()
+        .filter(|t| t.amplitude > 0.001)
+        .take(terms)
+    {
+        terms_vec.push(term);
     }
 
     Ok(terms_vec)
