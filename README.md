@@ -24,18 +24,18 @@ The engine employs several techniques to achieve precise conversion:
 
 ## Example Showcases
 
-| Original Image                                     | Rendered Output                                            |
-| :------------------------------------------------- | :--------------------------------------------------------- |
-| ![Original Image](assets/Hatsune_miku_v2.png)      | ![Rendered Output](assets/Hatsune_miku_v2_render.png)      |
-| ![Original Image](assets/Tux.png)                  | ![Rendered Output](assets/Tux_render.png)                  |
-| ![Original Image](assets/Cat_November_2010-1a.jpg) | ![Rendered Output](assets/Cat_November_2010-1a_render.png) |
-| ![Original Image](assets/01_khafre_north.jpg)      | ![Rendered Output](assets/01_khafre_north_render.png)      |
+| Original Image                                | Rendered Output                                       |
+| :-------------------------------------------- | :---------------------------------------------------- |
+| ![Original Image](assets/Hatsune_miku_v2.png) | ![Rendered Output](assets/Hatsune_miku_v2_render.png) |
+| ![Original Image](assets/Tux.png)             | ![Rendered Output](assets/Tux_render.png)             |
+| ![Original Image](assets/dolphin.jpg)         | ![Rendered Output](assets/dolphin_render.png)         |
+| ![Original Image](assets/01_khafre_north.jpg) | ![Rendered Output](assets/01_khafre_north_render.png) |
 
 ### Image Sources
 
 - Miku: [https://storage.moegirl.org.cn/moegirl/commons/3/35/Hatsune_miku_v2.png](https://storage.moegirl.org.cn/moegirl/commons/3/35/Hatsune_miku_v2.png)
 - Tux: [https://en.wikipedia.org/wiki/File:Tux.svg](https://en.wikipedia.org/wiki/File:Tux.svg)
-- Cat: [https://en.wikipedia.org/wiki/Tabby_cat#/media/File:Cat_November_2010-1a.jpg](https://en.wikipedia.org/wiki/Tabby_cat#/media/File:Cat_November_2010-1a.jpg)
+- Dolphin: [https://en.wikipedia.org/wiki/Guiana_dolphin#/media/File:Descri%C3%A7%C3%A3o_in%C3%ADcio_ou_comportamento.jpg](https://en.wikipedia.org/wiki/Guiana_dolphin#/media/File:Descri%C3%A7%C3%A3o_in%C3%ADcio_ou_comportamento.jpg)
 - Pyramid: [https://en.wikipedia.org/wiki/Pyramid#/media/File:01_khafre_north.jpg](https://en.wikipedia.org/wiki/Pyramid#/media/File:01_khafre_north.jpg)
 
 ## CLI Usage
