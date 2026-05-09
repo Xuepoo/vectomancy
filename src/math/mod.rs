@@ -165,3 +165,56 @@ pub fn perform_fft(
 
     Ok(terms_vec)
 }
+
+pub fn chaikin_smooth(points: &[Point2D], iterations: usize) -> Vec<Point2D> {
+    if points.len() < 3 || iterations == 0 {
+        return points.to_vec();
+    }
+
+    let mut current = points.to_vec();
+    for _ in 0..iterations {
+        let mut next = Vec::with_capacity(current.len() * 2);
+        next.push(current[0]); // Keep the first point
+        for i in 0..current.len() - 1 {
+            let p0 = current[i];
+            let p1 = current[i + 1];
+
+            let q0 = Point2D {
+                x: 0.75 * p0.x + 0.25 * p1.x,
+                y: 0.75 * p0.y + 0.25 * p1.y,
+            };
+            let q1 = Point2D {
+                x: 0.25 * p0.x + 0.75 * p1.x,
+                y: 0.25 * p0.y + 0.75 * p1.y,
+            };
+
+            next.push(q0);
+            next.push(q1);
+        }
+        next.push(current[current.len() - 1]); // Keep the last point
+        current = next;
+    }
+    current
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_chaikin_smooth() {
+        let points = vec![
+            Point2D { x: 0.0, y: 0.0 },
+            Point2D { x: 10.0, y: 0.0 },
+            Point2D { x: 10.0, y: 10.0 },
+        ];
+        let smoothed = chaikin_smooth(&points, 1);
+        assert_eq!(smoothed.len(), 6);
+        assert_eq!(smoothed[0], Point2D { x: 0.0, y: 0.0 });
+        assert_eq!(smoothed[1], Point2D { x: 2.5, y: 0.0 });
+        assert_eq!(smoothed[2], Point2D { x: 7.5, y: 0.0 });
+        assert_eq!(smoothed[3], Point2D { x: 10.0, y: 2.5 });
+        assert_eq!(smoothed[4], Point2D { x: 10.0, y: 7.5 });
+        assert_eq!(smoothed[5], Point2D { x: 10.0, y: 10.0 });
+    }
+}

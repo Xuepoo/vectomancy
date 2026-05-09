@@ -27,15 +27,22 @@ fn main() -> Result<(), VectomancyError> {
             let ast = match output {
                 models::ParserOutput::Paths(paths) => {
                     info!("Successfully extracted {} paths.", paths.len());
+                    let config = vectomancy::config::Config::load();
+                    let iters = args.chaikin_iters.or(config.chaikin_iters).unwrap_or(0);
                     let mode = args.mode.clone().unwrap_or(cli::Mode::Fourier);
                     match mode {
                         cli::Mode::Fourier => {
                             let mut strokes = Vec::new();
                             for path in paths {
                                 let reduced = math::simplify_rdp(&path, 0.5); // Slightly higher tolerance to reduce noise
-                                if reduced.len() > 3 {
+                                let smoothed = if iters > 0 {
+                                    math::chaikin_smooth(&reduced, iters)
+                                } else {
+                                    reduced
+                                };
+                                if smoothed.len() > 3 {
                                     // We don't need TSP for raster paths since they are already ordered contours!
-                                    let terms = math::perform_fft(&reduced, args.terms)?;
+                                    let terms = math::perform_fft(&smoothed, args.terms)?;
                                     strokes.push(terms);
                                 }
                             }
@@ -45,8 +52,13 @@ fn main() -> Result<(), VectomancyError> {
                             let mut all_equations = Vec::new();
                             for path in paths {
                                 let reduced = math::simplify_rdp(&path, 0.5);
-                                if reduced.len() > 2 {
-                                    let segments = math::spline::fit_cubic_bezier(&reduced);
+                                let smoothed = if iters > 0 {
+                                    math::chaikin_smooth(&reduced, iters)
+                                } else {
+                                    reduced
+                                };
+                                if smoothed.len() > 2 {
+                                    let segments = math::spline::fit_cubic_bezier(&smoothed);
                                     let equations = math::spline::build_splines(&segments);
                                     all_equations.extend(equations);
                                 }

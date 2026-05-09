@@ -35,6 +35,10 @@ pub struct RunArgs {
     #[arg(short = 'n', long, default_value_t = 1000)]
     pub terms: usize,
 
+    /// Number of Chaikin smoothing iterations
+    #[arg(short = 'c', long)]
+    pub chaikin_iters: Option<usize>,
+
     /// Verbose output
     #[arg(short, long)]
     pub verbose: bool,

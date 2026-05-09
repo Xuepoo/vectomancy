@@ -9,6 +9,7 @@ pub struct Config {
     pub terms: Option<usize>,
     pub epsilon: Option<f64>,
     pub format: Option<OutputFormat>,
+    pub chaikin_iters: Option<usize>,
 }
 
 impl Config {
