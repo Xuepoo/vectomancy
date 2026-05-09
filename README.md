@@ -27,7 +27,7 @@ The engine employs several techniques to achieve precise conversion:
 | Original Image                                     | Rendered Output                                            |
 | :------------------------------------------------- | :--------------------------------------------------------- |
 | ![Original Image](assets/Hatsune_miku_v2.png)      | ![Rendered Output](assets/Hatsune_miku_v2_render.png)      |
-| ![Original Image](assets/Tux.svg)                  | ![Rendered Output](assets/Tux_render.png)                  |
+| ![Original Image](assets/Tux.png)                  | ![Rendered Output](assets/Tux_render.png)                  |
 | ![Original Image](assets/Cat_November_2010-1a.jpg) | ![Rendered Output](assets/Cat_November_2010-1a_render.png) |
 | ![Original Image](assets/01_khafre_north.jpg)      | ![Rendered Output](assets/01_khafre_north_render.png)      |
 
