@@ -46,11 +46,23 @@ jobs:
         if: runner.os == 'Windows'
         run: move target/${{ matrix.target }}/release/vectomancy.exe ${{ matrix.artifact_name }}
 
+      - name: Package for Linux distributions
+        if: runner.os == 'Linux'
+        run: |
+          curl -sL https://github.com/goreleaser/nfpm/releases/download/v2.37.1/nfpm_2.37.1_Linux_x86_64.tar.gz | tar xz nfpm
+          ./nfpm pkg --packager deb --target vectomancy-linux-amd64.deb
+          ./nfpm pkg --packager rpm --target vectomancy-linux-x86_64.rpm
+          ./nfpm pkg --packager archlinux --target vectomancy-linux-x86_64.pkg.tar.zst
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
-          path: ${{ matrix.artifact_name }}
+          path: |
+            ${{ matrix.artifact_name }}
+            *.deb
+            *.rpm
+            *.pkg.tar.zst
 
   release:
     name: Create Release
