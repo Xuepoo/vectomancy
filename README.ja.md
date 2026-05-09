@@ -1,72 +1,70 @@
 # Vectomancy
 
-Vectomancy は、さまざまなグラフィックファイルを解析し、数学的なパラメータ方程式やレンダリングスクリプトに変換するように設計された高性能なコマンドラインインターフェースツールです。ユーザーは、ラスター画像やベクターグラフィックスを数学的な波形に変換できます。
+[English](README.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [日本語](README.ja.md) | [Français](README.fr.md) | [Español](README.es.md)
 
-## 機能
+Vectomancy は、画像ファイルを解析し、数学的なパラメータ方程式とレンダリングスクリプトに変換するために設計された、高性能なコマンドラインインターフェースツールです。ラスター画像やベクターグラフィックスを数学的に美しい波形に変換することができます。
 
-- **入力解析と前処理:**
-  - **ベクター (`.svg`):** パス、変換、基本形状を正規化された絶対座標に解析します。
-  - **ラスター (`.png`, `.jpg`, `.webp`):** Ramer-Douglas-Peucker (RDP) アルゴリズムを使用して、ノイズ除去、二値化、輪郭追跡、スケルトン化、点群削減を行います。
-- **数学変換エンジン:**
-  - **フーリエ級数近似 (`--mode fourier`):** TSP (最近傍法 + 2-Opt) を使用して最適な連続パスを見つけ、FFT を適用して設定可能な項数 (`--terms`) でパスを近似します。ラスター入力や複雑な非パラメータ形状に最適です。
-  - **正確なパラメータスプライン (`--mode spline`):** SVG ベジェ曲線を正確なパラメータ多項式方程式グループに変換します。
-- **テンプレート駆動型出力:** LaTeX (`.tex`)、Desmos HTML (`.html`)、Python Matplotlib (`.py`)、GeoGebra コマンド (`.ggb.txt`)、生の JSON (`.json`) など、さまざまな形式で出力を生成します。
+## ギャラリー
 
-## コアアルゴリズム
+| 元の画像                                | レンダリング出力                                       |
+| :-------------------------------------------- | :---------------------------------------------------- |
+| ![Original Image](assets/dolphin.jpg)         | ![Rendered Output](assets/dolphin_render.png)         |
+| ![Original Image](assets/Hatsune_miku_v2.png) | ![Rendered Output](assets/Hatsune_miku_v2_render.png) |
+| ![Original Image](assets/Tux.png)             | ![Rendered Output](assets/Tux_render.png)             |
+| ![Original Image](assets/01_khafre_north.jpg) | ![Rendered Output](assets/01_khafre_north_render.png) |
 
-エンジンは、正確な変換を実現するためにいくつかの技術を採用しています。
+### 画像の出典
 
-- **大津の二値化 (Otsu Binarization)**: 画像二値化の最適な閾値を自動的に決定します。
-- **ムーア近傍追跡 (Moore Neighborhood Tracing)**: 二値画像から輪郭を抽出します。
-- **Ramer-Douglas-Peucker 削減**: 形状を維持しながら点数を減らしてパスを簡略化します。
-- **TSP 最近傍法 + 2-Opt**: フーリエ級数近似のためにパスの連続性を最適化します。
-- **FFT (高速フーリエ変換)**: 設定可能な項数を使用してパスを近似します。
-
-## 示例展示
-
-| オリジナル画像                                     | レンダリング出力                                            |
-| :------------------------------------------------- | :---------------------------------------------------------- |
-| ![オリジナル画像](assets/Hatsune_miku_v2.png)      | ![レンダリング出力](assets/Hatsune_miku_v2_render.png)      |
-| ![オリジナル画像](assets/Tux.svg)                  | ![レンダリング出力](assets/Tux_render.png)                  |
-| ![オリジナル画像](assets/Cat_November_2010-1a.jpg) | ![レンダリング出力](assets/Cat_November_2010-1a_render.png) |
-| ![オリジナル画像](assets/01_khafre_north.jpg)      | ![レンダリング出力](assets/01_khafre_north_render.png)      |
-
-### 画像ソース
-
+- Dolphin: [https://en.wikipedia.org/wiki/Guiana_dolphin#/media/File:Descri%C3%A7%C3%A3o_in%C3%ADcio_ou_comportamento.jpg](https://en.wikipedia.org/wiki/Guiana_dolphin#/media/File:Descri%C3%A7%C3%A3o_in%C3%ADcio_ou_comportamento.jpg)
 - Miku: [https://storage.moegirl.org.cn/moegirl/commons/3/35/Hatsune_miku_v2.png](https://storage.moegirl.org.cn/moegirl/commons/3/35/Hatsune_miku_v2.png)
 - Tux: [https://en.wikipedia.org/wiki/File:Tux.svg](https://en.wikipedia.org/wiki/File:Tux.svg)
-- Cat: [https://en.wikipedia.org/wiki/Tabby_cat#/media/File:Cat_November_2010-1a.jpg](https://en.wikipedia.org/wiki/Tabby_cat#/media/File:Cat_November_2010-1a.jpg)
 - Pyramid: [https://en.wikipedia.org/wiki/Pyramid#/media/File:01_khafre_north.jpg](https://en.wikipedia.org/wiki/Pyramid#/media/File:01_khafre_north.jpg)
+
+## 主な機能
+
+- **マルチフォーマットでの数式エクスポート**: Python (Matplotlib)、LaTeX (TikZ)、Wolfram、GeoGebra (`.ggb`)、Kmplot (`.fkt`)、HTML5 Canvas、およびネイティブ JSON をサポートしています。
+- **AST サイズの最適化**: 膨大な浮点数マトリックスを保存するために `Zlib + Base64` エンコーディングを使用しています。これにより、生成されたファイルがコンパクトに保たれ、大きなファイルをパースする際のエディターやレンダリングエンジンのフリーズやクラッシュを防ぎます。
+- **制御可能な滑らかさとレンダリングモード**:
+  - `--mode spline`: 正確なベジェ曲線補間で形状を再構築し、Chaikinアルゴリズムと組み合わせてギザギザの階段状のエッジを排除する平滑化を行います。
+  - `--mode fourier`: フーリエ級数（TSP経路計画に基づく）を利用して、画像の一筆書きの連続曲線に近似させます。
+
+大津の二値化、Ramer-Douglas-Peucker 削減、Moore近傍追跡、FFTなどの数学的アルゴリズムの詳細については、[ユーザーマニュアル](docs/user_manual.md)を参照してください。
+
+## インストール
+
+ソースからビルドするには、Rustツールチェーンがインストールされている必要があります。
+
+```bash
+git clone https://github.com/Xuepoo/vectomancy.git
+cd vectomancy/vectomancy
+cargo build --release
+```
+
+Linux (Debian、Arch、RedHat、openSUSE、NixOS)、Windows、macOS 用のコンパイル済みバイナリは、[GitHub Releases](https://github.com/Xuepoo/vectomancy/releases) で入手できます。
 
 ## CLI の使用方法
 
 ```bash
-vectomancy run [OPTIONS] --output <OUTPUT> <INPUT>
+./target/release/vectomancy run [OPTIONS] --output <OUTPUT> <INPUT>
 ```
 
 オプション:
 
-- `-o, --output <OUTPUT>`: 生成された出力ファイルのパス。
-- `-f, --format <FORMAT>`: 出力形式 (python, latex, html, json, geogebra, wolfram)。
+- `-o, --output <OUTPUT>`: 生成される出力ファイルのパス。
+- `-f, --format <FORMAT>`: 出力フォーマット (python, latex, html, json, geogebra, wolfram, kmplot)。
 - `-m, --mode <MODE>`: 変換モード (fourier, spline)。
 - `-n, --terms <TERMS>`: フーリエ近似の項数 (デフォルト: 1000)。
 
-設定は、XDG Base Directory 仕様に従い `~/.config/vectomancy/config.toml` から読み込まれます。
+設定は、XDG Base Directory 仕様に従って `~/.config/vectomancy/config.toml` から読み込まれます。
 
-## ロードマップ
+## FAQ
 
-- Compute Shader (wgpu および Vulkan) による GPU アクセラレーション。
-- マルチスレッドの改善。
-- カラーターミナル出力。
+**Q: 生成された Python や HTML ファイルを開くと VSCode がフリーズしますか？**
+**A:** いいえ。生成されたスクリプトの先頭にアンチスキャンディレクティブ（`# pylint: disable=all` や `<!-- eslint-disable -->` など）を自動的に挿入します。Zlib 圧縮によりファイルサイズは小さく保たれ、主要な IDE で安全に開くことができます。
+
+**Q: GeoGebra にファイルをインポートするとフリーズするのはなぜですか？**
+**A:** 数式レンダリングソフトウェアは、内部の XML ツリーパース制限によって制限されています。画像にノイズが多く含まれ、何万もの方程式が生成されると、遅延が発生します。 `--tolerance` を増やし（例：2.0 または 3.0）、`--min-path-len` を指定して、小さくてノイズの多い線をフィルタリングすることをお勧めします。詳細なチューニングオプションについては、[ユーザーマニュアル](docs/user_manual.md)をご覧ください。
 
 ## ライセンス
 
 このプロジェクトは MIT ライセンスの下でライセンスされています。
-
-## インストール
-
-Rust ツールチェーンをインストールする必要があります。
-
-```bash
-cargo build --release
-```

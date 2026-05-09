@@ -1,6 +1,6 @@
 # Vectomancy
 
-[English](README.md) | [简体中文](README.zh-CN.md)
+[English](README.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [日本語](README.ja.md) | [Français](README.fr.md) | [Español](README.es.md)
 
 Vectomancy 是一个高性能的命令行图像转换工具。它能深入解析光栅图像和矢量文件，将它们转化为极具数学美感的参数方程集合，并且直接渲染为各大数学软件支持的工程格式或脚本。
 
@@ -28,19 +28,19 @@ Vectomancy 是一个高性能的命令行图像转换工具。它能深入解析
   - `--mode spline`：以精确的贝塞尔曲线插值还原形状，搭配 Chaikin 算法平滑处理，解决阶梯锯齿感。
   - `--mode fourier`：利用傅里叶级数（基于 TSP 旅行商路径规划），逼近生成一条连续的一笔画图像曲线。
 
-关于底层的具体数学算法细节（例如 Otsu 二值化、Ramer-Douglas-Peucker 降维、Moore 邻域追踪和 FFT 傅里叶变换），请参阅更详细的 [用户使用手册](docs/user_manual.zh-CN.md)。
+关于底层的具体数学算法细节（例如 Otsu 二值化、Ramer-Douglas-Peucker 降维、Moore 邻域追踪和 FFT 傅里叶变换），请参阅更详细的 [用户使用手册](docs/user_manual.md)。
 
 ## 安装方式
 
 从源码编译需要预先安装 Rust 工具链：
 
 ```bash
-git clone https://github.com/Xuepoo/vectomanct.git
-cd vectomanct/vectomancy
+git clone https://github.com/Xuepoo/vectomancy.git
+cd vectomancy/vectomancy
 cargo build --release
 ```
 
-你也可以在 [GitHub Releases](https://github.com/Xuepoo/vectomanct/releases) 页面下载对应于 Linux (Debian, Arch, RedHat, openSUSE, NixOS 等), Windows, macOS 平台的预编译原生二进制文件。
+你也可以在 [GitHub Releases](https://github.com/Xuepoo/vectomancy/releases) 页面下载对应于 Linux (Debian, Arch, RedHat, openSUSE, NixOS 等), Windows, macOS 平台的预编译原生二进制文件。
 
 ## CLI 基础用法
 
@@ -63,7 +63,7 @@ cargo build --release
 **A:** 不会。我们在生成的脚本开头自动注入了防扫描指令（如 `# pylint: disable=all` 或 `<!-- eslint-disable -->`）。且通过 Zlib 压缩，文件体积极小，主流 IDE 都可以安全打开。
 
 **Q: 为什么我导入 GeoGebra 会卡死？**
-**A:** 纯数学公式渲染软件受限于内部 XML 树解析限制，如果图片包含过多噪点导致方程多达上万条就会卡顿。建议通过增加 `--tolerance`（比如设定为 2.0 或 3.0）并指定 `--min-path-len` 以滤除细碎线条。详情请参考 [用户使用手册](docs/user_manual.zh-CN.md) 了解相关调优说明。
+**A:** 纯数学公式渲染软件受限于内部 XML 树解析限制，如果图片包含过多噪点导致方程多达上万条就会卡顿。建议通过增加 `--tolerance`（比如设定为 2.0 或 3.0）并指定 `--min-path-len` 以滤除细碎线条。详情请参考 [用户使用手册](docs/user_manual.md) 了解相关调优说明。
 
 ## 许可证
 

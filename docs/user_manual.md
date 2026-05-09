@@ -17,11 +17,11 @@ Welcome to **Vectomancy**! Vectomancy is a high-performance command-line image c
 
 We provide compiled binaries for various platforms:
 
-- **Download Precompiled Binaries**: You can download native binaries for Windows, macOS, and Linux (Debian, Arch, RedHat, openSUSE, NixOS, etc.) from the [Releases](https://github.com/Xuepoo/vectomanct/releases) page of this repository.
+- **Download Precompiled Binaries**: You can download native binaries for Windows, macOS, and Linux (Debian, Arch, RedHat, openSUSE, NixOS, etc.) from the [Releases](https://github.com/Xuepoo/vectomancy/releases) page of this repository.
 - **Build from Source (Rust)**:
   ```bash
-  git clone https://github.com/Xuepoo/vectomanct.git
-  cd vectomanct/vectomancy
+  git clone https://github.com/Xuepoo/vectomancy.git
+  cd vectomancy/vectomancy
   cargo build --release
   ```
 

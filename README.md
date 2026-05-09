@@ -1,6 +1,6 @@
 # Vectomancy
 
-[English](README.md) | [简体中文](README.zh-CN.md)
+[English](README.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [日本語](README.ja.md) | [Français](README.fr.md) | [Español](README.es.md)
 
 Vectomancy is a high-performance command-line interface tool designed to parse graphic files and convert them into mathematical parametric equations and rendering scripts. It enables users to transform raster images and vector graphics into mathematically beautiful waveforms.
 
@@ -35,12 +35,12 @@ For a deeper dive into the mathematical algorithms (like Otsu Binarization, Rame
 You will need the Rust toolchain installed to build from source.
 
 ```bash
-git clone https://github.com/Xuepoo/vectomanct.git
-cd vectomanct/vectomancy
+git clone https://github.com/Xuepoo/vectomancy.git
+cd vectomancy/vectomancy
 cargo build --release
 ```
 
-Precompiled binaries for Linux (Debian, Arch, RedHat, openSUSE, NixOS), Windows, and macOS are available in the [GitHub Releases](https://github.com/Xuepoo/vectomanct/releases).
+Precompiled binaries for Linux (Debian, Arch, RedHat, openSUSE, NixOS), Windows, and macOS are available in the [GitHub Releases](https://github.com/Xuepoo/vectomancy/releases).
 
 ## CLI Usage
 
