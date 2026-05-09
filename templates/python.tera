@@ -1,3 +1,5 @@
+# pylint: disable=all
+# type: ignore
 import numpy as np
 import matplotlib.pyplot as plt
 import json, zlib, base64, sys
@@ -41,6 +43,14 @@ def render():
         y_poly = eq['y_poly']
         x = np.dot(x_poly, t_eq_powers)
         y = np.dot(y_poly, t_eq_powers)
+        plt.plot(x, y, 'k-', linewidth=1.0)
+    {% endif %}
+
+    {% if is_polyline %}
+    paths_data = _load_data()
+    for path in paths_data:
+        x = [p['x'] for p in path]
+        y = [p['y'] for p in path]
         plt.plot(x, y, 'k-', linewidth=1.0)
     {% endif %}
 

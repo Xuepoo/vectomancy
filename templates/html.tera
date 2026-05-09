@@ -1,3 +1,5 @@
+<!-- prettier-ignore -->
+<!-- eslint-disable -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -45,6 +47,14 @@
                 }
             }
         }
+        {% endfor %}
+        {% elif paths %}
+        {% for path in paths %}
+        ctx.beginPath();
+        {% for p in path %}
+        {% if loop.first %}ctx.moveTo({{ p.x }}, {{ p.y }});{% else %}ctx.lineTo({{ p.x }}, {{ p.y }});{% endif %}
+        {% endfor %}
+        ctx.stroke();
         {% endfor %}
         {% endif %}
         ctx.stroke();

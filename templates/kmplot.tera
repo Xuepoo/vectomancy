@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE kmplot>
+<kmplot version="1.2.1">
+    <coordinate>
+        <xmin>-10</xmin>
+        <xmax>10</xmax>
+        <ymin>-10</ymin>
+        <ymax>10</ymax>
+    </coordinate>
+    <axes>
+        <x>
+            <tic>1</tic>
+            <label></label>
+        </x>
+        <y>
+            <tic>1</tic>
+            <label></label>
+        </y>
+    </axes>
+    <functions>
+{% if equations %}
+{% for eq in equations %}
+        <function type="parametric" id="{{ loop.index0 }}">
+            <equation>
+                <x>{% for c in eq.x_poly %}{{ c }}{% if loop.index0 == 1 %}*t{% elif loop.index0 > 1 %}*t^{{ loop.index0 }}{% endif %}{% if not loop.last %} + {% endif %}{% endfor %}</x>
+                <y>{% for c in eq.y_poly %}{{ c }}{% if loop.index0 == 1 %}*t{% elif loop.index0 > 1 %}*t^{{ loop.index0 }}{% endif %}{% if not loop.last %} + {% endif %}{% endfor %}</y>
+            </equation>
+            <tmin>0</tmin>
+            <tmax>1</tmax>
+        </function>
+{% endfor %}
+{% elif strokes %}
+{% for stroke in strokes %}
+        <function type="parametric" id="{{ loop.index0 }}">
+            <equation>
+                <x>{% for term in stroke %}{% if not loop.first %} + {% endif %}{{ term.amplitude }}*cos({{ term.frequency }}*t + {{ term.phase }}){% endfor %}</x>
+                <y>{% for term in stroke %}{% if not loop.first %} + {% endif %}{{ term.amplitude }}*sin({{ term.frequency }}*t + {{ term.phase }}){% endfor %}</y>
+            </equation>
+            <tmin>0</tmin>
+            <tmax>6.28318</tmax>
+        </function>
+{% endfor %}
+{% endif %}
+    </functions>
+</kmplot>

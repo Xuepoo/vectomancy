@@ -35,9 +35,17 @@ pub struct RunArgs {
     #[arg(short = 'n', long, default_value_t = 1000)]
     pub terms: usize,
 
-    /// Number of Chaikin smoothing iterations
+    /// Number of Chaikin smoothing iterations (applies to Chaikin mode)
     #[arg(short = 'c', long)]
     pub chaikin_iters: Option<usize>,
+
+    /// Tolerance for RDP simplification
+    #[arg(long, default_value_t = 0.5)]
+    pub tolerance: f64,
+
+    /// Minimum path length to process
+    #[arg(long, default_value_t = 5)]
+    pub min_path_len: usize,
 
     /// Verbose output
     #[arg(short, long)]
@@ -53,6 +61,7 @@ pub enum OutputFormat {
     Json,
     Geogebra,
     Wolfram,
+    Kmplot,
 }
 
 #[derive(ValueEnum, Clone, Debug, serde::Deserialize)]
@@ -60,4 +69,5 @@ pub enum OutputFormat {
 pub enum Mode {
     Fourier,
     Spline,
+    Chaikin,
 }

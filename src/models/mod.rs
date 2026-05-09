@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize)]
 pub struct Point2D {
     pub x: f64,
     pub y: f64,
@@ -36,6 +36,7 @@ pub struct SplineEquation {
 pub enum MathExpressionAST {
     Fourier { strokes: Vec<Vec<FourierTerm>> },
     Spline { equations: Vec<SplineEquation> },
+    Polyline { paths: Vec<Vec<Point2D>> },
 }
 
 #[derive(Debug, Clone)]

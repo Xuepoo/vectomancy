@@ -68,6 +68,10 @@ pub fn emit_file(
             tera.add_template_file("templates/wolfram.tera", Some("wolfram"))?;
             "wolfram"
         }
+        OutputFormat::Kmplot => {
+            tera.add_template_file("templates/kmplot.tera", Some("kmplot"))?;
+            "kmplot"
+        }
         OutputFormat::Json => unreachable!(),
     };
 
@@ -77,11 +81,19 @@ pub fn emit_file(
             let encoded = encode_math_data(strokes)?;
             context.insert("encoded_data", &encoded);
             context.insert("is_fourier", &true);
+            context.insert("strokes", strokes);
         }
         MathExpressionAST::Spline { equations } => {
             let encoded = encode_math_data(equations)?;
             context.insert("encoded_data", &encoded);
             context.insert("is_spline", &true);
+            context.insert("equations", equations);
+        }
+        MathExpressionAST::Polyline { paths } => {
+            let encoded = encode_math_data(paths)?;
+            context.insert("encoded_data", &encoded);
+            context.insert("is_polyline", &true);
+            context.insert("paths", paths);
         }
     }
 
@@ -89,7 +101,20 @@ pub fn emit_file(
     let rendered = tera.render(template_name, &context)?;
 
     info!("Writing output to {:?}", output_path);
-    fs::write(output_path, rendered)?;
+    if let OutputFormat::Geogebra = format {
+        let file = std::fs::File::create(output_path)?;
+        let mut zip = zip::ZipWriter::new(file);
+        let options = zip::write::SimpleFileOptions::default()
+            .compression_method(zip::CompressionMethod::Deflated);
+        zip.start_file("geogebra.xml", options)
+            .map_err(|e| VectomancyError::InvalidInput(format!("Zip error: {}", e)))?;
+        zip.write_all(rendered.as_bytes())
+            .map_err(|e| VectomancyError::InvalidInput(format!("Zip write error: {}", e)))?;
+        zip.finish()
+            .map_err(|e| VectomancyError::InvalidInput(format!("Zip finish error: {}", e)))?;
+    } else {
+        fs::write(output_path, rendered)?;
+    }
 
     Ok(())
 }

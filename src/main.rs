@@ -29,20 +29,28 @@ fn main() -> Result<(), VectomancyError> {
                     info!("Successfully extracted {} paths.", paths.len());
                     let config = vectomancy::config::Config::load();
                     let iters = args.chaikin_iters.or(config.chaikin_iters).unwrap_or(0);
+                    let tolerance = if args.tolerance != 0.5 {
+                        args.tolerance
+                    } else {
+                        config.tolerance.unwrap_or(0.5)
+                    };
+                    let min_path_len = if args.min_path_len != 5 {
+                        args.min_path_len
+                    } else {
+                        config.min_path_len.unwrap_or(5)
+                    };
                     let mode = args.mode.clone().unwrap_or(cli::Mode::Fourier);
                     match mode {
                         cli::Mode::Fourier => {
                             let mut strokes = Vec::new();
                             for path in paths {
-                                let reduced = math::simplify_rdp(&path, 0.5); // Slightly higher tolerance to reduce noise
-                                let smoothed = if iters > 0 {
-                                    math::chaikin_smooth(&reduced, iters)
-                                } else {
-                                    reduced
-                                };
-                                if smoothed.len() > 3 {
+                                if path.len() < min_path_len {
+                                    continue;
+                                }
+                                let reduced = math::simplify_rdp(&path, tolerance);
+                                if reduced.len() > 3 {
                                     // We don't need TSP for raster paths since they are already ordered contours!
-                                    let terms = math::perform_fft(&smoothed, args.terms)?;
+                                    let terms = math::perform_fft(&reduced, args.terms)?;
                                     strokes.push(terms);
                                 }
                             }
@@ -51,20 +59,36 @@ fn main() -> Result<(), VectomancyError> {
                         cli::Mode::Spline => {
                             let mut all_equations = Vec::new();
                             for path in paths {
-                                let reduced = math::simplify_rdp(&path, 0.5);
-                                let smoothed = if iters > 0 {
-                                    math::chaikin_smooth(&reduced, iters)
-                                } else {
-                                    reduced
-                                };
-                                if smoothed.len() > 2 {
-                                    let segments = math::spline::fit_cubic_bezier(&smoothed);
+                                if path.len() < min_path_len {
+                                    continue;
+                                }
+                                let reduced = math::simplify_rdp(&path, tolerance);
+                                if reduced.len() > 2 {
+                                    let segments = math::spline::fit_cubic_bezier(&reduced);
                                     let equations = math::spline::build_splines(&segments);
                                     all_equations.extend(equations);
                                 }
                             }
                             MathExpressionAST::Spline {
                                 equations: all_equations,
+                            }
+                        }
+                        cli::Mode::Chaikin => {
+                            let mut smoothed_paths = Vec::new();
+                            for path in paths {
+                                if path.len() < min_path_len {
+                                    continue;
+                                }
+                                let reduced = math::simplify_rdp(&path, tolerance);
+                                let smoothed = if iters > 0 {
+                                    math::chaikin_smooth(&reduced, iters)
+                                } else {
+                                    reduced
+                                };
+                                smoothed_paths.push(smoothed);
+                            }
+                            MathExpressionAST::Polyline {
+                                paths: smoothed_paths,
                             }
                         }
                     }
@@ -88,6 +112,21 @@ fn main() -> Result<(), VectomancyError> {
                                 strokes: vec![terms],
                             }
                         }
+                        cli::Mode::Chaikin => {
+                            let config = vectomancy::config::Config::load();
+                            let iters = args.chaikin_iters.or(config.chaikin_iters).unwrap_or(0);
+                            let pts = math::spline::sample_segments(&segs, 100);
+                            info!("Sampled {} points from segments.", pts.len());
+                            let ordered_points = math::solve_tsp_nearest_neighbor(pts);
+                            let smoothed = if iters > 0 {
+                                math::chaikin_smooth(&ordered_points, iters)
+                            } else {
+                                ordered_points
+                            };
+                            MathExpressionAST::Polyline {
+                                paths: vec![smoothed],
+                            }
+                        }
                     }
                 }
             };
@@ -97,6 +136,9 @@ fn main() -> Result<(), VectomancyError> {
                 }
                 MathExpressionAST::Spline { equations } => {
                     info!("Generated AST with {} equations", equations.len());
+                }
+                MathExpressionAST::Polyline { paths } => {
+                    info!("Generated AST with {} paths", paths.len());
                 }
             }
 

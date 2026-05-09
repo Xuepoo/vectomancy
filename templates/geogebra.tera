@@ -1,9 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<geogebra format="5.0" version="5.0.600.0" app="classic" id="vectomancy">
+<gui>
+	<window>
+		<view id="1" visible="true" x="0" y="0" width="800" height="600"/>
+	</window>
+</gui>
+<euclidianView>
+	<viewNumber viewNo="1"/>
+	<size width="800" height="600"/>
+	<coordSystem xZero="400" yZero="300" scale="50" yscale="50"/>
+	<evSettings axes="true" grid="true" gridIsBold="false" pointCapturing="3" rightAngleStyle="1" checkboxSize="26" gridType="3"/>
+</euclidianView>
+<kernel>
+	<continuous val="false"/>
+	<usePathAndRegionParameters val="true"/>
+	<decimals val="2"/>
+	<angleUnit val="degree"/>
+	<algebraStyle val="0" spreadsheet="0"/>
+	<coordStyle val="0"/>
+</kernel>
+<construction title="vectomancy" author="" date="">
 {% if equations %}
 {% for eq in equations %}
-Curve({% for c in eq.x_poly %}{{ c }}{% if loop.index0 == 1 %}*t{% elif loop.index0 > 1 %}*t^{{ loop.index0 }}{% endif %}{% if not loop.last %} + {% endif %}{% endfor %}, {% for c in eq.y_poly %}{{ c }}{% if loop.index0 == 1 %}*t{% elif loop.index0 > 1 %}*t^{{ loop.index0 }}{% endif %}{% if not loop.last %} + {% endif %}{% endfor %}, t, 0, 1)
+<command name="Curve">
+	<input a0="{% for c in eq.x_poly %}{{ c }}{% if loop.index0 == 1 %}*t{% elif loop.index0 > 1 %}*t^{{ loop.index0 }}{% endif %}{% if not loop.last %} + {% endif %}{% endfor %}" a1="{% for c in eq.y_poly %}{{ c }}{% if loop.index0 == 1 %}*t{% elif loop.index0 > 1 %}*t^{{ loop.index0 }}{% endif %}{% if not loop.last %} + {% endif %}{% endfor %}" a2="t" a3="0" a4="1"/>
+	<output a0="c{{ loop.index0 }}"/>
+</command>
+<element type="curve" label="c{{ loop.index0 }}">
+	<show object="true" label="false"/>
+	<objColor r="0" g="0" b="0" alpha="0"/>
+	<layer val="0"/>
+	<labelMode val="0"/>
+	<lineStyle thickness="5" type="0" typeHidden="1"/>
+</element>
 {% endfor %}
 {% elif strokes %}
 {% for stroke in strokes %}
-Curve({% for term in stroke %}{% if not loop.first %} + {% endif %}{{ term.amplitude }}*cos({{ term.frequency }}*t + {{ term.phase }}){% endfor %}, {% for term in stroke %}{% if not loop.first %} + {% endif %}{{ term.amplitude }}*sin({{ term.frequency }}*t + {{ term.phase }}){% endfor %}, t, 0, 6.28318)
+<command name="Curve">
+	<input a0="{% for term in stroke %}{% if not loop.first %} + {% endif %}{{ term.amplitude }}*cos({{ term.frequency }}*t + {{ term.phase }}){% endfor %}" a1="{% for term in stroke %}{% if not loop.first %} + {% endif %}{{ term.amplitude }}*sin({{ term.frequency }}*t + {{ term.phase }}){% endfor %}" a2="t" a3="0" a4="6.28318"/>
+	<output a0="c{{ loop.index0 }}"/>
+</command>
+<element type="curve" label="c{{ loop.index0 }}">
+	<show object="true" label="false"/>
+	<objColor r="0" g="0" b="0" alpha="0"/>
+	<layer val="0"/>
+	<labelMode val="0"/>
+	<lineStyle thickness="5" type="0" typeHidden="1"/>
+</element>
+{% endfor %}
+{% elif paths %}
+{% for path in paths %}
+<command name="Polyline">
+	<input {% for p in path %}a{{ loop.index0 }}="({{ p.x }}, {{ p.y * -1 }})" {% endfor %}/>
+	<output a0="p{{ loop.index0 }}"/>
+</command>
+<element type="polyline" label="p{{ loop.index0 }}">
+	<show object="true" label="false"/>
+	<objColor r="0" g="0" b="0" alpha="0"/>
+	<layer val="0"/>
+	<labelMode val="0"/>
+	<lineStyle thickness="5" type="0" typeHidden="1"/>
+</element>
 {% endfor %}
 {% endif %}
+</construction>
+</geogebra>

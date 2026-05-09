@@ -10,6 +10,8 @@ pub struct Config {
     pub epsilon: Option<f64>,
     pub format: Option<OutputFormat>,
     pub chaikin_iters: Option<usize>,
+    pub tolerance: Option<f64>,
+    pub min_path_len: Option<usize>,
 }
 
 impl Config {
