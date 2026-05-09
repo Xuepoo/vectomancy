@@ -76,10 +76,12 @@ pub fn emit_file(
         MathExpressionAST::Fourier { strokes } => {
             let encoded = encode_math_data(strokes)?;
             context.insert("encoded_data", &encoded);
+            context.insert("is_fourier", &true);
         }
         MathExpressionAST::Spline { equations } => {
             let encoded = encode_math_data(equations)?;
             context.insert("encoded_data", &encoded);
+            context.insert("is_spline", &true);
         }
     }
 
