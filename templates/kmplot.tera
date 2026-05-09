@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE kmplot>
-<kmplot version="1.2.1">
+<kmplot version="4">
     <coordinate>
         <xmin>-10</xmin>
         <xmax>10</xmax>
