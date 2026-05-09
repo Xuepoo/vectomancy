@@ -23,3 +23,6 @@ tests
 perf.data
 tests/output/
 .worktrees/
+.agents/
+.worktrees/
+/tmp/

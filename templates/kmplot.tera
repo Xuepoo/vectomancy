@@ -2,10 +2,10 @@
 <!DOCTYPE kmplot>
 <kmplot version="4">
     <coordinate>
-        <xmin>-10</xmin>
-        <xmax>10</xmax>
-        <ymin>-10</ymin>
-        <ymax>10</ymax>
+        <xmin>0</xmin>
+        <xmax>2000</xmax>
+        <ymin>0</ymin>
+        <ymax>2000</ymax>
     </coordinate>
     <axes>
         <x>
