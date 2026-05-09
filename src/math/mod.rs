@@ -3,7 +3,7 @@ pub mod spline;
 use crate::error::VectomancyError;
 use crate::models::Point2D;
 use rustfft::{num_complex::Complex, FftPlanner};
-use tracing::{debug, info};
+use tracing::debug;
 
 fn perpendicular_distance(pt: Point2D, line_start: Point2D, line_end: Point2D) -> f64 {
     let dx = line_end.x - line_start.x;

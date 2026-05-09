@@ -36,15 +36,15 @@ jobs:
           targets: ${{ matrix.target }}
 
       - name: Build release
-        run: cargo build --release --target ${{ matrix.target }} --manifest-path vectomancy/Cargo.toml
+        run: cargo build --release --target ${{ matrix.target }} --manifest-path Cargo.toml
 
       - name: Rename artifact (Linux/macOS)
         if: runner.os != 'Windows'
-        run: mv vectomancy/target/${{ matrix.target }}/release/vectomancy ${{ matrix.artifact_name }}
+        run: mv target/${{ matrix.target }}/release/vectomancy ${{ matrix.artifact_name }}
 
       - name: Rename artifact (Windows)
         if: runner.os == 'Windows'
-        run: move vectomancy/target/${{ matrix.target }}/release/vectomancy.exe ${{ matrix.artifact_name }}
+        run: move target/${{ matrix.target }}/release/vectomancy.exe ${{ matrix.artifact_name }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

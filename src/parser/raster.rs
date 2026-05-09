@@ -283,6 +283,7 @@ fn extract_paths(grid: &[Vec<bool>], width: usize, height: usize) -> Vec<Vec<Poi
 
     // Find endpoints (pixels with exactly 1 neighbor)
     let mut endpoints = Vec::new();
+    #[allow(clippy::needless_range_loop)]
     for y in 1..height - 1 {
         for x in 1..width - 1 {
             if grid[y][x] && get_neighbors(x, y).len() == 1 {

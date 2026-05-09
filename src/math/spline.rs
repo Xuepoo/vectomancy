@@ -259,7 +259,7 @@ mod tests {
         } else {
             panic!("Expected MoveTo");
         }
-        if let BezierSegment::CubicTo(cp1, cp2, p2) = segments[1] {
+        if let BezierSegment::CubicTo(_cp1, _cp2, p2) = segments[1] {
             assert_eq!(p2.x, 10.0);
             assert_eq!(p2.y, 0.0);
         } else {
