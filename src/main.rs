@@ -27,16 +27,35 @@ fn main() -> Result<(), VectomancyError> {
             let ast = match output {
                 models::ParserOutput::Paths(paths) => {
                     info!("Successfully extracted {} paths.", paths.len());
-                    let mut strokes = Vec::new();
-                    for path in paths {
-                        let reduced = math::simplify_rdp(&path, 0.5); // Slightly higher tolerance to reduce noise
-                        if reduced.len() > 3 {
-                            // We don't need TSP for raster paths since they are already ordered contours!
-                            let terms = math::perform_fft(&reduced, args.terms)?;
-                            strokes.push(terms);
+                    let mode = args.mode.clone().unwrap_or(cli::Mode::Fourier);
+                    match mode {
+                        cli::Mode::Fourier => {
+                            let mut strokes = Vec::new();
+                            for path in paths {
+                                let reduced = math::simplify_rdp(&path, 0.5); // Slightly higher tolerance to reduce noise
+                                if reduced.len() > 3 {
+                                    // We don't need TSP for raster paths since they are already ordered contours!
+                                    let terms = math::perform_fft(&reduced, args.terms)?;
+                                    strokes.push(terms);
+                                }
+                            }
+                            MathExpressionAST::Fourier { strokes }
+                        }
+                        cli::Mode::Spline => {
+                            let mut all_equations = Vec::new();
+                            for path in paths {
+                                let reduced = math::simplify_rdp(&path, 0.5);
+                                if reduced.len() > 2 {
+                                    let segments = math::spline::fit_cubic_bezier(&reduced);
+                                    let equations = math::spline::build_splines(&segments);
+                                    all_equations.extend(equations);
+                                }
+                            }
+                            MathExpressionAST::Spline {
+                                equations: all_equations,
+                            }
                         }
                     }
-                    MathExpressionAST::Fourier { strokes }
                 }
                 models::ParserOutput::Segments(segs) => {
                     info!("Successfully extracted {} segments.", segs.len());

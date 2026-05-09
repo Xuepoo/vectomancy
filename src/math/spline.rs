@@ -199,3 +199,71 @@ pub fn sample_segments(segments: &[BezierSegment], points_per_segment: usize) ->
     }
     points
 }
+
+pub fn fit_cubic_bezier(points: &[Point2D]) -> Vec<crate::models::BezierSegment> {
+    if points.len() < 3 {
+        let mut segments = Vec::new();
+        if let Some(first) = points.first() {
+            segments.push(BezierSegment::MoveTo(*first));
+            for p in points.iter().skip(1) {
+                segments.push(BezierSegment::LineTo(*p));
+            }
+        }
+        return segments;
+    }
+
+    let mut segments = Vec::new();
+    segments.push(BezierSegment::MoveTo(points[0]));
+
+    for i in 0..points.len() - 1 {
+        let p0 = if i == 0 { points[0] } else { points[i - 1] };
+        let p1 = points[i];
+        let p2 = points[i + 1];
+        let p3 = if i + 2 < points.len() {
+            points[i + 2]
+        } else {
+            points[i + 1]
+        };
+
+        let cp1 = Point2D {
+            x: p1.x + (p2.x - p0.x) / 6.0,
+            y: p1.y + (p2.y - p0.y) / 6.0,
+        };
+        let cp2 = Point2D {
+            x: p2.x - (p3.x - p1.x) / 6.0,
+            y: p2.y - (p3.y - p1.y) / 6.0,
+        };
+
+        segments.push(BezierSegment::CubicTo(cp1, cp2, p2));
+    }
+
+    segments
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_fit_cubic_bezier() {
+        let points = vec![
+            Point2D { x: 0.0, y: 0.0 },
+            Point2D { x: 10.0, y: 0.0 },
+            Point2D { x: 10.0, y: 10.0 },
+        ];
+        let segments = fit_cubic_bezier(&points);
+        assert_eq!(segments.len(), 3);
+        if let BezierSegment::MoveTo(p) = segments[0] {
+            assert_eq!(p.x, 0.0);
+            assert_eq!(p.y, 0.0);
+        } else {
+            panic!("Expected MoveTo");
+        }
+        if let BezierSegment::CubicTo(cp1, cp2, p2) = segments[1] {
+            assert_eq!(p2.x, 10.0);
+            assert_eq!(p2.y, 0.0);
+        } else {
+            panic!("Expected CubicTo");
+        }
+    }
+}
