@@ -22,3 +22,4 @@ tests
 .DS_Store
 perf.data
 tests/output/
+.worktrees/
