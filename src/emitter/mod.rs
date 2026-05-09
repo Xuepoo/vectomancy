@@ -1,10 +1,30 @@
 use crate::cli::OutputFormat;
 use crate::error::VectomancyError;
 use crate::models::MathExpressionAST;
+use base64::Engine;
+use flate2::write::ZlibEncoder;
+use flate2::Compression;
+use serde::Serialize;
 use std::fs;
+use std::io::Write;
 use std::path::Path;
 use tera::{Context, Tera};
 use tracing::info;
+
+pub fn encode_math_data<T: Serialize>(data: &T) -> Result<String, VectomancyError> {
+    let json_str = serde_json::to_string(data)
+        .map_err(|e| VectomancyError::InvalidInput(format!("JSON serialization error: {}", e)))?;
+
+    let mut encoder = ZlibEncoder::new(Vec::new(), Compression::default());
+    encoder
+        .write_all(json_str.as_bytes())
+        .map_err(|e| VectomancyError::InvalidInput(format!("Compression error: {}", e)))?;
+    let compressed_bytes = encoder
+        .finish()
+        .map_err(|e| VectomancyError::InvalidInput(format!("Compression finish error: {}", e)))?;
+
+    Ok(base64::engine::general_purpose::STANDARD.encode(compressed_bytes))
+}
 
 pub fn emit_file(
     ast: &MathExpressionAST,
@@ -54,10 +74,14 @@ pub fn emit_file(
     let mut context = Context::new();
     match ast {
         MathExpressionAST::Fourier { strokes } => {
-            context.insert("strokes", strokes);
+            let encoded = encode_math_data(strokes)?;
+            context.insert("encoded_data", &encoded);
+            context.insert("is_fourier", &true);
         }
         MathExpressionAST::Spline { equations } => {
-            context.insert("equations", equations);
+            let encoded = encode_math_data(equations)?;
+            context.insert("encoded_data", &encoded);
+            context.insert("is_spline", &true);
         }
     }
 
@@ -68,4 +92,35 @@ pub fn emit_file(
     fs::write(output_path, rendered)?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde::Serialize;
+
+    #[derive(Serialize)]
+    struct TestData {
+        value: String,
+    }
+
+    #[test]
+    fn test_encode_math_data() {
+        let data = TestData {
+            value: "hello world".to_string(),
+        };
+        let encoded = encode_math_data(&data).unwrap();
+        assert!(!encoded.is_empty());
+
+        // Decode to verify
+        use base64::Engine;
+        use std::io::Read;
+        let compressed = base64::engine::general_purpose::STANDARD
+            .decode(encoded)
+            .unwrap();
+        let mut decoder = flate2::read::ZlibDecoder::new(&compressed[..]);
+        let mut decoded_json = String::new();
+        decoder.read_to_string(&mut decoded_json).unwrap();
+        assert_eq!(decoded_json, r#"{"value":"hello world"}"#);
+    }
 }
