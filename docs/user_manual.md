@@ -30,13 +30,13 @@ We provide compiled binaries for various platforms:
 If you have an image (e.g., `assets/Tux.png`), you can convert it to a Python script with the following command:
 
 ```bash
-./vectomancy run assets/Tux.png --output Tux.py --format python --mode spline
+vectomancy run assets/Tux.png --output Tux.py --format python --mode spline
 ```
 
 If you want to double-click and directly open the rendered equations in mathematical software (like GeoGebra), you can run:
 
 ```bash
-./vectomancy run assets/Tux.png --output Tux.ggb --format geogebra --mode spline --chaikin-iters 2 --tolerance 2.0
+vectomancy run assets/Tux.png --output Tux.ggb --format geogebra --mode spline --chaikin-iters 2 --tolerance 2.0
 ```
 
 _(Note: For GeoGebra, it is recommended to increase the `--tolerance`, such as 2.0, to significantly reduce the total number of equations and ensure the software runs smoothly.)_
@@ -76,9 +76,9 @@ min_path_len = 5.0
 ## 6. Examples
 
 - **High-Quality Python Spline Generation**:
-  `./vectomancy run input.png --output out.py --format python --mode spline --chaikin-iters 2`
+  `vectomancy run input.png --output out.py --format python --mode spline --chaikin-iters 2`
 - **Low-Density Math Software Rendering**:
-  `./vectomancy run input.png --output out.ggb --format geogebra --mode spline --tolerance 2.0`
+  `vectomancy run input.png --output out.ggb --format geogebra --mode spline --tolerance 2.0`
 
 ## 7. FAQ
 

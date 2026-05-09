@@ -45,7 +45,7 @@ Los binarios precompilados para Linux (Debian, Arch, RedHat, openSUSE, NixOS), W
 ## Uso de la CLI
 
 ```bash
-./target/release/vectomancy run [OPTIONS] --output <OUTPUT> <INPUT>
+vectomancy run [OPTIONS] --output <OUTPUT> <INPUT>
 ```
 
 Opciones:

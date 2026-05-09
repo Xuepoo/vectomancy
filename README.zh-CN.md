@@ -45,7 +45,7 @@ cargo build --release
 ## CLI 基础用法
 
 ```bash
-./target/release/vectomancy run [OPTIONS] --output <OUTPUT> <INPUT>
+vectomancy run [OPTIONS] --output <OUTPUT> <INPUT>
 ```
 
 常用选项:

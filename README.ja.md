@@ -6,7 +6,7 @@ Vectomancy は、画像ファイルを解析し、数学的なパラメータ方
 
 ## ギャラリー
 
-| 元の画像                                | レンダリング出力                                       |
+| 元の画像                                      | レンダリング出力                                      |
 | :-------------------------------------------- | :---------------------------------------------------- |
 | ![Original Image](assets/dolphin.jpg)         | ![Rendered Output](assets/dolphin_render.png)         |
 | ![Original Image](assets/Hatsune_miku_v2.png) | ![Rendered Output](assets/Hatsune_miku_v2_render.png) |
@@ -45,7 +45,7 @@ Linux (Debian、Arch、RedHat、openSUSE、NixOS)、Windows、macOS 用のコン
 ## CLI の使用方法
 
 ```bash
-./target/release/vectomancy run [OPTIONS] --output <OUTPUT> <INPUT>
+vectomancy run [OPTIONS] --output <OUTPUT> <INPUT>
 ```
 
 オプション:
