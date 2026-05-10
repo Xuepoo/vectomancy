@@ -3,6 +3,7 @@ use crate::models::{BezierSegment, ColoredPath, Point2D};
 use std::path::Path;
 use usvg::{Options, Tree, TreeParsing};
 
+#[allow(clippy::type_complexity)]
 pub fn process_svg(
     path: &Path,
     color: bool,

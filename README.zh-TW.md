@@ -6,12 +6,12 @@ Vectomancy 是一個高效能的命令列介面工具，專為解析圖形檔案
 
 ## 範例展示
 
-| 原始圖像                                      | 渲染輸出                                              |
-| :-------------------------------------------- | :---------------------------------------------------- |
-| ![Original Image](assets/dolphin.jpg)         | ![Rendered Output](assets/dolphin_render.png)         |
-| ![Original Image](assets/Hatsune_miku_v2.png) | ![Rendered Output](assets/Hatsune_miku_v2_render.png) |
-| ![Original Image](assets/Tux.png)             | ![Rendered Output](assets/Tux_render.png)             |
-| ![Original Image](assets/01_khafre_north.jpg) | ![Rendered Output](assets/01_khafre_north_render.png) |
+| 原始圖像                                      | 渲染輸出 (無顏色)                                     | 渲染輸出 (彩色)                                             |
+| :-------------------------------------------- | :---------------------------------------------------- | :---------------------------------------------------------- |
+| ![Original Image](assets/dolphin.jpg)         | ![Rendered Output](assets/dolphin_render.png)         | ![Rendered Output](assets/dolphin_render_color.png)         |
+| ![Original Image](assets/Hatsune_miku_v2.png) | ![Rendered Output](assets/Hatsune_miku_v2_render.png) | ![Rendered Output](assets/Hatsune_miku_v2_render_color.png) |
+| ![Original Image](assets/Tux.png)             | ![Rendered Output](assets/Tux_render.png)             | ![Rendered Output](assets/Tux_render_color.png)             |
+| ![Original Image](assets/01_khafre_north.jpg) | ![Rendered Output](assets/01_khafre_north_render.png) | ![Rendered Output](assets/01_khafre_north_render_color.png) |
 
 ### 圖像來源
 

@@ -4,6 +4,7 @@ use image::Luma;
 use std::path::Path;
 use tracing::{debug, info};
 
+#[allow(clippy::type_complexity)]
 pub fn process_raster_image(
     path: &Path,
     color: bool,
@@ -131,6 +132,7 @@ pub fn process_raster_image(
                     count += 1;
                 }
             }
+            #[allow(clippy::manual_checked_ops)]
             if count > 0 {
                 Some((
                     (r_sum / count) as u8,

@@ -4,6 +4,7 @@ use crate::models::MathExpressionAST;
 use std::path::Path;
 use tiny_skia::{Color, Paint, PathBuilder, Pixmap, Stroke, Transform};
 
+#[allow(clippy::too_many_arguments)]
 pub fn render_to_image(
     ast: &MathExpressionAST,
     output_path: &Path,
@@ -38,11 +39,15 @@ pub fn render_to_image(
 
     let transform = Transform::from_scale(scale, scale).post_translate(offset_x, offset_y);
 
-    let mut paint = Paint::default();
-    paint.anti_alias = true;
+    let mut paint = Paint {
+        anti_alias: true,
+        ..Default::default()
+    };
 
-    let mut stroke = Stroke::default();
-    stroke.width = stroke_width;
+    let stroke = Stroke {
+        width: stroke_width,
+        ..Default::default()
+    };
 
     match ast {
         MathExpressionAST::Polyline { paths } => {

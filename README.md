@@ -6,12 +6,12 @@ Vectomancy is a high-performance command-line interface tool designed to parse g
 
 ## Example Showcases
 
-| Original Image                                | Rendered Output                                       |
-| :-------------------------------------------- | :---------------------------------------------------- |
-| ![Original Image](assets/dolphin.jpg)         | ![Rendered Output](assets/dolphin_render.png)         |
-| ![Original Image](assets/Hatsune_miku_v2.png) | ![Rendered Output](assets/Hatsune_miku_v2_render.png) |
-| ![Original Image](assets/Tux.png)             | ![Rendered Output](assets/Tux_render.png)             |
-| ![Original Image](assets/01_khafre_north.jpg) | ![Rendered Output](assets/01_khafre_north_render.png) |
+| Original Image                                | Rendered Output (Uncolored)                           | Rendered Output (Colored)                                   |
+| :-------------------------------------------- | :---------------------------------------------------- | :---------------------------------------------------------- |
+| ![Original Image](assets/dolphin.jpg)         | ![Rendered Output](assets/dolphin_render.png)         | ![Rendered Output](assets/dolphin_render_color.png)         |
+| ![Original Image](assets/Hatsune_miku_v2.png) | ![Rendered Output](assets/Hatsune_miku_v2_render.png) | ![Rendered Output](assets/Hatsune_miku_v2_render_color.png) |
+| ![Original Image](assets/Tux.png)             | ![Rendered Output](assets/Tux_render.png)             | ![Rendered Output](assets/Tux_render_color.png)             |
+| ![Original Image](assets/01_khafre_north.jpg) | ![Rendered Output](assets/01_khafre_north_render.png) | ![Rendered Output](assets/01_khafre_north_render_color.png) |
 
 ### Image Sources
 
