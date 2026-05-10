@@ -51,18 +51,12 @@ You can use `vectomancy --help` to see all parameters. Common ones include:
 - `--tolerance <FLOAT>`: Ramer-Douglas-Peucker algorithm simplification tolerance. Larger values omit more vertices and equations. When rendering large images to mathematical software, `2.0` is recommended.
 - `--min-path-len <FLOAT>`: Ignores noise paths with a total length below this value. Increasing this value removes tiny speckles during the image conversion process.
 
-## 4. Configuration File
+## 4. Configuration File & Defaults
 
 Users can configure default settings by creating a `config.toml` in the system configuration directory.
 For Linux, the path is `~/.config/vectomancy/config.toml`.
 
-Example `config.toml`:
-
-```toml
-chaikin_iters = 2
-tolerance = 1.5
-min_path_len = 5.0
-```
+For full details on advanced global configurations, multi-file batch processing, default output behaviors, and planned GPU acceleration support, please refer to the [Configuration Guide](./configuration_guide.md).
 
 ## 5. Prerequisites and Output Usage
 
