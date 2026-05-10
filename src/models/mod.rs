@@ -53,6 +53,12 @@ pub enum MathExpressionAST {
 
 #[derive(Debug, Clone)]
 pub enum ParserOutput {
-    Paths(Vec<ColoredPath<Vec<Point2D>>>),
-    Segments(Vec<ColoredPath<Vec<BezierSegment>>>),
+    Paths {
+        paths: Vec<ColoredPath<Vec<Point2D>>>,
+        original_dimensions: (u32, u32),
+    },
+    Segments {
+        segments: Vec<ColoredPath<Vec<BezierSegment>>>,
+        original_dimensions: (u32, u32),
+    },
 }

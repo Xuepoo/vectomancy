@@ -7,7 +7,7 @@ use tracing::{debug, info};
 pub fn process_raster_image(
     path: &Path,
     color: bool,
-) -> Result<Vec<ColoredPath<Vec<Point2D>>>, VectomancyError> {
+) -> Result<(Vec<ColoredPath<Vec<Point2D>>>, (u32, u32)), VectomancyError> {
     info!("Processing raster image: {:?}", path);
     let img = image::open(path).map_err(|e| VectomancyError::ImageProcessing(e.to_string()))?;
 
@@ -149,7 +149,7 @@ pub fn process_raster_image(
         });
     }
 
-    Ok(colored_paths)
+    Ok((colored_paths, (width, height)))
 }
 
 fn zhang_suen_thinning(grid: &mut [Vec<bool>], width: usize, height: usize) {

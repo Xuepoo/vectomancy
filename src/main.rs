@@ -20,8 +20,11 @@ fn main() -> Result<(), VectomancyError> {
     info!("Running with input: {:?}", cli.input);
     let output = parser::parse_file(&cli.input, cli.color)?;
 
-    let ast = match output {
-        models::ParserOutput::Paths(paths) => {
+    let (ast, original_dimensions) = match output {
+        models::ParserOutput::Paths {
+            paths,
+            original_dimensions,
+        } => {
             info!("Successfully extracted {} paths.", paths.len());
             let config = vectomancy::config::Config::load();
             let iters = cli.chaikin_iters.or(config.chaikin_iters).unwrap_or(0);
@@ -36,7 +39,7 @@ fn main() -> Result<(), VectomancyError> {
                 config.min_path_len.unwrap_or(5)
             };
             let mode = cli.mode.clone().unwrap_or(cli::Mode::Fourier);
-            match mode {
+            let ast = match mode {
                 cli::Mode::Fourier => {
                     let mut strokes = Vec::new();
                     for path in paths {
@@ -96,12 +99,16 @@ fn main() -> Result<(), VectomancyError> {
                         paths: smoothed_paths,
                     }
                 }
-            }
+            };
+            (ast, original_dimensions)
         }
-        models::ParserOutput::Segments(segs) => {
+        models::ParserOutput::Segments {
+            segments: segs,
+            original_dimensions,
+        } => {
             info!("Successfully extracted {} segments.", segs.len());
             let mode = cli.mode.clone().unwrap_or(cli::Mode::Spline);
-            match mode {
+            let ast = match mode {
                 cli::Mode::Spline => {
                     let mut all_equations = Vec::new();
                     for seg in segs {
@@ -151,7 +158,8 @@ fn main() -> Result<(), VectomancyError> {
                     }
                     MathExpressionAST::Polyline { paths }
                 }
-            }
+            };
+            (ast, original_dimensions)
         }
     };
     match &ast {
@@ -167,11 +175,37 @@ fn main() -> Result<(), VectomancyError> {
     }
 
     // Render
-    emitter::emit_file(
-        &ast,
-        cli.format.as_ref().unwrap_or(&cli::OutputFormat::Python),
-        &cli.output,
-    )?;
+    let format = cli.format.as_ref().unwrap_or(&cli::OutputFormat::Python);
+    match format {
+        cli::OutputFormat::Png | cli::OutputFormat::Jpg | cli::OutputFormat::Webp => {
+            let target_dimensions = match (cli.width, cli.height) {
+                (None, None) => original_dimensions,
+                (Some(w), None) => {
+                    let h = (w as f32 * original_dimensions.1 as f32 / original_dimensions.0 as f32)
+                        as u32;
+                    (w, h)
+                }
+                (None, Some(h)) => {
+                    let w = (h as f32 * original_dimensions.0 as f32 / original_dimensions.1 as f32)
+                        as u32;
+                    (w, h)
+                }
+                (Some(w), Some(h)) => (w, h),
+            };
+            emitter::native::render_to_image(
+                &ast,
+                &cli.output,
+                format,
+                cli.bg_transparent,
+                original_dimensions,
+                target_dimensions,
+                cli.stroke_width,
+            )?;
+        }
+        _ => {
+            emitter::emit_file(&ast, format, &cli.output)?;
+        }
+    }
     info!("Vectomancy execution completed successfully.");
 
     Ok(())

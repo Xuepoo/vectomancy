@@ -6,11 +6,14 @@ use usvg::{Options, Tree, TreeParsing};
 pub fn process_svg(
     path: &Path,
     color: bool,
-) -> Result<Vec<ColoredPath<Vec<BezierSegment>>>, VectomancyError> {
+) -> Result<(Vec<ColoredPath<Vec<BezierSegment>>>, (u32, u32)), VectomancyError> {
     let svg_data = std::fs::read(path).map_err(|e| VectomancyError::InvalidInput(e.to_string()))?;
     let opt = Options::default();
     let tree = Tree::from_data(&svg_data, &opt)
         .map_err(|e| VectomancyError::InvalidInput(e.to_string()))?;
+
+    let width = tree.size.width() as u32;
+    let height = tree.size.height() as u32;
 
     let mut colored_paths = Vec::new();
 
@@ -116,5 +119,5 @@ pub fn process_svg(
 
     traverse(&tree.root, &mut colored_paths, color);
 
-    Ok(colored_paths)
+    Ok((colored_paths, (width, height)))
 }
