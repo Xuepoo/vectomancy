@@ -12,7 +12,15 @@ pub fn render_to_image(
     original_dimensions: (u32, u32),
     target_dimensions: (u32, u32),
     stroke_width: f32,
+    bit_depth: Option<u8>,
+    color_space: Option<String>,
 ) -> Result<(), VectomancyError> {
+    if let Some(cs) = color_space {
+        tracing::debug!(
+            "Color space {} requested, but ICC profiles are not fully supported yet.",
+            cs
+        );
+    }
     let mut pixmap = Pixmap::new(target_dimensions.0, target_dimensions.1).ok_or_else(|| {
         VectomancyError::MemoryAllocationFailed("Failed to allocate pixmap".to_string())
     })?;
@@ -129,8 +137,18 @@ pub fn render_to_image(
     let img_data = pixmap
         .encode_png()
         .map_err(|e| VectomancyError::InvalidInput(format!("PNG encoding error: {}", e)))?;
-    let img = image::load_from_memory(&img_data)
+    let mut img = image::load_from_memory(&img_data)
         .map_err(|e| VectomancyError::InvalidInput(format!("Image loading error: {}", e)))?;
+
+    if bit_depth == Some(16) {
+        if transparent {
+            let rgba16 = img.into_rgba16();
+            img = image::DynamicImage::ImageRgba16(rgba16);
+        } else {
+            let rgb16 = img.into_rgb16();
+            img = image::DynamicImage::ImageRgb16(rgb16);
+        }
+    }
 
     match format {
         OutputFormat::Png => {

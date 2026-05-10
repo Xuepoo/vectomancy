@@ -2,6 +2,7 @@ use crate::cli::{Mode, OutputFormat};
 use directories::ProjectDirs;
 use serde::Deserialize;
 use std::fs;
+use std::path::PathBuf;
 
 #[derive(Deserialize, Debug, Default)]
 pub struct Config {
@@ -13,6 +14,11 @@ pub struct Config {
     pub tolerance: Option<f64>,
     pub min_path_len: Option<usize>,
     pub color: Option<bool>,
+    pub default_output_dir: Option<PathBuf>,
+    pub bit_depth: Option<u8>,
+    pub color_space: Option<String>,
+    pub gpu_acceleration: Option<bool>,
+    pub bg_transparent: Option<bool>,
 }
 
 impl Config {

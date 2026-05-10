@@ -4,12 +4,12 @@ use std::path::PathBuf;
 #[derive(Parser, Debug)]
 #[command(name = "vectomancy", version, author, about = "Image-to-Equation Converter", long_about = None)]
 pub struct Cli {
-    /// Input file path (.png, .jpg, .svg)
-    pub input: PathBuf,
+    /// Input file paths (.png, .jpg, .svg) or directories
+    pub inputs: Vec<PathBuf>,
 
-    /// Output file path
+    /// Output file path or directory
     #[arg(short, long)]
-    pub output: PathBuf,
+    pub output: Option<PathBuf>,
 
     /// Output format (python, latex, html, json, geogebra)
     #[arg(short, long)]
@@ -58,6 +58,18 @@ pub struct Cli {
     /// Verbose output
     #[arg(short, long)]
     pub verbose: bool,
+
+    /// Bit depth for native rendering (8, 10, 16, 32)
+    #[arg(long)]
+    pub bit_depth: Option<u8>,
+
+    /// Color space for native rendering (sRGB, DisplayP3, CMYK)
+    #[arg(long)]
+    pub color_space: Option<String>,
+
+    /// Enable GPU acceleration (experimental stub)
+    #[arg(long)]
+    pub gpu_acceleration: Option<bool>,
 }
 
 #[derive(ValueEnum, Clone, Debug, serde::Deserialize)]
