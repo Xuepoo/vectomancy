@@ -17,12 +17,19 @@ fn main() -> Result<(), VectomancyError> {
     info!("Starting Vectomancy");
 
     let config = vectomancy::config::Config::load();
-    if cli
+    let use_gpu = cli
         .gpu_acceleration
         .or(config.gpu_acceleration)
-        .unwrap_or(false)
-    {
-        tracing::warn!("GPU acceleration is currently a stub and has no effect in this version.");
+        .unwrap_or(false);
+
+    let gpu_backend = cli
+        .gpu_backend
+        .or(config.gpu_backend)
+        .unwrap_or_else(|| "wgpu".to_string())
+        .to_lowercase();
+
+    if use_gpu {
+        info!("GPU acceleration requested. Backend: {}", gpu_backend);
     }
 
     let mut flattened_inputs = Vec::new();
@@ -82,7 +89,8 @@ fn main() -> Result<(), VectomancyError> {
                             }
                             let reduced = math::simplify_rdp(&path.data, tolerance);
                             if reduced.len() > 3 {
-                                let terms = math::perform_fft(&reduced, cli.terms)?;
+                                let terms =
+                                    math::perform_fft(&reduced, cli.terms, use_gpu, &gpu_backend)?;
                                 strokes.push(models::ColoredPath {
                                     color_rgb: path.color_rgb,
                                     data: terms,
@@ -161,7 +169,12 @@ fn main() -> Result<(), VectomancyError> {
                             let pts = math::spline::sample_segments(&seg.data, 100);
                             info!("Sampled {} points from segments.", pts.len());
                             let ordered_points = math::solve_tsp_nearest_neighbor(pts);
-                            let terms = math::perform_fft(&ordered_points, cli.terms)?;
+                            let terms = math::perform_fft(
+                                &ordered_points,
+                                cli.terms,
+                                use_gpu,
+                                &gpu_backend,
+                            )?;
                             strokes.push(models::ColoredPath {
                                 color_rgb: seg.color_rgb,
                                 data: terms,

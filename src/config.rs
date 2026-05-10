@@ -18,6 +18,7 @@ pub struct Config {
     pub bit_depth: Option<u8>,
     pub color_space: Option<String>,
     pub gpu_acceleration: Option<bool>,
+    pub gpu_backend: Option<String>,
     pub bg_transparent: Option<bool>,
 }
 

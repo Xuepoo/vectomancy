@@ -1,3 +1,4 @@
+pub mod gpu;
 pub mod spline;
 
 use crate::error::VectomancyError;
@@ -115,10 +116,13 @@ pub fn solve_tsp_nearest_neighbor(points: Vec<Point2D>) -> Vec<Point2D> {
 pub fn perform_fft(
     points: &[Point2D],
     terms: usize,
+    use_gpu: bool,
+    gpu_backend: &str,
 ) -> Result<Vec<crate::models::FourierTerm>, VectomancyError> {
-    debug!("Performing FFT. Terms: {}", terms);
-    let mut planner = FftPlanner::new();
-    let fft = planner.plan_fft_forward(points.len());
+    debug!(
+        "Performing FFT. Terms: {}, GPU: {} (Backend: {})",
+        terms, use_gpu, gpu_backend
+    );
 
     // Convert points to complex numbers
     let mut buffer: Vec<Complex<f64>> = points
@@ -126,11 +130,31 @@ pub fn perform_fft(
         .map(|p| Complex { re: p.x, im: p.y })
         .collect();
 
-    fft.process(&mut buffer);
+    let n = buffer.len() as f64;
+
+    if use_gpu && gpu_backend == "cuda" {
+        debug!("Delegating to CUDA cuFFT");
+        match gpu::perform_fft_gpu(&buffer) {
+            Ok(gpu_out) => {
+                buffer = gpu_out;
+            }
+            Err(e) => {
+                debug!("CUDA FFT failed, falling back to CPU. Error: {}", e);
+                let mut planner = FftPlanner::new();
+                let fft = planner.plan_fft_forward(points.len());
+                fft.process(&mut buffer);
+            }
+        }
+    } else {
+        if use_gpu {
+            debug!("WGPU/other backends not yet implemented. Falling back to CPU.");
+        }
+        let mut planner = FftPlanner::new();
+        let fft = planner.plan_fft_forward(points.len());
+        fft.process(&mut buffer);
+    }
 
     let mut terms_vec = Vec::new();
-
-    let n = buffer.len() as f64;
 
     let mut all_terms = Vec::with_capacity(buffer.len());
     for (i, val) in buffer.iter().enumerate() {

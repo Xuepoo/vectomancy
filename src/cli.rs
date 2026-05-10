@@ -67,9 +67,13 @@ pub struct Cli {
     #[arg(long)]
     pub color_space: Option<String>,
 
-    /// Enable GPU acceleration (experimental stub)
+    /// Enable GPU acceleration
     #[arg(long)]
     pub gpu_acceleration: Option<bool>,
+
+    /// GPU backend to use (wgpu, cuda)
+    #[arg(long)]
+    pub gpu_backend: Option<String>,
 }
 
 #[derive(ValueEnum, Clone, Debug, serde::Deserialize)]
