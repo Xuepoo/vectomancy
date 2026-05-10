@@ -1,6 +1,6 @@
 use crate::error::VectomancyError;
 use crate::models::{ColoredPath, Point2D};
-use image::{GenericImageView, Luma};
+use image::Luma;
 use std::path::Path;
 use tracing::{debug, info};
 
