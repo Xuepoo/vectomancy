@@ -17,7 +17,7 @@ pub struct Config {
     pub default_output_dir: Option<PathBuf>,
     pub bit_depth: Option<u8>,
     pub color_space: Option<String>,
-    pub gpu_acceleration: Option<bool>,
+    pub gpu: Option<bool>,
     pub bg_transparent: Option<bool>,
 }
 

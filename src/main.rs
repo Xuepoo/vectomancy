@@ -17,12 +17,9 @@ fn main() -> Result<(), VectomancyError> {
     info!("Starting Vectomancy");
 
     let config = vectomancy::config::Config::load();
-    if cli
-        .gpu_acceleration
-        .or(config.gpu_acceleration)
-        .unwrap_or(false)
-    {
-        tracing::warn!("GPU acceleration is currently a stub and has no effect in this version.");
+    let use_gpu = cli.gpu || config.gpu.unwrap_or(false);
+    if use_gpu {
+        tracing::warn!("GPU acceleration (wgpu) is currently an experimental stub and has no effect in this version. Falling back to CPU.");
     }
 
     let mut flattened_inputs = Vec::new();
