@@ -13,4 +13,7 @@ pub enum VectomancyError {
 
     #[error("Invalid input format: {0}")]
     InvalidInput(String),
+
+    #[error("Memory allocation failed: {0}")]
+    MemoryAllocationFailed(String),
 }

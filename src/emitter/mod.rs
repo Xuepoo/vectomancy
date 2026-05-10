@@ -1,3 +1,5 @@
+pub mod native;
+
 use crate::cli::OutputFormat;
 use crate::error::VectomancyError;
 use crate::models::MathExpressionAST;
@@ -72,7 +74,9 @@ pub fn emit_file(
             tera.add_template_file("templates/kmplot.tera", Some("kmplot"))?;
             "kmplot"
         }
-        OutputFormat::Json => unreachable!(),
+        OutputFormat::Json | OutputFormat::Png | OutputFormat::Jpg | OutputFormat::Webp => {
+            unreachable!()
+        }
     };
 
     let mut context = Context::new();
