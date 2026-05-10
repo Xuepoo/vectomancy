@@ -21,28 +21,30 @@
 </kernel>
 <construction title="vectomancy" author="" date="">
 {% if equations %}
-{% for eq in equations %}
+{% for path in equations %}
+{% for eq in path.data %}
 <command name="Curve">
 	<input a0="{% for c in eq.x_poly %}{{ c }}{% if loop.index0 == 1 %}*t{% elif loop.index0 > 1 %}*t^{{ loop.index0 }}{% endif %}{% if not loop.last %} + {% endif %}{% endfor %}" a1="{% for c in eq.y_poly %}{{ c }}{% if loop.index0 == 1 %}*t{% elif loop.index0 > 1 %}*t^{{ loop.index0 }}{% endif %}{% if not loop.last %} + {% endif %}{% endfor %}" a2="t" a3="0" a4="1"/>
-	<output a0="c{{ loop.index0 }}"/>
+	<output a0="c{{ loop.parent.index0 }}_{{ loop.index0 }}"/>
 </command>
-<element type="curve" label="c{{ loop.index0 }}">
+<element type="curve" label="c{{ loop.parent.index0 }}_{{ loop.index0 }}">
 	<show object="true" label="false"/>
-	<objColor r="0" g="0" b="0" alpha="0"/>
+	<objColor r="{% if path.color_rgb %}{{ path.color_rgb.0 }}{% else %}0{% endif %}" g="{% if path.color_rgb %}{{ path.color_rgb.1 }}{% else %}0{% endif %}" b="{% if path.color_rgb %}{{ path.color_rgb.2 }}{% else %}0{% endif %}" alpha="0"/>
 	<layer val="0"/>
 	<labelMode val="0"/>
 	<lineStyle thickness="5" type="0" typeHidden="1"/>
 </element>
 {% endfor %}
+{% endfor %}
 {% elif strokes %}
-{% for stroke in strokes %}
+{% for stroke_path in strokes %}
 <command name="Curve">
-	<input a0="{% for term in stroke %}{% if not loop.first %} + {% endif %}{{ term.amplitude }}*cos({{ term.frequency }}*t + {{ term.phase }}){% endfor %}" a1="{% for term in stroke %}{% if not loop.first %} + {% endif %}{{ term.amplitude }}*sin({{ term.frequency }}*t + {{ term.phase }}){% endfor %}" a2="t" a3="0" a4="6.28318"/>
+	<input a0="{% for term in stroke_path.data %}{% if not loop.first %} + {% endif %}{{ term.amplitude }}*cos({{ term.frequency }}*t + {{ term.phase }}){% endfor %}" a1="{% for term in stroke_path.data %}{% if not loop.first %} + {% endif %}{{ term.amplitude }}*sin({{ term.frequency }}*t + {{ term.phase }}){% endfor %}" a2="t" a3="0" a4="6.28318"/>
 	<output a0="c{{ loop.index0 }}"/>
 </command>
 <element type="curve" label="c{{ loop.index0 }}">
 	<show object="true" label="false"/>
-	<objColor r="0" g="0" b="0" alpha="0"/>
+	<objColor r="{% if stroke_path.color_rgb %}{{ stroke_path.color_rgb.0 }}{% else %}0{% endif %}" g="{% if stroke_path.color_rgb %}{{ stroke_path.color_rgb.1 }}{% else %}0{% endif %}" b="{% if stroke_path.color_rgb %}{{ stroke_path.color_rgb.2 }}{% else %}0{% endif %}" alpha="0"/>
 	<layer val="0"/>
 	<labelMode val="0"/>
 	<lineStyle thickness="5" type="0" typeHidden="1"/>
@@ -51,12 +53,12 @@
 {% elif paths %}
 {% for path in paths %}
 <command name="Polyline">
-	<input {% for p in path %}a{{ loop.index0 }}="({{ p.x }}, {{ p.y * -1 }})" {% endfor %}/>
+	<input {% for p in path.data %}a{{ loop.index0 }}="({{ p.x }}, {{ p.y * -1 }})" {% endfor %}/>
 	<output a0="p{{ loop.index0 }}"/>
 </command>
 <element type="polyline" label="p{{ loop.index0 }}">
 	<show object="true" label="false"/>
-	<objColor r="0" g="0" b="0" alpha="0"/>
+	<objColor r="{% if path.color_rgb %}{{ path.color_rgb.0 }}{% else %}0{% endif %}" g="{% if path.color_rgb %}{{ path.color_rgb.1 }}{% else %}0{% endif %}" b="{% if path.color_rgb %}{{ path.color_rgb.2 }}{% else %}0{% endif %}" alpha="0"/>
 	<layer val="0"/>
 	<labelMode val="0"/>
 	<lineStyle thickness="5" type="0" typeHidden="1"/>

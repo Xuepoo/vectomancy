@@ -5,16 +5,18 @@
 \begin{document}
 \begin{tikzpicture}
 {% if equations %}
-{% for eq in equations %}
+{% for path in equations %}
+{% for eq in path.data %}
 \draw[domain=0:1, smooth, variable=\t] plot ({% for c in eq.x_poly %}{{ c }}{% if loop.index0 == 1 %}*\t{% elif loop.index0 > 1 %}*\t^{{ loop.index0 }}{% endif %}{% if not loop.last %} + {% endif %}{% endfor %}, {% for c in eq.y_poly %}{{ c }}{% if loop.index0 == 1 %}*\t{% elif loop.index0 > 1 %}*\t^{{ loop.index0 }}{% endif %}{% if not loop.last %} + {% endif %}{% endfor %});
 {% endfor %}
+{% endfor %}
 {% elif strokes %}
-{% for stroke in strokes %}
-\draw[domain=0:6.28318, smooth, variable=\t, samples=100] plot ({% for term in stroke %}{% if not loop.first %} + {% endif %}{{ term.amplitude }}*cos(deg({{ term.frequency }}*\t + {{ term.phase }})){% endfor %}, {% for term in stroke %}{% if not loop.first %} + {% endif %}{{ term.amplitude }}*sin(deg({{ term.frequency }}*\t + {{ term.phase }})){% endfor %});
+{% for stroke_path in strokes %}
+\draw[domain=0:6.28318, smooth, variable=\t, samples=100] plot ({% for term in stroke_path.data %}{% if not loop.first %} + {% endif %}{{ term.amplitude }}*cos(deg({{ term.frequency }}*\t + {{ term.phase }})){% endfor %}, {% for term in stroke_path.data %}{% if not loop.first %} + {% endif %}{{ term.amplitude }}*sin(deg({{ term.frequency }}*\t + {{ term.phase }})){% endfor %});
 {% endfor %}
 {% elif paths %}
 {% for path in paths %}
-\draw {% for p in path %} ({{ p.x }}, {{ p.y }}) {% if not loop.last %} -- {% endif %} {% endfor %};
+\draw {% for p in path.data %} ({{ p.x }}, {{ p.y }}) {% if not loop.last %} -- {% endif %} {% endfor %};
 {% endfor %}
 {% endif %}
 \end{tikzpicture}

@@ -19,8 +19,9 @@
     </axes>
     <functions>
 {% if equations %}
-{% for eq in equations %}
-        <function type="parametric" id="{{ loop.index0 }}">
+{% for path in equations %}
+{% for eq in path.data %}
+        <function type="parametric" id="{{ loop.parent.index0 }}_{{ loop.index0 }}">
             <equation>
                 <x>{% for c in eq.x_poly %}{{ c }}{% if loop.index0 == 1 %}*t{% elif loop.index0 > 1 %}*t^{{ loop.index0 }}{% endif %}{% if not loop.last %} + {% endif %}{% endfor %}</x>
                 <y>{% for c in eq.y_poly %}{{ c }}{% if loop.index0 == 1 %}*t{% elif loop.index0 > 1 %}*t^{{ loop.index0 }}{% endif %}{% if not loop.last %} + {% endif %}{% endfor %}</y>
@@ -29,12 +30,13 @@
             <tmax>1</tmax>
         </function>
 {% endfor %}
+{% endfor %}
 {% elif strokes %}
-{% for stroke in strokes %}
+{% for stroke_path in strokes %}
         <function type="parametric" id="{{ loop.index0 }}">
             <equation>
-                <x>{% for term in stroke %}{% if not loop.first %} + {% endif %}{{ term.amplitude }}*cos({{ term.frequency }}*t + {{ term.phase }}){% endfor %}</x>
-                <y>{% for term in stroke %}{% if not loop.first %} + {% endif %}{{ term.amplitude }}*sin({{ term.frequency }}*t + {{ term.phase }}){% endfor %}</y>
+                <x>{% for term in stroke_path.data %}{% if not loop.first %} + {% endif %}{{ term.amplitude }}*cos({{ term.frequency }}*t + {{ term.phase }}){% endfor %}</x>
+                <y>{% for term in stroke_path.data %}{% if not loop.first %} + {% endif %}{{ term.amplitude }}*sin({{ term.frequency }}*t + {{ term.phase }}){% endfor %}</y>
             </equation>
             <tmin>0</tmin>
             <tmax>6.28318</tmax>

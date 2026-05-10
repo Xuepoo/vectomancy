@@ -1,23 +1,31 @@
 use crate::error::VectomancyError;
-use crate::models::{BezierSegment, Point2D};
+use crate::models::{BezierSegment, ColoredPath, Point2D};
 use std::path::Path;
 use usvg::{Options, Tree, TreeParsing};
 
-pub fn process_svg(path: &Path) -> Result<Vec<BezierSegment>, VectomancyError> {
+pub fn process_svg(
+    path: &Path,
+    color: bool,
+) -> Result<Vec<ColoredPath<Vec<BezierSegment>>>, VectomancyError> {
     let svg_data = std::fs::read(path).map_err(|e| VectomancyError::InvalidInput(e.to_string()))?;
     let opt = Options::default();
     let tree = Tree::from_data(&svg_data, &opt)
         .map_err(|e| VectomancyError::InvalidInput(e.to_string()))?;
 
-    let mut segments = Vec::new();
+    let mut colored_paths = Vec::new();
 
-    fn traverse(group: &usvg::Group, segments: &mut Vec<BezierSegment>) {
+    fn traverse(
+        group: &usvg::Group,
+        colored_paths: &mut Vec<ColoredPath<Vec<BezierSegment>>>,
+        color: bool,
+    ) {
         for child in &group.children {
             match child {
                 usvg::Node::Group(g) => {
-                    traverse(g, segments);
+                    traverse(g, colored_paths, color);
                 }
                 usvg::Node::Path(p) => {
+                    let mut segments = Vec::new();
                     let transform = p.abs_transform;
                     for seg in p.data.segments() {
                         match seg {
@@ -80,13 +88,33 @@ pub fn process_svg(path: &Path) -> Result<Vec<BezierSegment>, VectomancyError> {
                             }
                         }
                     }
+
+                    let mut color_rgb = None;
+                    if color {
+                        if let Some(stroke) = &p.stroke {
+                            if let usvg::Paint::Color(c) = stroke.paint {
+                                color_rgb = Some((c.red, c.green, c.blue));
+                            }
+                        } else if let Some(fill) = &p.fill {
+                            if let usvg::Paint::Color(c) = fill.paint {
+                                color_rgb = Some((c.red, c.green, c.blue));
+                            }
+                        }
+                    }
+
+                    if !segments.is_empty() {
+                        colored_paths.push(ColoredPath {
+                            color_rgb,
+                            data: segments,
+                        });
+                    }
                 }
                 _ => {}
             }
         }
     }
 
-    traverse(&tree.root, &mut segments);
+    traverse(&tree.root, &mut colored_paths, color);
 
-    Ok(segments)
+    Ok(colored_paths)
 }

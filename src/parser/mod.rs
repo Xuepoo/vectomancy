@@ -5,18 +5,18 @@ use crate::error::VectomancyError;
 use crate::models::ParserOutput;
 use std::path::Path;
 
-pub fn parse_file(path: &Path) -> Result<ParserOutput, VectomancyError> {
+pub fn parse_file(path: &Path, color: bool) -> Result<ParserOutput, VectomancyError> {
     let ext_str = path
         .extension()
         .and_then(|s| s.to_str())
         .unwrap_or_default();
     match ext_str.to_lowercase().as_str() {
         "png" | "jpg" | "jpeg" | "webp" => {
-            let paths = raster::process_raster_image(path)?;
+            let paths = raster::process_raster_image(path, color)?;
             Ok(ParserOutput::Paths(paths))
         }
         "svg" => {
-            let segments = vector::process_svg(path)?;
+            let segments = vector::process_svg(path, color)?;
             Ok(ParserOutput::Segments(segments))
         }
         _ => Err(VectomancyError::InvalidInput(format!(

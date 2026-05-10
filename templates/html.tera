@@ -16,7 +16,13 @@
         const ctx = canvas.getContext('2d');
         
         {% if equations %}
-        {% for eq in equations %}
+        {% for path in equations %}
+        {% if path.color_rgb %}
+        ctx.strokeStyle = `rgb({{ path.color_rgb.0 }}, {{ path.color_rgb.1 }}, {{ path.color_rgb.2 }})`;
+        {% else %}
+        ctx.strokeStyle = 'rgb(0, 0, 0)';
+        {% endif %}
+        {% for eq in path.data %}
         ctx.beginPath();
         {
             let first = true;
@@ -33,15 +39,21 @@
         }
         ctx.stroke();
         {% endfor %}
+        {% endfor %}
         {% elif strokes %}
-        {% for stroke in strokes %}
+        {% for stroke_path in strokes %}
+        {% if stroke_path.color_rgb %}
+        ctx.strokeStyle = `rgb({{ stroke_path.color_rgb.0 }}, {{ stroke_path.color_rgb.1 }}, {{ stroke_path.color_rgb.2 }})`;
+        {% else %}
+        ctx.strokeStyle = 'rgb(0, 0, 0)';
+        {% endif %}
         ctx.beginPath();
         {
             let first = true;
             for (let t = 0; t <= Math.PI * 2; t += 0.01) {
                 let x = 0;
                 let y = 0;
-                {% for term in stroke %}
+                {% for term in stroke_path.data %}
                 x += {{ term.amplitude }} * Math.cos({{ term.frequency }} * t + {{ term.phase }});
                 y += {{ term.amplitude }} * Math.sin({{ term.frequency }} * t + {{ term.phase }});
                 {% endfor %}
@@ -57,8 +69,13 @@
         {% endfor %}
         {% elif paths %}
         {% for path in paths %}
+        {% if path.color_rgb %}
+        ctx.strokeStyle = `rgb({{ path.color_rgb.0 }}, {{ path.color_rgb.1 }}, {{ path.color_rgb.2 }})`;
+        {% else %}
+        ctx.strokeStyle = 'rgb(0, 0, 0)';
+        {% endif %}
         ctx.beginPath();
-        {% for p in path %}
+        {% for p in path.data %}
         {% if loop.first %}ctx.moveTo({{ p.x }}, {{ p.y }});{% else %}ctx.lineTo({{ p.x }}, {{ p.y }});{% endif %}
         {% endfor %}
         ctx.stroke();

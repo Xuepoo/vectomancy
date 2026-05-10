@@ -3,24 +3,24 @@
 
 {% if strokes %}
 f[t_] := {
-  {% for stroke in strokes %}
+  {% for stroke_path in strokes %}
   (
-    {% for term in stroke %}
+    {% for term in stroke_path.data %}
     {% if not loop.first %} + {% endif %}
     ({{ term.amplitude }}) * Cos[({{ term.frequency }}) * t + ({{ term.phase }})]
     {% endfor %}
-    {% if stroke | length == 0 %}0{% endif %}
+    {% if stroke_path.data | length == 0 %}0{% endif %}
   ) * (UnitStep[t - {{ 2 * loop.index0 }} * Pi] - UnitStep[t - {{ 2 * (loop.index0 + 1) }} * Pi])
   {% if not loop.last %} + {% endif %}
   {% endfor %}
   ,
-  {% for stroke in strokes %}
+  {% for stroke_path in strokes %}
   (
-    {% for term in stroke %}
+    {% for term in stroke_path.data %}
     {% if not loop.first %} + {% endif %}
     ({{ term.amplitude }}) * Sin[({{ term.frequency }}) * t + ({{ term.phase }})]
     {% endfor %}
-    {% if stroke | length == 0 %}0{% endif %}
+    {% if stroke_path.data | length == 0 %}0{% endif %}
   ) * (UnitStep[t - {{ 2 * loop.index0 }} * Pi] - UnitStep[t - {{ 2 * (loop.index0 + 1) }} * Pi])
   {% if not loop.last %} + {% endif %}
   {% endfor %}
@@ -29,7 +29,8 @@ f[t_] := {
 plot = ParametricPlot[f[t], {t, 0, {{ strokes | length * 2 }} * Pi}, Exclusions -> Automatic, Axes -> False, Frame -> False];
 {% elif equations %}
 f[t_] := {
-  {% for eq in equations %}
+  {% for path in equations %}
+  {% for eq in path.data %}
   (
     {% for c in eq.x_poly %}
     {% if not loop.first %} + {% endif %}
@@ -39,8 +40,11 @@ f[t_] := {
   ) * (UnitStep[t - {{ eq.start_t }}] - UnitStep[t - {{ eq.end_t }}])
   {% if not loop.last %} + {% endif %}
   {% endfor %}
+  {% if not loop.last %} + {% endif %}
+  {% endfor %}
   ,
-  {% for eq in equations %}
+  {% for path in equations %}
+  {% for eq in path.data %}
   (
     {% for c in eq.y_poly %}
     {% if not loop.first %} + {% endif %}
@@ -50,13 +54,15 @@ f[t_] := {
   ) * (UnitStep[t - {{ eq.start_t }}] - UnitStep[t - {{ eq.end_t }}])
   {% if not loop.last %} + {% endif %}
   {% endfor %}
+  {% if not loop.last %} + {% endif %}
+  {% endfor %}
 };
 
-plot = ParametricPlot[f[t], {t, 0, {{ equations | length }}}, Exclusions -> Automatic, Axes -> False, Frame -> False];
+plot = ParametricPlot[f[t], {t, 0, 1000}, Exclusions -> Automatic, Axes -> False, Frame -> False];
 {% elif paths %}
 plot = Graphics[{
   {% for path in paths %}
-  Line[{ {% for p in path %} { {{ p.x }}, {{ p.y }} } {% if not loop.last %}, {% endif %} {% endfor %} }]{% if not loop.last %}, {% endif %}
+  Line[{ {% for p in path.data %} { {{ p.x }}, {{ p.y }} } {% if not loop.last %}, {% endif %} {% endfor %} }]{% if not loop.last %}, {% endif %}
   {% endfor %}
 }];
 {% endif %}

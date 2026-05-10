@@ -1,16 +1,19 @@
 use crate::error::VectomancyError;
-use crate::models::Point2D;
-use image::Luma;
+use crate::models::{ColoredPath, Point2D};
+use image::{GenericImageView, Luma};
 use std::path::Path;
 use tracing::{debug, info};
 
-pub fn process_raster_image(path: &Path) -> Result<Vec<Vec<Point2D>>, VectomancyError> {
+pub fn process_raster_image(
+    path: &Path,
+    color: bool,
+) -> Result<Vec<ColoredPath<Vec<Point2D>>>, VectomancyError> {
     info!("Processing raster image: {:?}", path);
     let img = image::open(path).map_err(|e| VectomancyError::ImageProcessing(e.to_string()))?;
 
     // 1. Grayscale
     debug!("Converting to grayscale");
-    let grayscale = img.into_luma8();
+    let grayscale = img.to_luma8();
 
     debug!("Applying Sobel edge detection");
     let (width, height) = grayscale.dimensions();
@@ -108,7 +111,45 @@ pub fn process_raster_image(path: &Path) -> Result<Vec<Vec<Point2D>>, Vectomancy
         total_pts
     );
 
-    Ok(all_paths)
+    let rgb_image = if color { Some(img.to_rgb8()) } else { None };
+
+    let mut colored_paths = Vec::new();
+    for path in all_paths {
+        let color_rgb = if let Some(ref rgb) = rgb_image {
+            let mut r_sum = 0u64;
+            let mut g_sum = 0u64;
+            let mut b_sum = 0u64;
+            let mut count = 0u64;
+            for pt in &path {
+                let x = pt.x.round() as u32;
+                let y = pt.y.round() as u32;
+                if x < width && y < height {
+                    let pixel = rgb.get_pixel(x, y);
+                    r_sum += pixel[0] as u64;
+                    g_sum += pixel[1] as u64;
+                    b_sum += pixel[2] as u64;
+                    count += 1;
+                }
+            }
+            if count > 0 {
+                Some((
+                    (r_sum / count) as u8,
+                    (g_sum / count) as u8,
+                    (b_sum / count) as u8,
+                ))
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+        colored_paths.push(ColoredPath {
+            color_rgb,
+            data: path,
+        });
+    }
+
+    Ok(colored_paths)
 }
 
 fn zhang_suen_thinning(grid: &mut [Vec<bool>], width: usize, height: usize) {

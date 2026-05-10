@@ -32,15 +32,27 @@ pub struct SplineEquation {
 }
 
 #[derive(Debug, Clone, Serialize)]
+pub struct ColoredPath<T> {
+    pub color_rgb: Option<(u8, u8, u8)>,
+    pub data: T,
+}
+
+#[derive(Debug, Clone, Serialize)]
 #[serde(tag = "type")]
 pub enum MathExpressionAST {
-    Fourier { strokes: Vec<Vec<FourierTerm>> },
-    Spline { equations: Vec<SplineEquation> },
-    Polyline { paths: Vec<Vec<Point2D>> },
+    Fourier {
+        strokes: Vec<ColoredPath<Vec<FourierTerm>>>,
+    },
+    Spline {
+        equations: Vec<ColoredPath<Vec<SplineEquation>>>,
+    },
+    Polyline {
+        paths: Vec<ColoredPath<Vec<Point2D>>>,
+    },
 }
 
 #[derive(Debug, Clone)]
 pub enum ParserOutput {
-    Paths(Vec<Vec<Point2D>>),
-    Segments(Vec<BezierSegment>),
+    Paths(Vec<ColoredPath<Vec<Point2D>>>),
+    Segments(Vec<ColoredPath<Vec<BezierSegment>>>),
 }

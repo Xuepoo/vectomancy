@@ -22,36 +22,49 @@ def render():
     {% if is_fourier %}
     t = np.linspace(0, 2 * np.pi, 10000)
     strokes_data = _load_data()
-    for stroke in strokes_data:
+    for stroke_path in strokes_data:
         x = np.zeros_like(t)
         y = np.zeros_like(t)
-        for term in stroke:
+        for term in stroke_path['data']:
             amp = term['amplitude']
             freq = term['frequency']
             phase = term['phase']
             x += amp * np.cos(freq * t + phase)
             y += amp * np.sin(freq * t + phase)
-        plt.plot(x, y, 'b-', linewidth=0.5)
+        color = '#000000'
+        if stroke_path.get('color_rgb'):
+            r, g, b = stroke_path['color_rgb']
+            color = f'#{r:02x}{g:02x}{b:02x}'
+        plt.plot(x, y, color=color, linewidth=0.5)
     {% endif %}
 
     {% if is_spline %}
     t_eq = np.linspace(0, 1.0, 50)
     t_eq_powers = np.array([np.ones_like(t_eq), t_eq, t_eq**2, t_eq**3])
     equations_data = _load_data()
-    for eq in equations_data:
-        x_poly = eq['x_poly']
-        y_poly = eq['y_poly']
-        x = np.dot(x_poly, t_eq_powers)
-        y = np.dot(y_poly, t_eq_powers)
-        plt.plot(x, y, 'k-', linewidth=1.0)
+    for path in equations_data:
+        color = '#000000'
+        if path.get('color_rgb'):
+            r, g, b = path['color_rgb']
+            color = f'#{r:02x}{g:02x}{b:02x}'
+        for eq in path['data']:
+            x_poly = eq['x_poly']
+            y_poly = eq['y_poly']
+            x = np.dot(x_poly, t_eq_powers)
+            y = np.dot(y_poly, t_eq_powers)
+            plt.plot(x, y, color=color, linewidth=1.0)
     {% endif %}
 
     {% if is_polyline %}
     paths_data = _load_data()
     for path in paths_data:
-        x = [p['x'] for p in path]
-        y = [p['y'] for p in path]
-        plt.plot(x, y, 'k-', linewidth=1.0)
+        x = [p['x'] for p in path['data']]
+        y = [p['y'] for p in path['data']]
+        color = '#000000'
+        if path.get('color_rgb'):
+            r, g, b = path['color_rgb']
+            color = f'#{r:02x}{g:02x}{b:02x}'
+        plt.plot(x, y, color=color, linewidth=1.0)
     {% endif %}
 
     plt.axis('equal')

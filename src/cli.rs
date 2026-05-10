@@ -4,18 +4,6 @@ use std::path::PathBuf;
 #[derive(Parser, Debug)]
 #[command(name = "vectomancy", version, author, about = "Image-to-Equation Converter", long_about = None)]
 pub struct Cli {
-    #[command(subcommand)]
-    pub command: Commands,
-}
-
-#[derive(Parser, Debug)]
-pub enum Commands {
-    /// Convert an image to mathematical equations
-    Run(RunArgs),
-}
-
-#[derive(Parser, Debug)]
-pub struct RunArgs {
     /// Input file path (.png, .jpg, .svg)
     pub input: PathBuf,
 
@@ -46,6 +34,10 @@ pub struct RunArgs {
     /// Minimum path length to process
     #[arg(long, default_value_t = 5)]
     pub min_path_len: usize,
+
+    /// Enable color sampling and drawing
+    #[arg(long, default_value_t = false)]
+    pub color: bool,
 
     /// Verbose output
     #[arg(short, long)]
