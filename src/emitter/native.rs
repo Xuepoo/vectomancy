@@ -74,7 +74,7 @@ pub fn render_to_image(
                 for eq in &path.data {
                     let steps = 50;
                     for i in 0..=steps {
-                        let t = eq.start_t + (eq.end_t - eq.start_t) * (i as f64 / steps as f64);
+                        let t = i as f64 / steps as f64;
                         let mut x = 0.0;
                         let mut y = 0.0;
                         for (j, coef) in eq.x_poly.iter().enumerate() {
