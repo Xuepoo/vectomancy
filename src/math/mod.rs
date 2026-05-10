@@ -1,4 +1,5 @@
 pub mod spline;
+pub mod wgpu_math;
 
 use crate::error::VectomancyError;
 use crate::models::Point2D;
@@ -115,7 +116,17 @@ pub fn solve_tsp_nearest_neighbor(points: Vec<Point2D>) -> Vec<Point2D> {
 pub fn perform_fft(
     points: &[Point2D],
     terms: usize,
+    use_gpu: bool,
 ) -> Result<Vec<crate::models::FourierTerm>, VectomancyError> {
+    if use_gpu {
+        match wgpu_math::perform_fft_gpu(points, terms) {
+            Ok(res) => return Ok(res),
+            Err(e) => {
+                tracing::warn!("GPU FFT failed: {}. Falling back to CPU.", e);
+            }
+        }
+    }
+
     debug!("Performing FFT. Terms: {}", terms);
     let mut planner = FftPlanner::new();
     let fft = planner.plan_fft_forward(points.len());

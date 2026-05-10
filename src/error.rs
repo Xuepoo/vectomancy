@@ -16,4 +16,7 @@ pub enum VectomancyError {
 
     #[error("Memory allocation failed: {0}")]
     MemoryAllocationFailed(String),
+
+    #[error("Math error: {0}")]
+    MathError(String),
 }

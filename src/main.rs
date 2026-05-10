@@ -19,7 +19,7 @@ fn main() -> Result<(), VectomancyError> {
     let config = vectomancy::config::Config::load();
     let use_gpu = cli.gpu || config.gpu.unwrap_or(false);
     if use_gpu {
-        tracing::warn!("GPU acceleration (wgpu) is currently an experimental stub and has no effect in this version. Falling back to CPU.");
+        tracing::info!("GPU acceleration (wgpu) is enabled.");
     }
 
     let mut flattened_inputs = Vec::new();
@@ -79,7 +79,7 @@ fn main() -> Result<(), VectomancyError> {
                             }
                             let reduced = math::simplify_rdp(&path.data, tolerance);
                             if reduced.len() > 3 {
-                                let terms = math::perform_fft(&reduced, cli.terms)?;
+                                let terms = math::perform_fft(&reduced, cli.terms, use_gpu)?;
                                 strokes.push(models::ColoredPath {
                                     color_rgb: path.color_rgb,
                                     data: terms,
@@ -158,7 +158,7 @@ fn main() -> Result<(), VectomancyError> {
                             let pts = math::spline::sample_segments(&seg.data, 100);
                             info!("Sampled {} points from segments.", pts.len());
                             let ordered_points = math::solve_tsp_nearest_neighbor(pts);
-                            let terms = math::perform_fft(&ordered_points, cli.terms)?;
+                            let terms = math::perform_fft(&ordered_points, cli.terms, use_gpu)?;
                             strokes.push(models::ColoredPath {
                                 color_rgb: seg.color_rgb,
                                 data: terms,
