@@ -1,8 +1,35 @@
 use crate::cli::OutputFormat;
 use crate::error::VectomancyError;
 use crate::models::MathExpressionAST;
+use lyon_tessellation::{
+    math::Point, path::Path as LyonPath, StrokeOptions, StrokeTessellator, StrokeVertexConstructor,
+    VertexBuffers,
+};
 use std::path::Path;
-use tiny_skia::{Color, Paint, PathBuilder, Pixmap, Stroke, Transform};
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+struct Vertex {
+    position: [f32; 2],
+    color: [f32; 4],
+}
+
+struct VertexCtor {
+    color: [f32; 4],
+    target_dimensions: (u32, u32),
+}
+
+impl StrokeVertexConstructor<Vertex> for VertexCtor {
+    fn new_vertex(&mut self, vertex: lyon_tessellation::StrokeVertex) -> Vertex {
+        let p = vertex.position();
+        let ndc_x = (p.x / self.target_dimensions.0 as f32) * 2.0 - 1.0;
+        let ndc_y = 1.0 - (p.y / self.target_dimensions.1 as f32) * 2.0;
+        Vertex {
+            position: [ndc_x, ndc_y],
+            color: self.color,
+        }
+    }
+}
 
 #[allow(clippy::too_many_arguments)]
 pub fn render_to_image(
@@ -22,13 +49,148 @@ pub fn render_to_image(
             cs
         );
     }
-    let mut pixmap = Pixmap::new(target_dimensions.0, target_dimensions.1).ok_or_else(|| {
-        VectomancyError::MemoryAllocationFailed("Failed to allocate pixmap".to_string())
-    })?;
 
-    if !transparent {
-        pixmap.fill(Color::WHITE);
-    }
+    pollster::block_on(render_wgpu(
+        ast,
+        output_path,
+        format,
+        transparent,
+        original_dimensions,
+        target_dimensions,
+        stroke_width,
+        bit_depth,
+    ))
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn render_wgpu(
+    ast: &MathExpressionAST,
+    output_path: &Path,
+    format: &OutputFormat,
+    transparent: bool,
+    original_dimensions: (u32, u32),
+    target_dimensions: (u32, u32),
+    stroke_width: f32,
+    bit_depth: Option<u8>,
+) -> Result<(), VectomancyError> {
+    let instance = wgpu::Instance::default();
+
+    let adapter = instance
+        .request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::LowPower,
+            compatible_surface: None,
+            force_fallback_adapter: false,
+        })
+        .await
+        .unwrap();
+
+    let (device, queue) = adapter
+        .request_device(&wgpu::DeviceDescriptor::default())
+        .await
+        .map_err(|e| VectomancyError::InvalidInput(format!("Failed to request device: {}", e)))?;
+
+    let texture_desc = wgpu::TextureDescriptor {
+        size: wgpu::Extent3d {
+            width: target_dimensions.0,
+            height: target_dimensions.1,
+            depth_or_array_layers: 1,
+        },
+        mip_level_count: 1,
+        sample_count: 4,
+        dimension: wgpu::TextureDimension::D2,
+        format: wgpu::TextureFormat::Rgba8UnormSrgb,
+        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+        label: Some("Multisampled Texture"),
+        view_formats: &[],
+    };
+    let multisampled_texture = device.create_texture(&texture_desc);
+    let multisampled_view =
+        multisampled_texture.create_view(&wgpu::TextureViewDescriptor::default());
+
+    let resolve_texture_desc = wgpu::TextureDescriptor {
+        size: wgpu::Extent3d {
+            width: target_dimensions.0,
+            height: target_dimensions.1,
+            depth_or_array_layers: 1,
+        },
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: wgpu::TextureDimension::D2,
+        format: wgpu::TextureFormat::Rgba8UnormSrgb,
+        usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
+        label: Some("Resolve Texture"),
+        view_formats: &[],
+    };
+    let resolve_texture = device.create_texture(&resolve_texture_desc);
+    let resolve_view = resolve_texture.create_view(&wgpu::TextureViewDescriptor::default());
+
+    let u32_size = std::mem::size_of::<u32>() as u32;
+    let bytes_per_row = (u32_size * target_dimensions.0 + 255) & !255;
+    let output_buffer_size = (bytes_per_row * target_dimensions.1) as wgpu::BufferAddress;
+    let output_buffer_desc = wgpu::BufferDescriptor {
+        size: output_buffer_size,
+        usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
+        label: Some("Output Buffer"),
+        mapped_at_creation: false,
+    };
+    let output_buffer = device.create_buffer(&output_buffer_desc);
+
+    let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+        label: Some("Shader"),
+        source: wgpu::ShaderSource::Wgsl(include_str!("shader.wgsl").into()),
+    });
+
+    let render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+        label: Some("Render Pipeline Layout"),
+        bind_group_layouts: &[],
+        immediate_size: 0,
+    });
+
+    let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        label: Some("Render Pipeline"),
+        layout: Some(&render_pipeline_layout),
+        vertex: wgpu::VertexState {
+            module: &shader,
+            entry_point: Some("vs_main"),
+            compilation_options: Default::default(),
+            buffers: &[wgpu::VertexBufferLayout {
+                array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
+                step_mode: wgpu::VertexStepMode::Vertex,
+                attributes: &wgpu::vertex_attr_array![0 => Float32x2, 1 => Float32x4],
+            }],
+        },
+        fragment: Some(wgpu::FragmentState {
+            module: &shader,
+            entry_point: Some("fs_main"),
+            compilation_options: Default::default(),
+            targets: &[Some(wgpu::ColorTargetState {
+                format: wgpu::TextureFormat::Rgba8UnormSrgb,
+                blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                write_mask: wgpu::ColorWrites::ALL,
+            })],
+        }),
+        primitive: wgpu::PrimitiveState {
+            topology: wgpu::PrimitiveTopology::TriangleList,
+            strip_index_format: None,
+            front_face: wgpu::FrontFace::Ccw,
+            cull_mode: None,
+            unclipped_depth: false,
+            polygon_mode: wgpu::PolygonMode::Fill,
+            conservative: false,
+        },
+        depth_stencil: None,
+        multisample: wgpu::MultisampleState {
+            count: 4,
+            mask: !0,
+            alpha_to_coverage_enabled: false,
+        },
+        multiview_mask: None,
+        cache: None,
+    });
+
+    let mut geometry: VertexBuffers<Vertex, u32> = VertexBuffers::new();
+    let mut tessellator = StrokeTessellator::new();
+    let stroke_options = StrokeOptions::default().with_line_width(stroke_width);
 
     let scale_x = target_dimensions.0 as f32 / original_dimensions.0 as f32;
     let scale_y = target_dimensions.1 as f32 / original_dimensions.1 as f32;
@@ -37,44 +199,53 @@ pub fn render_to_image(
     let offset_x = (target_dimensions.0 as f32 - original_dimensions.0 as f32 * scale) / 2.0;
     let offset_y = (target_dimensions.1 as f32 - original_dimensions.1 as f32 * scale) / 2.0;
 
-    let transform = Transform::from_scale(scale, scale).post_translate(offset_x, offset_y);
-
-    let mut paint = Paint {
-        anti_alias: true,
-        ..Default::default()
-    };
-
-    let stroke = Stroke {
-        width: stroke_width,
-        ..Default::default()
+    let transform_point = |x: f32, y: f32| -> Point {
+        let tx = x * scale + offset_x;
+        let ty = y * scale + offset_y;
+        lyon_tessellation::math::point(tx, ty)
     };
 
     match ast {
         MathExpressionAST::Polyline { paths } => {
             for path in paths {
-                let mut pb = PathBuilder::new();
+                let mut builder = LyonPath::builder();
                 let mut first = true;
                 for pt in &path.data {
+                    let p = transform_point(pt.x as f32, pt.y as f32);
                     if first {
-                        pb.move_to(pt.x as f32, pt.y as f32);
+                        builder.begin(p);
                         first = false;
                     } else {
-                        pb.line_to(pt.x as f32, pt.y as f32);
+                        builder.line_to(p);
                     }
                 }
-                if let Some(skia_path) = pb.finish() {
-                    if let Some((r, g, b)) = path.color_rgb {
-                        paint.set_color_rgba8(r, g, b, 255);
-                    } else {
-                        paint.set_color_rgba8(0, 0, 0, 255);
-                    }
-                    pixmap.stroke_path(&skia_path, &paint, &stroke, transform, None);
+                if !first {
+                    builder.end(false);
                 }
+                let lyon_path = builder.build();
+                let color = if let Some((r, g, b)) = path.color_rgb {
+                    [r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0, 1.0]
+                } else {
+                    [0.0, 0.0, 0.0, 1.0]
+                };
+                tessellator
+                    .tessellate_path(
+                        &lyon_path,
+                        &stroke_options,
+                        &mut lyon_tessellation::BuffersBuilder::new(
+                            &mut geometry,
+                            VertexCtor {
+                                color,
+                                target_dimensions,
+                            },
+                        ),
+                    )
+                    .unwrap();
             }
         }
         MathExpressionAST::Spline { equations } => {
             for path in equations {
-                let mut pb = PathBuilder::new();
+                let mut builder = LyonPath::builder();
                 let mut first = true;
                 for eq in &path.data {
                     let steps = 50;
@@ -88,28 +259,43 @@ pub fn render_to_image(
                         for (j, coef) in eq.y_poly.iter().enumerate() {
                             y += coef * t.powi(j as i32);
                         }
+                        let p = transform_point(x as f32, y as f32);
                         if first {
-                            pb.move_to(x as f32, y as f32);
+                            builder.begin(p);
                             first = false;
                         } else {
-                            pb.line_to(x as f32, y as f32);
+                            builder.line_to(p);
                         }
                     }
                 }
-                if let Some(skia_path) = pb.finish() {
-                    if let Some((r, g, b)) = path.color_rgb {
-                        paint.set_color_rgba8(r, g, b, 255);
-                    } else {
-                        paint.set_color_rgba8(0, 0, 0, 255);
-                    }
-                    pixmap.stroke_path(&skia_path, &paint, &stroke, transform, None);
+                if !first {
+                    builder.end(false);
                 }
+                let lyon_path = builder.build();
+                let color = if let Some((r, g, b)) = path.color_rgb {
+                    [r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0, 1.0]
+                } else {
+                    [0.0, 0.0, 0.0, 1.0]
+                };
+                tessellator
+                    .tessellate_path(
+                        &lyon_path,
+                        &stroke_options,
+                        &mut lyon_tessellation::BuffersBuilder::new(
+                            &mut geometry,
+                            VertexCtor {
+                                color,
+                                target_dimensions,
+                            },
+                        ),
+                    )
+                    .unwrap();
             }
         }
         MathExpressionAST::Fourier { strokes } => {
             let steps = target_dimensions.0.max(target_dimensions.1) as usize;
             for path in strokes {
-                let mut pb = PathBuilder::new();
+                let mut builder = LyonPath::builder();
                 let mut first = true;
                 for i in 0..=steps {
                     let t = i as f64 / steps as f64;
@@ -120,53 +306,175 @@ pub fn render_to_image(
                         x += term.amplitude * angle.cos();
                         y += term.amplitude * angle.sin();
                     }
+                    let p = transform_point(x as f32, y as f32);
                     if first {
-                        pb.move_to(x as f32, y as f32);
+                        builder.begin(p);
                         first = false;
                     } else {
-                        pb.line_to(x as f32, y as f32);
+                        builder.line_to(p);
                     }
                 }
-                if let Some(skia_path) = pb.finish() {
-                    if let Some((r, g, b)) = path.color_rgb {
-                        paint.set_color_rgba8(r, g, b, 255);
-                    } else {
-                        paint.set_color_rgba8(0, 0, 0, 255);
-                    }
-                    pixmap.stroke_path(&skia_path, &paint, &stroke, transform, None);
+                if !first {
+                    builder.end(false);
                 }
+                let lyon_path = builder.build();
+                let color = if let Some((r, g, b)) = path.color_rgb {
+                    [r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0, 1.0]
+                } else {
+                    [0.0, 0.0, 0.0, 1.0]
+                };
+                tessellator
+                    .tessellate_path(
+                        &lyon_path,
+                        &stroke_options,
+                        &mut lyon_tessellation::BuffersBuilder::new(
+                            &mut geometry,
+                            VertexCtor {
+                                color,
+                                target_dimensions,
+                            },
+                        ),
+                    )
+                    .unwrap();
             }
         }
     }
 
-    let img_data = pixmap
-        .encode_png()
-        .map_err(|e| VectomancyError::InvalidInput(format!("PNG encoding error: {}", e)))?;
-    let mut img = image::load_from_memory(&img_data)
-        .map_err(|e| VectomancyError::InvalidInput(format!("Image loading error: {}", e)))?;
+    let vertex_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+        label: Some("Vertex Buffer"),
+        size: (geometry.vertices.len() * std::mem::size_of::<Vertex>()) as wgpu::BufferAddress,
+        usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+        mapped_at_creation: false,
+    });
+    queue.write_buffer(&vertex_buffer, 0, bytemuck::cast_slice(&geometry.vertices));
+
+    let index_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+        label: Some("Index Buffer"),
+        size: (geometry.indices.len() * std::mem::size_of::<u32>()) as wgpu::BufferAddress,
+        usage: wgpu::BufferUsages::INDEX | wgpu::BufferUsages::COPY_DST,
+        mapped_at_creation: false,
+    });
+    queue.write_buffer(&index_buffer, 0, bytemuck::cast_slice(&geometry.indices));
+
+    let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+        label: Some("Render Encoder"),
+    });
+
+    {
+        let clear_color = if transparent {
+            wgpu::Color::TRANSPARENT
+        } else {
+            wgpu::Color::WHITE
+        };
+
+        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some("Render Pass"),
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view: &multisampled_view,
+                resolve_target: Some(&resolve_view),
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(clear_color),
+                    store: wgpu::StoreOp::Store,
+                },
+                depth_slice: None,
+            })],
+            depth_stencil_attachment: None,
+            multiview_mask: None,
+            timestamp_writes: None,
+            occlusion_query_set: None,
+        });
+
+        if !geometry.indices.is_empty() {
+            render_pass.set_pipeline(&render_pipeline);
+            render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
+            render_pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+            render_pass.draw_indexed(0..geometry.indices.len() as u32, 0, 0..1);
+        }
+    }
+
+    encoder.copy_texture_to_buffer(
+        wgpu::TexelCopyTextureInfo {
+            texture: &resolve_texture,
+            mip_level: 0,
+            origin: wgpu::Origin3d::ZERO,
+            aspect: wgpu::TextureAspect::All,
+        },
+        wgpu::TexelCopyBufferInfo {
+            buffer: &output_buffer,
+            layout: wgpu::TexelCopyBufferLayout {
+                offset: 0,
+                bytes_per_row: Some(bytes_per_row),
+                rows_per_image: Some(target_dimensions.1),
+            },
+        },
+        wgpu::Extent3d {
+            width: target_dimensions.0,
+            height: target_dimensions.1,
+            depth_or_array_layers: 1,
+        },
+    );
+
+    let submission_index = queue.submit(Some(encoder.finish()));
+
+    let buffer_slice = output_buffer.slice(..);
+    let (tx, rx) = std::sync::mpsc::channel();
+    buffer_slice.map_async(wgpu::MapMode::Read, move |result| {
+        tx.send(result).unwrap();
+    });
+    let _ = device.poll(wgpu::PollType::Wait {
+        submission_index: Some(submission_index),
+        timeout: None,
+    });
+    rx.recv()
+        .unwrap()
+        .map_err(|e| VectomancyError::InvalidInput(format!("Buffer map error: {}", e)))?;
+
+    let data = buffer_slice.get_mapped_range();
+    let mut pixels = Vec::with_capacity((target_dimensions.0 * target_dimensions.1 * 4) as usize);
+    for row in 0..target_dimensions.1 {
+        let start = (row * bytes_per_row) as usize;
+        let end = start + (target_dimensions.0 * 4) as usize;
+        pixels.extend_from_slice(&data[start..end]);
+    }
+
+    drop(data);
+    output_buffer.unmap();
+
+    let img = image::RgbaImage::from_raw(target_dimensions.0, target_dimensions.1, pixels)
+        .ok_or_else(|| {
+            VectomancyError::InvalidInput("Failed to create image from buffer".to_string())
+        })?;
+
+    let mut dyn_img = image::DynamicImage::ImageRgba8(img);
 
     if bit_depth == Some(16) {
         if transparent {
-            let rgba16 = img.into_rgba16();
-            img = image::DynamicImage::ImageRgba16(rgba16);
+            let rgba16 = dyn_img.into_rgba16();
+            dyn_img = image::DynamicImage::ImageRgba16(rgba16);
         } else {
-            let rgb16 = img.into_rgb16();
-            img = image::DynamicImage::ImageRgb16(rgb16);
+            let rgb16 = dyn_img.into_rgb16();
+            dyn_img = image::DynamicImage::ImageRgb16(rgb16);
         }
+    } else if !transparent {
+        let rgb8 = dyn_img.into_rgb8();
+        dyn_img = image::DynamicImage::ImageRgb8(rgb8);
     }
 
     match format {
         OutputFormat::Png => {
-            img.save_with_format(output_path, image::ImageFormat::Png)
+            dyn_img
+                .save_with_format(output_path, image::ImageFormat::Png)
                 .map_err(|e| VectomancyError::InvalidInput(format!("Image save error: {}", e)))?;
         }
         OutputFormat::Jpg => {
-            img.into_rgb8()
+            dyn_img
+                .into_rgb8()
                 .save_with_format(output_path, image::ImageFormat::Jpeg)
                 .map_err(|e| VectomancyError::InvalidInput(format!("Image save error: {}", e)))?;
         }
         OutputFormat::Webp => {
-            img.save_with_format(output_path, image::ImageFormat::WebP)
+            dyn_img
+                .save_with_format(output_path, image::ImageFormat::WebP)
                 .map_err(|e| VectomancyError::InvalidInput(format!("Image save error: {}", e)))?;
         }
         _ => {

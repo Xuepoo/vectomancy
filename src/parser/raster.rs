@@ -19,73 +19,21 @@ pub fn process_raster_image(
 
     debug!("Applying Sobel edge detection");
     let (width, height) = grayscale.dimensions();
+    let sobel16 = imageproc::gradients::sobel_gradients(&grayscale);
     let mut edge_image = image::GrayImage::new(width, height);
-    for y in 1..height - 1 {
-        for x in 1..width - 1 {
-            let p00 = grayscale.get_pixel(x - 1, y - 1).0[0] as f32;
-            let p10 = grayscale.get_pixel(x, y - 1).0[0] as f32;
-            let p20 = grayscale.get_pixel(x + 1, y - 1).0[0] as f32;
-            let p01 = grayscale.get_pixel(x - 1, y).0[0] as f32;
-            let p21 = grayscale.get_pixel(x + 1, y).0[0] as f32;
-            let p02 = grayscale.get_pixel(x - 1, y + 1).0[0] as f32;
-            let p12 = grayscale.get_pixel(x, y + 1).0[0] as f32;
-            let p22 = grayscale.get_pixel(x + 1, y + 1).0[0] as f32;
-
-            let gx = -p00 + p20 - 2.0 * p01 + 2.0 * p21 - p02 + p22;
-            let gy = -p00 - 2.0 * p10 - p20 + p02 + 2.0 * p12 + p22;
-
-            let mag = (gx * gx + gy * gy).sqrt();
-            let val = if mag > 255.0 { 255 } else { mag as u8 };
-            edge_image.put_pixel(x, y, Luma([val]));
-        }
+    for (x, y, pixel) in sobel16.enumerate_pixels() {
+        let val = if pixel.0[0] > 255 {
+            255
+        } else {
+            pixel.0[0] as u8
+        };
+        edge_image.put_pixel(x, y, Luma([val]));
     }
 
     // 2. Otsu Binarization
     debug!("Applying Otsu binarization");
-
-    let mut histogram = [0u32; 256];
-    for pixel in edge_image.pixels() {
-        histogram[pixel.0[0] as usize] += 1;
-    }
-
-    let total_pixels = width * height;
-    let mut sum = 0.0;
-    for (i, &count) in histogram.iter().enumerate() {
-        sum += i as f64 * count as f64;
-    }
-
-    let mut sum_b = 0.0;
-    let mut w_b = 0;
-    let mut w_f;
-
-    let mut var_max = 0.0;
-    let mut threshold = 0u8;
-
-    for (i, &count) in histogram.iter().enumerate() {
-        w_b += count;
-        if w_b == 0 {
-            continue;
-        }
-
-        w_f = total_pixels - w_b;
-        if w_f == 0 {
-            break;
-        }
-
-        sum_b += i as f64 * count as f64;
-
-        let m_b = sum_b / w_b as f64;
-        let m_f = (sum - sum_b) / w_f as f64;
-
-        let var_between = w_b as f64 * w_f as f64 * (m_b - m_f).powi(2);
-
-        if var_between > var_max {
-            var_max = var_between;
-            threshold = i as u8;
-        }
-    }
-
-    info!("Otsu calculated threshold: {}", threshold);
+    let threshold_val = imageproc::contrast::otsu_level(&edge_image);
+    info!("Otsu calculated threshold: {}", threshold_val);
 
     let padded_width = width as usize + 2;
     let padded_height = height as usize + 2;
@@ -93,7 +41,7 @@ pub fn process_raster_image(
 
     for (x, y, pixel) in edge_image.enumerate_pixels() {
         let Luma([luma]) = *pixel;
-        if luma > threshold {
+        if luma > threshold_val {
             grid[y as usize + 1][x as usize + 1] = true;
         }
     }

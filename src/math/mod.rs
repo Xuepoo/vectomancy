@@ -4,7 +4,12 @@ pub mod wgpu_math;
 use crate::error::VectomancyError;
 use crate::models::Point2D;
 use rustfft::{num_complex::Complex, FftPlanner};
+use std::cell::RefCell;
 use tracing::debug;
+
+thread_local! {
+    static FFT_PLANNER: RefCell<FftPlanner<f64>> = RefCell::new(FftPlanner::new());
+}
 
 fn perpendicular_distance(pt: Point2D, line_start: Point2D, line_end: Point2D) -> f64 {
     let dx = line_end.x - line_start.x;
@@ -54,41 +59,47 @@ pub fn simplify_rdp(points: &[Point2D], epsilon: f64) -> Vec<Point2D> {
     result
 }
 
+use kiddo::KdTree;
+
 pub fn solve_tsp_nearest_neighbor(points: Vec<Point2D>) -> Vec<Point2D> {
     if points.is_empty() {
         return Vec::new();
     }
 
     debug!("Solving TSP (Nearest Neighbor) for {} points", points.len());
-    let mut unvisited = points;
-    let mut ordered = Vec::with_capacity(unvisited.len());
+    let mut tree: KdTree<f64, 2> = KdTree::new();
+
+    for (i, p) in points.iter().enumerate() {
+        tree.add(&[p.x, p.y], i as u64);
+    }
+
+    let mut ordered = Vec::with_capacity(points.len());
 
     // Start with the first point
-    ordered.push(unvisited.remove(0));
+    let mut current_idx = 0;
+    let mut current_point = points[current_idx];
+    tree.remove(&[current_point.x, current_point.y], current_idx as u64);
+    ordered.push(current_point);
 
-    while !unvisited.is_empty() {
-        let last = ordered.last().unwrap();
+    for _ in 1..points.len() {
+        let nearest =
+            tree.nearest_one::<kiddo::SquaredEuclidean>(&[current_point.x, current_point.y]);
+        current_idx = nearest.item as usize;
+        current_point = points[current_idx];
 
-        let (best_idx, _) = unvisited
-            .iter()
-            .enumerate()
-            .min_by(|(_, a), (_, b)| {
-                let dist_a = (last.x - a.x).powi(2) + (last.y - a.y).powi(2);
-                let dist_b = (last.x - b.x).powi(2) + (last.y - b.y).powi(2);
-                dist_a
-                    .partial_cmp(&dist_b)
-                    .unwrap_or(std::cmp::Ordering::Equal)
-            })
-            .unwrap();
-
-        ordered.push(unvisited.remove(best_idx));
+        tree.remove(&[current_point.x, current_point.y], current_idx as u64);
+        ordered.push(current_point);
     }
 
     debug!("Applying 2-Opt optimization");
     let mut improvement = true;
     let n = ordered.len();
-    while improvement {
+    let max_iterations = if n > 5000 { 1 } else { 10 };
+    let mut iter_count = 0;
+
+    while improvement && iter_count < max_iterations {
         improvement = false;
+        iter_count += 1;
         for i in 0..n.saturating_sub(1) {
             for j in i + 2..n {
                 let d_i = ordered[i];
@@ -128,8 +139,7 @@ pub fn perform_fft(
     }
 
     debug!("Performing FFT. Terms: {}", terms);
-    let mut planner = FftPlanner::new();
-    let fft = planner.plan_fft_forward(points.len());
+    let fft = FFT_PLANNER.with(|planner| planner.borrow_mut().plan_fft_forward(points.len()));
 
     // Convert points to complex numbers
     let mut buffer: Vec<Complex<f64>> = points
@@ -208,28 +218,6 @@ pub fn chaikin_smooth(points: &[Point2D], iterations: usize) -> Vec<Point2D> {
     current
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_chaikin_smooth() {
-        let points = vec![
-            Point2D { x: 0.0, y: 0.0 },
-            Point2D { x: 10.0, y: 0.0 },
-            Point2D { x: 10.0, y: 10.0 },
-        ];
-        let smoothed = chaikin_smooth(&points, 1);
-        assert_eq!(smoothed.len(), 6);
-        assert_eq!(smoothed[0], Point2D { x: 0.0, y: 0.0 });
-        assert_eq!(smoothed[1], Point2D { x: 2.5, y: 0.0 });
-        assert_eq!(smoothed[2], Point2D { x: 7.5, y: 0.0 });
-        assert_eq!(smoothed[3], Point2D { x: 10.0, y: 2.5 });
-        assert_eq!(smoothed[4], Point2D { x: 10.0, y: 7.5 });
-        assert_eq!(smoothed[5], Point2D { x: 10.0, y: 10.0 });
-    }
-}
-
 pub fn perform_fft_batch(
     paths: &[&[Point2D]],
     terms: usize,
@@ -254,4 +242,26 @@ pub fn perform_fft_batch(
         all_results.push(perform_fft(points, terms, false)?);
     }
     Ok(all_results)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_chaikin_smooth() {
+        let points = vec![
+            Point2D { x: 0.0, y: 0.0 },
+            Point2D { x: 10.0, y: 0.0 },
+            Point2D { x: 10.0, y: 10.0 },
+        ];
+        let smoothed = chaikin_smooth(&points, 1);
+        assert_eq!(smoothed.len(), 6);
+        assert_eq!(smoothed[0], Point2D { x: 0.0, y: 0.0 });
+        assert_eq!(smoothed[1], Point2D { x: 2.5, y: 0.0 });
+        assert_eq!(smoothed[2], Point2D { x: 7.5, y: 0.0 });
+        assert_eq!(smoothed[3], Point2D { x: 10.0, y: 2.5 });
+        assert_eq!(smoothed[4], Point2D { x: 10.0, y: 7.5 });
+        assert_eq!(smoothed[5], Point2D { x: 10.0, y: 10.0 });
+    }
 }
