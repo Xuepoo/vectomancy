@@ -15,6 +15,7 @@ fn main() -> Result<(), VectomancyError> {
     let subscriber = FmtSubscriber::builder().with_max_level(log_level).finish();
     tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
 
+    let start_time = std::time::Instant::now();
     info!("Starting Vectomancy");
 
     let config = vectomancy::config::Config::load();
@@ -351,6 +352,9 @@ fn main() -> Result<(), VectomancyError> {
         info!("Saved output to {:?}", final_output);
     }
 
-    info!("Vectomancy batch execution completed successfully.");
+    info!(
+        "Vectomancy batch execution completed successfully in {:.2?}.",
+        start_time.elapsed()
+    );
     Ok(())
 }

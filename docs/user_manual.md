@@ -124,7 +124,29 @@ For full details on advanced global configurations, multi-file batch processing,
 **A:** No. Since version 1.0, we automatically inject anti-scanning directives (like `# pylint: disable=all` or `<!-- eslint-disable -->`) at the beginning of the generated scripts. Also, via Zlib compression, file sizes stay in the hundreds of KBs, which mainstream IDEs can open safely.
 
 **Q: Why does GeoGebra freeze when I import the file?**
+
 **A:** Math formula rendering software like GeoGebra is limited by internal XML tree parsing restrictions. If an image contains too much noise resulting in tens of thousands of equations, it will lag. We recommend increasing `--tolerance` (e.g., to 2.0 or 3.0) and specifying `--min-path-len` to filter out tiny noisy lines.
+
+## 8. Container & Docker Usage
+
+When using Vectomancy via Podman or Docker, be aware of the following:
+
+- **Missing Output Files**: Containers run in an isolated filesystem. To access host files, you must mount a volume. For example:
+  ```bash
+  podman run --rm -v $(pwd):/data localhost/vectomancy:2.0.2 run /data/input.png --output /data/output.py
+  ```
+- **XDG_RUNTIME_DIR Warning**: If you see `error: XDG_RUNTIME_DIR is invalid or not set in the environment`, it is a harmless warning from the underlying graphics libraries attempting to query a display server in a headless container. You can silence this by setting the environment variable:
+  ```bash
+  podman run -e XDG_RUNTIME_DIR=/tmp/runtime-root ...
+  ```
+- **GPU Acceleration**: By default, processing is done on the CPU. To enable `wgpu` hardware acceleration inside a container, pass your GPU to the container and append `--gpu` to the command:
+  ```bash
+  podman run --device nvidia.com/gpu=all ... localhost/vectomancy:2.0.2 run --gpu ...
+  ```
+- **Custom Configuration**: You can map your local config file to the container:
+  ```bash
+  podman run -v ~/.config/vectomancy:/root/.config/vectomancy ...
+  ```
 
 ---
 

@@ -19,6 +19,12 @@ pub fn process_raster_image(
 
     debug!("Applying Sobel edge detection");
     let (width, height) = grayscale.dimensions();
+    info!(
+        "Image loaded successfully. Dimensions: {}x{}, Color Mode: {}",
+        width,
+        height,
+        if color { "RGB" } else { "Grayscale" }
+    );
     let sobel16 = imageproc::gradients::sobel_gradients(&grayscale);
     let mut edge_image = image::GrayImage::new(width, height);
     for (x, y, pixel) in sobel16.enumerate_pixels() {
