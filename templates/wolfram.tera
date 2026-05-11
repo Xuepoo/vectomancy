@@ -67,4 +67,4 @@ plot = Graphics[{
 }];
 {% endif %}
 
-Export["output.png", plot];
+Export["{{ base_name }}.png", plot];

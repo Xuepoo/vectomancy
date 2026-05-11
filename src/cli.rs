@@ -94,6 +94,8 @@ pub enum OutputFormat {
     Geogebra,
     Wolfram,
     Kmplot,
+    Desmos,
+    Scratch,
     Png,
     Jpg,
     Webp,

@@ -305,6 +305,8 @@ fn main() -> Result<(), VectomancyError> {
             cli::OutputFormat::Geogebra => "ggb",
             cli::OutputFormat::Wolfram => "txt",
             cli::OutputFormat::Kmplot => "fkt",
+            cli::OutputFormat::Desmos => "html",
+            cli::OutputFormat::Scratch => "sb3",
         };
 
         let base_name = input_path.file_stem().unwrap().to_string_lossy();

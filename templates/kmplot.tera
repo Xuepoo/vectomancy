@@ -20,8 +20,9 @@
     <functions>
 {% if equations %}
 {% for path in equations %}
+{% set outer_idx = loop.index0 %}
 {% for eq in path.data %}
-        <function type="parametric" id="{{ loop.parent.index0 }}_{{ loop.index0 }}">
+        <function type="parametric" id="{{ outer_idx * 10000 + loop.index0 }}">
             <equation>
                 <x>{% for c in eq.x_poly %}{{ c }}{% if loop.index0 == 1 %}*t{% elif loop.index0 > 1 %}*t^{{ loop.index0 }}{% endif %}{% if not loop.last %} + {% endif %}{% endfor %}</x>
                 <y>{% for c in eq.y_poly %}{{ c }}{% if loop.index0 == 1 %}*t{% elif loop.index0 > 1 %}*t^{{ loop.index0 }}{% endif %}{% if not loop.last %} + {% endif %}{% endfor %}</y>

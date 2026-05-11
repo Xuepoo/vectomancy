@@ -1,4 +1,5 @@
 pub mod native;
+pub mod scratch;
 
 use crate::cli::OutputFormat;
 use crate::error::VectomancyError;
@@ -49,6 +50,10 @@ pub fn emit_file(
         fs::write(output_path, json_output)?;
         return Ok(());
     }
+    if let OutputFormat::Scratch = format {
+        info!("Emitting Scratch 3.0 project");
+        return scratch::emit_scratch(ast, output_path, original_dimensions);
+    }
 
     let template_name = match format {
         OutputFormat::Python => {
@@ -75,7 +80,15 @@ pub fn emit_file(
             tera.add_raw_template("kmplot", include_str!("../../templates/kmplot.tera"))?;
             "kmplot"
         }
-        OutputFormat::Json | OutputFormat::Png | OutputFormat::Jpg | OutputFormat::Webp => {
+        OutputFormat::Desmos => {
+            tera.add_raw_template("desmos", include_str!("../../templates/desmos.tera"))?;
+            "desmos"
+        }
+        OutputFormat::Scratch
+        | OutputFormat::Json
+        | OutputFormat::Png
+        | OutputFormat::Jpg
+        | OutputFormat::Webp => {
             unreachable!()
         }
     };
@@ -104,6 +117,12 @@ pub fn emit_file(
 
     context.insert("width", &original_dimensions.0);
     context.insert("height", &original_dimensions.1);
+
+    if let Some(file_stem) = output_path.file_stem() {
+        context.insert("base_name", &file_stem.to_string_lossy());
+    } else {
+        context.insert("base_name", "output");
+    }
 
     info!("Rendering template: {}", template_name);
     let rendered = tera.render(template_name, &context)?;
