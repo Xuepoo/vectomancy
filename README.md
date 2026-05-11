@@ -40,6 +40,15 @@ cd vectomancy/vectomancy
 cargo build --release
 ```
 
+Run via Container (Docker/Podman):
+
+```bash
+# Build the container image locally
+docker build -t vectomancy .
+# Mount current directory and run
+docker run --rm -v $(pwd):/data vectomancy run --output /data/output.json /data/input.svg
+```
+
 Precompiled binaries for Linux (Debian, Arch, RedHat, openSUSE, NixOS), Windows, and macOS are available in the [GitHub Releases](https://github.com/Xuepoo/vectomancy/releases).
 
 ## CLI Usage

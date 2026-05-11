@@ -4,7 +4,6 @@
 target/
 tests/
 docs/
-benches/
 *.md
 Dockerfile
 flake.nix

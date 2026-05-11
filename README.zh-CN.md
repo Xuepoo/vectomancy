@@ -40,6 +40,15 @@ cd vectomancy/vectomancy
 cargo build --release
 ```
 
+通过容器运行 (Docker/Podman)：
+
+```bash
+# 本地构建容器镜像
+docker build -t vectomancy .
+# 挂载当前目录并运行
+docker run --rm -v $(pwd):/data vectomancy run --output /data/output.json /data/input.svg
+```
+
 你也可以在 [GitHub Releases](https://github.com/Xuepoo/vectomancy/releases) 页面下载对应于 Linux (Debian, Arch, RedHat, openSUSE, NixOS 等), Windows, macOS 平台的预编译原生二进制文件。
 
 ## CLI 基础用法
