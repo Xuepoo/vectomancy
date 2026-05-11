@@ -7,6 +7,10 @@ pub struct Cli {
     /// Input file paths (.png, .jpg, .svg) or directories
     pub inputs: Vec<PathBuf>,
 
+    /// Path to a custom config file (.toml)
+    #[arg(long)]
+    pub config: Option<PathBuf>,
+
     /// Output file path or directory
     #[arg(short, long)]
     pub output: Option<PathBuf>,

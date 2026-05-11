@@ -18,7 +18,7 @@ fn main() -> Result<(), VectomancyError> {
     let start_time = std::time::Instant::now();
     info!("Starting Vectomancy");
 
-    let config = vectomancy::config::Config::load();
+    let config = vectomancy::config::Config::load(cli.config.clone());
     let use_gpu = cli.gpu || config.gpu.unwrap_or(false);
     if use_gpu {
         tracing::info!("GPU acceleration (wgpu) is enabled.");

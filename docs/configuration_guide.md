@@ -4,11 +4,12 @@ Vectomancy is designed with the **"Convention Over Configuration"** philosophy. 
 
 ## Configuration Hierarchy
 
-Vectomancy determines runtime parameters based on the following priority:
+Vectomancy determines runtime parameters based on the following priority (from highest to lowest):
 
-1. **CLI Arguments** (Highest Priority)
-2. **`config.toml` Settings** (Global User Preferences)
-3. **Internal Default Values** (Fallback)
+1. **CLI Arguments** (Highest Priority): Any arguments directly passed to the command line (e.g., `--mode spline`).
+2. **Explicit Config File**: If you pass a specific configuration file via `--config <PATH>`, those settings take precedence over standard defaults.
+3. **`config.toml` Settings**: Global preferences loaded from standard XDG base directories.
+4. **Internal Default Values** (Fallback)
 
 ## Global Configuration File (`config.toml`)
 
@@ -35,8 +36,22 @@ stroke_width = 1.5
 bit_depth = 16
 color_space = "sRGB"
 
-# Hardware Acceleration (Experimental, planned for next version)
+# Hardware Acceleration & Performance
+
 gpu_acceleration = false
+
+## Why is `--gpu` sometimes slower than CPU?
+
+You might notice that passing the `--gpu` flag (or setting `gpu = true` in your config) doesn't always make rendering faster. In fact, for many simple SVGs and low-resolution raster images, **CPU multithreading is significantly faster**.
+
+Why does this happen?
+
+1. **PCIe Bus Transfer Overhead**: The fundamental nature of Vector/Math rendering requires extracting a massive amount of mathematically connected vertices (nodes). Transferring these thousands of discrete geometry nodes across the PCI-Express bus to the GPU VRAM takes time.
+2. **WGPU Context Initialization**: Initializing the Vulkan/Metal/DX12 pipelines, compiling the shaders, and allocating GPU memory buffers inherently introduces a fixed 100ms - 300ms latency.
+3. **CPU vs. GPU Workloads**: GPUs excel at doing the *same* operation on massive grids of pixels in parallel. However, calculating Splines, tracing TSP paths, and simplifying graphs are highly *sequential* algebraic tasks. Vectomancy's CPU backend leverages `rayon` to distribute these calculations perfectly across high-performance CPU cores.
+
+**When should you use `--gpu`?**
+Enable GPU acceleration only when exporting the final mathematical AST directly to a very high-resolution native image format (`png` / `webp`) where the GPU can flex its hardware rasterization muscles for MSAA and pixel shading. For simply converting images into `.py` or `.ggb` scripts, stick to the default CPU processing.
 
 # Curve Fitting & Smoothing Defaults
 tolerance = 0.5

@@ -1,12 +1,12 @@
 name: "vectomancy"
 arch: "amd64"
 platform: "linux"
-version: "1.1.0"
+version: "2.0.2"
 section: "default"
 priority: "optional"
 maintainer: "vectomancy developers"
 description: "Vectomancy - Image to vector math CLI"
 license: "MIT"
 contents:
-  - src: ./vectomancy-linux-x86_64
+  - src: ./target/release/vectomancy
     dst: /usr/bin/vectomancy
