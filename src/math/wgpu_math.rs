@@ -181,7 +181,7 @@ async fn perform_fft_gpu_async(
     let bit_rev_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
         label: Some("Bit Reversal Pipeline"),
         layout: Some(&pipeline_layout),
-        module: &shader,
+        module: shader,
         entry_point: Some("bit_reversal"),
         compilation_options: Default::default(),
         cache: None,
@@ -190,7 +190,7 @@ async fn perform_fft_gpu_async(
     let butterfly_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
         label: Some("Butterfly Pipeline"),
         layout: Some(&pipeline_layout),
-        module: &shader,
+        module: shader,
         entry_point: Some("butterfly"),
         compilation_options: Default::default(),
         cache: None,
@@ -450,7 +450,7 @@ async fn perform_fft_batch_gpu_async(
     let bit_rev_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
         label: Some("Batch Bit Reversal Pipeline"),
         layout: Some(&pipeline_layout),
-        module: &shader,
+        module: shader,
         entry_point: Some("bit_reversal"),
         compilation_options: Default::default(),
         cache: None,
@@ -459,7 +459,7 @@ async fn perform_fft_batch_gpu_async(
     let butterfly_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
         label: Some("Batch Butterfly Pipeline"),
         layout: Some(&pipeline_layout),
-        module: &shader,
+        module: shader,
         entry_point: Some("butterfly"),
         compilation_options: Default::default(),
         cache: None,

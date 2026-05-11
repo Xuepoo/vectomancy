@@ -1,6 +1,7 @@
 use crate::error::VectomancyError;
 use crate::models::{ColoredPath, Point2D};
 use image::Luma;
+use rayon::prelude::*;
 use std::path::Path;
 use tracing::{debug, info};
 
@@ -114,42 +115,44 @@ pub fn process_raster_image(
 
     let rgb_image = if color { Some(img.to_rgb8()) } else { None };
 
-    let mut colored_paths = Vec::new();
-    for path in all_paths {
-        let color_rgb = if let Some(ref rgb) = rgb_image {
-            let mut r_sum = 0u64;
-            let mut g_sum = 0u64;
-            let mut b_sum = 0u64;
-            let mut count = 0u64;
-            for pt in &path {
-                let x = pt.x.round() as u32;
-                let y = pt.y.round() as u32;
-                if x < width && y < height {
-                    let pixel = rgb.get_pixel(x, y);
-                    r_sum += pixel[0] as u64;
-                    g_sum += pixel[1] as u64;
-                    b_sum += pixel[2] as u64;
-                    count += 1;
+    let colored_paths: Vec<_> = all_paths
+        .into_par_iter()
+        .map(|path| {
+            let color_rgb = if let Some(ref rgb) = rgb_image {
+                let mut r_sum = 0u64;
+                let mut g_sum = 0u64;
+                let mut b_sum = 0u64;
+                let mut count = 0u64;
+                for pt in &path {
+                    let x = pt.x.round() as u32;
+                    let y = pt.y.round() as u32;
+                    if x < width && y < height {
+                        let pixel = rgb.get_pixel(x, y);
+                        r_sum += pixel[0] as u64;
+                        g_sum += pixel[1] as u64;
+                        b_sum += pixel[2] as u64;
+                        count += 1;
+                    }
                 }
-            }
-            #[allow(clippy::manual_checked_ops)]
-            if count > 0 {
-                Some((
-                    (r_sum / count) as u8,
-                    (g_sum / count) as u8,
-                    (b_sum / count) as u8,
-                ))
+                #[allow(clippy::manual_checked_ops)]
+                if count > 0 {
+                    Some((
+                        (r_sum / count) as u8,
+                        (g_sum / count) as u8,
+                        (b_sum / count) as u8,
+                    ))
+                } else {
+                    None
+                }
             } else {
                 None
+            };
+            ColoredPath {
+                color_rgb,
+                data: path,
             }
-        } else {
-            None
-        };
-        colored_paths.push(ColoredPath {
-            color_rgb,
-            data: path,
-        });
-    }
+        })
+        .collect();
 
     Ok((colored_paths, (width, height)))
 }

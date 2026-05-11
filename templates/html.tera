@@ -10,7 +10,7 @@
     </style>
 </head>
 <body>
-    <canvas id="canvas" width="4000" height="4000"></canvas>
+    <canvas id="canvas" width="{{ width | default(value=4000) }}" height="{{ height | default(value=4000) }}"></canvas>
     <script>
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');

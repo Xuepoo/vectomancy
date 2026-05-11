@@ -41,15 +41,59 @@ vectomancy run assets/Tux.png --output Tux.ggb --format geogebra --mode spline -
 
 _(Note: For GeoGebra, it is recommended to increase the `--tolerance`, such as 2.0, to significantly reduce the total number of equations and ensure the software runs smoothly.)_
 
-## 3. Advanced Configuration Parameters
+## 3. Parameter Tuning Guide (How to Get the Best Results)
 
-You can use `vectomancy --help` to see all parameters. Common ones include:
+Vectomancy provides several parameters that significantly affect the visual quality, file size, and smoothness of the generated vector outputs. Since CPU and GPU backend outputs are visually identical (differing only in processing speed), tuning these parameters is the key to creating beautiful mathematical art.
 
-- `--format <FORMAT>`: Output file format. Options: `python`, `latex`, `html`, `json`, `geogebra`, `wolfram`, `kmplot`.
-- `--mode <MODE>`: Calculation mode. Options: `spline` (Bezier curve equations, recommended for exact displays), `fourier` (Fourier series single-stroke approximation).
-- `--chaikin-iters <N>`: The number of Chaikin smoothing iterations applied in Spline mode. Default is `0`. Higher values create smoother corners. Recommended settings are `1` or `2`.
-- `--tolerance <FLOAT>`: Ramer-Douglas-Peucker algorithm simplification tolerance. Larger values omit more vertices and equations. When rendering large images to mathematical software, `2.0` is recommended.
-- `--min-path-len <FLOAT>`: Ignores noise paths with a total length below this value. Increasing this value removes tiny speckles during the image conversion process.
+### 3.1 `min-path-len` (Minimum Path Length)
+
+- **Flag**: `--min-path-len`
+- **Default**: `5`
+- **What it does**: Filters out paths that have fewer points than this threshold.
+- **Effect when increased** (e.g., `10` - `20`): Removes small "dust" particles, compression artifacts, and tiny stray lines. Makes the final image cleaner and drastically reduces output file size. Highly recommended for noisy web images or complex backgrounds.
+- **Effect when decreased** (e.g., `2` - `5`): Retains maximum detail, including stippling, fine textures, and short strokes. Best for clean, high-contrast logos.
+
+### 3.2 `tolerance` (RDP Simplification Tolerance)
+
+- **Flag**: `--tolerance`
+- **Default**: `0.5`
+- **What it does**: Controls how strictly the Ramer-Douglas-Peucker (RDP) algorithm simplifies paths before generating equations.
+- **Effect when increased** (e.g., `1.0` - `2.0`): Aggressively simplifies paths by removing points that don't deviate much from a straight line. Results in much smaller files and a more angular, low-poly aesthetic. Recommended for rendering in math software like GeoGebra to prevent lag.
+- **Effect when decreased** (e.g., `0.1` - `0.3`): Keeps almost all points, hugging the original curve precisely. Generates larger file sizes and is better for highly detailed curves where exact shapes matter.
+
+### 3.3 `chaikin-iters` (Chaikin Smoothing Iterations)
+
+- **Flag**: `-c`, `--chaikin-iters`
+- **Default**: `0` (Off)
+- **What it does**: Applies Chaikin's corner-cutting algorithm to smooth out jagged or angular paths. Only active when using `--mode chaikin`.
+- **Effect when increased** (e.g., `2` - `3`): Produces very smooth, flowing, organic curves. Highly recommended for character art, anime lineart, and organic shapes to remove any "digital pixel jaggedness".
+- **Effect when decreased/off** (`0` or `1`): Retains sharp corners. Essential for geometric shapes, mechanical drawings, and exact logos.
+
+### 3.4 `mode` (Processing Algorithm)
+
+- **Flag**: `-m`, `--mode`
+- **Options**: `spline`, `fourier`, `chaikin`
+- **`spline`**: Exact point-to-point drawing using Bezier/linear formulas. Great for precision.
+- **`chaikin`**: Like `spline` but strictly applies smoothing. Produces the most visually pleasing, hand-drawn look for illustrations.
+- **`fourier`**: Attempts to draw the entire image with a single continuous line using Fourier Epicycles (TSP approximation). Creates a unique, chaotic "single-wire" aesthetic but generates massive files and equations.
+
+### 3.5 `terms` (Fourier Terms)
+
+- **Flag**: `-n`, `--terms`
+- **Default**: `1000`
+- **What it does**: Controls the mathematical precision of the `fourier` mode.
+- **Effect when increased**: The single continuous line more tightly wraps around the original image contours, preserving more detail but drastically increasing mathematical complexity.
+- **Effect when decreased**: The resulting drawing becomes very loose, loopy, and abstract.
+
+### 3.6 How to Get Vibrant Colors (Dealing with Anti-aliasing)
+
+When extracting colors, the engine averages the pixel colors under each generated path. If your path captures too much white background or anti-aliased gray pixels (especially common when smoothing is extreme or paths are too fine), the colors will appear "washed out" or desaturated.
+
+To achieve **vibrant, highly saturated colors**, use this recommended combination:
+
+- **`--stroke-width 1.5` or `2.0`**: Thicker lines resist the fading effect of the renderer's anti-aliasing.
+- **`-c 2` (Moderate Smoothing)**: While `3` is the smoothest, it can push paths off the original bright pixels. A value of `2` keeps the path tightly hugging the original vibrant colors while still eliminating jagged edges.
+- **`--min-path-len 5` and `--tolerance 0.3`**: Filters out microscopic dust/noise that usually averages to gray, leaving only the primary colorful structures.
 
 ## 4. Configuration File & Defaults
 

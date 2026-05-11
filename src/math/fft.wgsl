@@ -18,33 +18,37 @@ fn complex_mul(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
     return vec2<f32>(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);
 }
 
-@compute @workgroup_size(256)
+@compute @workgroup_size(256, 1, 1)
 fn bit_reversal(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let i = global_id.x;
+    let path_idx = global_id.y;
     if (i >= params.n) { return; }
 
+    let offset = path_idx * params.n;
     let shift = 32u - params.log2_n;
     let rev_i = reverseBits(i) >> shift;
 
     if (i < rev_i) {
-        let temp = buffer.data[i];
-        buffer.data[i] = buffer.data[rev_i];
-        buffer.data[rev_i] = temp;
+        let temp = buffer.data[offset + i];
+        buffer.data[offset + i] = buffer.data[offset + rev_i];
+        buffer.data[offset + rev_i] = temp;
     }
 }
 
-@compute @workgroup_size(256)
+@compute @workgroup_size(256, 1, 1)
 fn butterfly(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let k = global_id.x;
+    let path_idx = global_id.y;
     let half_step = 1u << params.stage;
     let step = half_step << 1u;
 
     if (k >= params.n / 2u) { return; }
 
+    let offset = path_idx * params.n;
     let group = k / half_step;
     let index = k % half_step;
     
-    let even_idx = group * step + index;
+    let even_idx = offset + group * step + index;
     let odd_idx = even_idx + half_step;
 
     let angle = -params.direction * 2.0 * PI * f32(index) / f32(step);

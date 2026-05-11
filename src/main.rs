@@ -126,9 +126,7 @@ fn main() -> Result<(), VectomancyError> {
                             math::perform_fft_batch(&path_refs, cli.terms, use_gpu)?;
 
                         let mut strokes = Vec::new();
-                        for (terms, color) in
-                            batch_results.into_iter().zip(valid_colors.into_iter())
-                        {
+                        for (terms, color) in batch_results.into_iter().zip(valid_colors) {
                             strokes.push(models::ColoredPath {
                                 color_rgb: color,
                                 data: terms,
@@ -224,9 +222,7 @@ fn main() -> Result<(), VectomancyError> {
                             math::perform_fft_batch(&path_refs, cli.terms, use_gpu)?;
 
                         let mut strokes = Vec::new();
-                        for (terms, color) in
-                            batch_results.into_iter().zip(valid_colors.into_iter())
-                        {
+                        for (terms, color) in batch_results.into_iter().zip(valid_colors) {
                             strokes.push(models::ColoredPath {
                                 color_rgb: color,
                                 data: terms,

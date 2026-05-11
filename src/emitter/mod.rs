@@ -32,6 +32,7 @@ pub fn emit_file(
     ast: &MathExpressionAST,
     format: &OutputFormat,
     output_path: &Path,
+    original_dimensions: (u32, u32),
 ) -> Result<(), VectomancyError> {
     info!("Initializing Tera template engine");
 
@@ -100,6 +101,9 @@ pub fn emit_file(
             context.insert("paths", paths);
         }
     }
+
+    context.insert("width", &original_dimensions.0);
+    context.insert("height", &original_dimensions.1);
 
     info!("Rendering template: {}", template_name);
     let rendered = tera.render(template_name, &context)?;

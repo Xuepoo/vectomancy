@@ -229,3 +229,29 @@ mod tests {
         assert_eq!(smoothed[5], Point2D { x: 10.0, y: 10.0 });
     }
 }
+
+pub fn perform_fft_batch(
+    paths: &[&[Point2D]],
+    terms: usize,
+    use_gpu: bool,
+) -> Result<Vec<Vec<crate::models::FourierTerm>>, VectomancyError> {
+    if use_gpu {
+        match wgpu_math::perform_fft_batch_gpu(paths, terms) {
+            Ok(res) => return Ok(res),
+            Err(e) => {
+                tracing::warn!("GPU Batch FFT failed: {}. Falling back to CPU.", e);
+            }
+        }
+    }
+
+    debug!(
+        "Performing Batch FFT on CPU. Paths: {}, Terms: {}",
+        paths.len(),
+        terms
+    );
+    let mut all_results = Vec::with_capacity(paths.len());
+    for points in paths {
+        all_results.push(perform_fft(points, terms, false)?);
+    }
+    Ok(all_results)
+}

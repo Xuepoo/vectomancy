@@ -17,7 +17,11 @@ def _load_data():
         sys.exit(1)
 
 def render():
-    plt.figure(figsize=(8, 8))
+    width = {{ width | default(value=800) }}
+    height = {{ height | default(value=800) }}
+    fig_w = 8
+    fig_h = 8 * (height / width)
+    plt.figure(figsize=(fig_w, fig_h))
     
     {% if is_fourier %}
     t = np.linspace(0, 2 * np.pi, 10000)
