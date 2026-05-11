@@ -52,27 +52,27 @@ pub fn emit_file(
 
     let template_name = match format {
         OutputFormat::Python => {
-            tera.add_template_file("templates/python.tera", Some("python"))?;
+            tera.add_raw_template("python", include_str!("../../templates/python.tera"))?;
             "python"
         }
         OutputFormat::Latex => {
-            tera.add_template_file("templates/latex.tera", Some("latex"))?;
+            tera.add_raw_template("latex", include_str!("../../templates/latex.tera"))?;
             "latex"
         }
         OutputFormat::Html => {
-            tera.add_template_file("templates/html.tera", Some("html"))?;
+            tera.add_raw_template("html", include_str!("../../templates/html.tera"))?;
             "html"
         }
         OutputFormat::Geogebra => {
-            tera.add_template_file("templates/geogebra.tera", Some("geogebra"))?;
+            tera.add_raw_template("geogebra", include_str!("../../templates/geogebra.tera"))?;
             "geogebra"
         }
         OutputFormat::Wolfram => {
-            tera.add_template_file("templates/wolfram.tera", Some("wolfram"))?;
+            tera.add_raw_template("wolfram", include_str!("../../templates/wolfram.tera"))?;
             "wolfram"
         }
         OutputFormat::Kmplot => {
-            tera.add_template_file("templates/kmplot.tera", Some("kmplot"))?;
+            tera.add_raw_template("kmplot", include_str!("../../templates/kmplot.tera"))?;
             "kmplot"
         }
         OutputFormat::Json | OutputFormat::Png | OutputFormat::Jpg | OutputFormat::Webp => {

@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY Cargo.toml Cargo.lock ./
 COPY src ./src
 COPY benches ./benches
+COPY templates ./templates
 
 # Use BuildKit cache mounts to prevent re-downloading and re-compiling crates
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
