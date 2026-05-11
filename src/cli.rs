@@ -70,6 +70,14 @@ pub struct Cli {
     /// Enable GPU acceleration (wgpu) - Defaults to CPU
     #[arg(long)]
     pub gpu: bool,
+
+    /// Number of threads for CPU multithreading (default: 1)
+    #[arg(long)]
+    pub threads: Option<usize>,
+
+    /// GPU Power Preference (HighPerformance, LowPower, None)
+    #[arg(long)]
+    pub gpu_power: Option<String>,
 }
 
 #[derive(ValueEnum, Clone, Debug, serde::Deserialize)]

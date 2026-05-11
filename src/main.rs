@@ -1,4 +1,5 @@
 use clap::Parser;
+use rayon::prelude::*;
 use tracing::{info, Level};
 use tracing_subscriber::FmtSubscriber;
 use vectomancy::cli::Cli;
@@ -20,6 +21,40 @@ fn main() -> Result<(), VectomancyError> {
     let use_gpu = cli.gpu || config.gpu.unwrap_or(false);
     if use_gpu {
         tracing::info!("GPU acceleration (wgpu) is enabled.");
+
+        let power_pref_str = cli
+            .gpu_power
+            .clone()
+            .or_else(|| config.gpu_power.clone())
+            .unwrap_or_else(|| "HighPerformance".to_string());
+
+        let power_pref = match power_pref_str.to_lowercase().as_str() {
+            "lowpower" => wgpu::PowerPreference::LowPower,
+            "none" => wgpu::PowerPreference::None,
+            _ => wgpu::PowerPreference::HighPerformance,
+        };
+        vectomancy::math::wgpu_math::init_context(power_pref);
+    }
+
+    let requested_threads = cli.threads.or(config.threads).unwrap_or(1);
+    let max_threads = std::thread::available_parallelism()
+        .map(|n| n.get())
+        .unwrap_or(1);
+    let num_threads = if requested_threads == 0 {
+        max_threads
+    } else {
+        requested_threads.clamp(1, max_threads)
+    };
+
+    if let Err(e) = rayon::ThreadPoolBuilder::new()
+        .num_threads(num_threads)
+        .build_global()
+    {
+        tracing::warn!("Failed to initialize rayon thread pool: {}", e);
+    } else if num_threads > 1 {
+        tracing::info!("CPU Multithreading enabled with {} threads.", num_threads);
+    } else {
+        tracing::info!("Running in single-threaded CPU mode.");
     }
 
     let mut flattened_inputs = Vec::new();
@@ -72,59 +107,78 @@ fn main() -> Result<(), VectomancyError> {
                 let mode = cli.mode.clone().unwrap_or(cli::Mode::Fourier);
                 let ast = match mode {
                     cli::Mode::Fourier => {
-                        let mut strokes = Vec::new();
+                        let mut valid_paths = Vec::new();
+                        let mut valid_colors = Vec::new();
                         for path in paths {
                             if path.data.len() < min_path_len {
                                 continue;
                             }
                             let reduced = math::simplify_rdp(&path.data, tolerance);
                             if reduced.len() > 3 {
-                                let terms = math::perform_fft(&reduced, cli.terms, use_gpu)?;
-                                strokes.push(models::ColoredPath {
-                                    color_rgb: path.color_rgb,
-                                    data: terms,
-                                });
+                                valid_paths.push(reduced);
+                                valid_colors.push(path.color_rgb);
                             }
+                        }
+
+                        let path_refs: Vec<&[models::Point2D]> =
+                            valid_paths.iter().map(|p| p.as_slice()).collect();
+                        let batch_results =
+                            math::perform_fft_batch(&path_refs, cli.terms, use_gpu)?;
+
+                        let mut strokes = Vec::new();
+                        for (terms, color) in
+                            batch_results.into_iter().zip(valid_colors.into_iter())
+                        {
+                            strokes.push(models::ColoredPath {
+                                color_rgb: color,
+                                data: terms,
+                            });
                         }
                         MathExpressionAST::Fourier { strokes }
                     }
                     cli::Mode::Spline => {
-                        let mut all_equations = Vec::new();
-                        for path in paths {
-                            if path.data.len() < min_path_len {
-                                continue;
-                            }
-                            let reduced = math::simplify_rdp(&path.data, tolerance);
-                            if reduced.len() > 2 {
-                                let segments = math::spline::fit_cubic_bezier(&reduced);
-                                let equations = math::spline::build_splines(&segments);
-                                all_equations.push(models::ColoredPath {
-                                    color_rgb: path.color_rgb,
-                                    data: equations,
-                                });
-                            }
-                        }
+                        let all_equations: Vec<_> = paths
+                            .into_par_iter()
+                            .filter_map(|path| {
+                                if path.data.len() < min_path_len {
+                                    return None;
+                                }
+                                let reduced = math::simplify_rdp(&path.data, tolerance);
+                                if reduced.len() > 2 {
+                                    let segments = math::spline::fit_cubic_bezier(&reduced);
+                                    let equations = math::spline::build_splines(&segments);
+                                    Some(models::ColoredPath {
+                                        color_rgb: path.color_rgb,
+                                        data: equations,
+                                    })
+                                } else {
+                                    None
+                                }
+                            })
+                            .collect();
                         MathExpressionAST::Spline {
                             equations: all_equations,
                         }
                     }
                     cli::Mode::Chaikin => {
-                        let mut smoothed_paths = Vec::new();
-                        for path in paths {
-                            if path.data.len() < min_path_len {
-                                continue;
-                            }
-                            let reduced = math::simplify_rdp(&path.data, tolerance);
-                            let smoothed = if iters > 0 {
-                                math::chaikin_smooth(&reduced, iters)
-                            } else {
-                                reduced
-                            };
-                            smoothed_paths.push(models::ColoredPath {
-                                color_rgb: path.color_rgb,
-                                data: smoothed,
-                            });
-                        }
+                        let smoothed_paths: Vec<_> = paths
+                            .into_par_iter()
+                            .filter_map(|path| {
+                                if path.data.len() < min_path_len {
+                                    return None;
+                                }
+                                let reduced = math::simplify_rdp(&path.data, tolerance);
+                                let smoothed = if iters > 0 {
+                                    math::chaikin_smooth(&reduced, iters)
+                                } else {
+                                    reduced
+                                };
+                                Some(models::ColoredPath {
+                                    color_rgb: path.color_rgb,
+                                    data: smoothed,
+                                })
+                            })
+                            .collect();
                         MathExpressionAST::Polyline {
                             paths: smoothed_paths,
                         }
@@ -140,27 +194,41 @@ fn main() -> Result<(), VectomancyError> {
                 let mode = cli.mode.clone().unwrap_or(cli::Mode::Spline);
                 let ast = match mode {
                     cli::Mode::Spline => {
-                        let mut all_equations = Vec::new();
-                        for seg in segs {
-                            let equations = math::spline::build_splines(&seg.data);
-                            all_equations.push(models::ColoredPath {
-                                color_rgb: seg.color_rgb,
-                                data: equations,
-                            });
-                        }
+                        let all_equations: Vec<_> = segs
+                            .into_par_iter()
+                            .map(|seg| {
+                                let equations = math::spline::build_splines(&seg.data);
+                                models::ColoredPath {
+                                    color_rgb: seg.color_rgb,
+                                    data: equations,
+                                }
+                            })
+                            .collect();
                         MathExpressionAST::Spline {
                             equations: all_equations,
                         }
                     }
                     cli::Mode::Fourier => {
-                        let mut strokes = Vec::new();
+                        let mut valid_paths = Vec::new();
+                        let mut valid_colors = Vec::new();
                         for seg in segs {
                             let pts = math::spline::sample_segments(&seg.data, 100);
-                            info!("Sampled {} points from segments.", pts.len());
                             let ordered_points = math::solve_tsp_nearest_neighbor(pts);
-                            let terms = math::perform_fft(&ordered_points, cli.terms, use_gpu)?;
+                            valid_paths.push(ordered_points);
+                            valid_colors.push(seg.color_rgb);
+                        }
+
+                        let path_refs: Vec<&[models::Point2D]> =
+                            valid_paths.iter().map(|p| p.as_slice()).collect();
+                        let batch_results =
+                            math::perform_fft_batch(&path_refs, cli.terms, use_gpu)?;
+
+                        let mut strokes = Vec::new();
+                        for (terms, color) in
+                            batch_results.into_iter().zip(valid_colors.into_iter())
+                        {
                             strokes.push(models::ColoredPath {
-                                color_rgb: seg.color_rgb,
+                                color_rgb: color,
                                 data: terms,
                             });
                         }
@@ -168,21 +236,22 @@ fn main() -> Result<(), VectomancyError> {
                     }
                     cli::Mode::Chaikin => {
                         let iters = cli.chaikin_iters.or(config.chaikin_iters).unwrap_or(0);
-                        let mut paths = Vec::new();
-                        for seg in segs {
-                            let pts = math::spline::sample_segments(&seg.data, 100);
-                            info!("Sampled {} points from segments.", pts.len());
-                            let ordered_points = math::solve_tsp_nearest_neighbor(pts);
-                            let smoothed = if iters > 0 {
-                                math::chaikin_smooth(&ordered_points, iters)
-                            } else {
-                                ordered_points
-                            };
-                            paths.push(models::ColoredPath {
-                                color_rgb: seg.color_rgb,
-                                data: smoothed,
-                            });
-                        }
+                        let paths: Vec<_> = segs
+                            .into_par_iter()
+                            .map(|seg| {
+                                let pts = math::spline::sample_segments(&seg.data, 100);
+                                let ordered_points = math::solve_tsp_nearest_neighbor(pts);
+                                let smoothed = if iters > 0 {
+                                    math::chaikin_smooth(&ordered_points, iters)
+                                } else {
+                                    ordered_points
+                                };
+                                models::ColoredPath {
+                                    color_rgb: seg.color_rgb,
+                                    data: smoothed,
+                                }
+                            })
+                            .collect();
                         MathExpressionAST::Polyline { paths }
                     }
                 };
@@ -280,7 +349,7 @@ fn main() -> Result<(), VectomancyError> {
                 )?;
             }
             _ => {
-                emitter::emit_file(&ast, format, &final_output)?;
+                emitter::emit_file(&ast, format, &final_output, original_dimensions)?;
             }
         }
         info!("Saved output to {:?}", final_output);

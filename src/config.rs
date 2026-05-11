@@ -19,6 +19,8 @@ pub struct Config {
     pub color_space: Option<String>,
     pub gpu: Option<bool>,
     pub bg_transparent: Option<bool>,
+    pub threads: Option<usize>,
+    pub gpu_power: Option<String>,
 }
 
 impl Config {
