@@ -86,7 +86,12 @@ fn main() -> Result<(), VectomancyError> {
 
     for input_path in flattened_inputs.iter() {
         info!("Running with input: {:?}", input_path);
-        let output = parser::parse_file(input_path, cli.color)?;
+        let color = if cli.color {
+            true
+        } else {
+            config.color.unwrap_or(false)
+        };
+        let output = parser::parse_file(input_path, color)?;
 
         let (ast, original_dimensions) = match output {
             models::ParserOutput::Paths {
@@ -105,7 +110,11 @@ fn main() -> Result<(), VectomancyError> {
                 } else {
                     config.min_path_len.unwrap_or(5)
                 };
-                let mode = cli.mode.clone().unwrap_or(cli::Mode::Fourier);
+                let mode = cli
+                    .mode
+                    .clone()
+                    .or(config.mode.clone())
+                    .unwrap_or(cli::Mode::Spline);
                 let ast = match mode {
                     cli::Mode::Fourier => {
                         let mut valid_paths = Vec::new();
@@ -123,8 +132,12 @@ fn main() -> Result<(), VectomancyError> {
 
                         let path_refs: Vec<&[models::Point2D]> =
                             valid_paths.iter().map(|p| p.as_slice()).collect();
-                        let batch_results =
-                            math::perform_fft_batch(&path_refs, cli.terms, use_gpu)?;
+                        let terms = if cli.terms != 1000 {
+                            cli.terms
+                        } else {
+                            config.terms.unwrap_or(1000)
+                        };
+                        let batch_results = math::perform_fft_batch(&path_refs, terms, use_gpu)?;
 
                         let mut strokes = Vec::new();
                         for (terms, color) in batch_results.into_iter().zip(valid_colors) {
@@ -190,7 +203,11 @@ fn main() -> Result<(), VectomancyError> {
                 original_dimensions,
             } => {
                 info!("Successfully extracted {} segments.", segs.len());
-                let mode = cli.mode.clone().unwrap_or(cli::Mode::Spline);
+                let mode = cli
+                    .mode
+                    .clone()
+                    .or(config.mode.clone())
+                    .unwrap_or(cli::Mode::Spline);
                 let ast = match mode {
                     cli::Mode::Spline => {
                         let all_equations: Vec<_> = segs
@@ -219,8 +236,12 @@ fn main() -> Result<(), VectomancyError> {
 
                         let path_refs: Vec<&[models::Point2D]> =
                             valid_paths.iter().map(|p| p.as_slice()).collect();
-                        let batch_results =
-                            math::perform_fft_batch(&path_refs, cli.terms, use_gpu)?;
+                        let terms = if cli.terms != 1000 {
+                            cli.terms
+                        } else {
+                            config.terms.unwrap_or(1000)
+                        };
+                        let batch_results = math::perform_fft_batch(&path_refs, terms, use_gpu)?;
 
                         let mut strokes = Vec::new();
                         for (terms, color) in batch_results.into_iter().zip(valid_colors) {
