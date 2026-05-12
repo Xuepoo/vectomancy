@@ -1,6 +1,6 @@
 [package]
 name = "vectomancy"
-version = "3.0.0"
+version = "4.0.0"
 edition = "2021"
 exclude = [
     "assets/",
@@ -13,6 +13,7 @@ exclude = [
 
 [dependencies]
 clap = { version = "4.4", features = ["derive"] }
+clap_complete = "4.4"
 env_logger = "0.11"
 log = "0.4"
 directories = "5.0"

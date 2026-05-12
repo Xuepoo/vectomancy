@@ -41,17 +41,13 @@ The `mode` parameter defines which mathematical algorithm Vectomancy uses to pro
 
 The `format` parameter determines the output platform and how the rendering instructions are serialized.
 
-| Format              | Output Type | Description                                                                                                    |
-| ------------------- | ----------- | -------------------------------------------------------------------------------------------------------------- |
-| **Image (Default)** | `.png`      | Native fast rendering. Rasterizes the calculated math data directly into an image using the internal renderer. |
-| **Python**          | `.py`       | Generates a Python script using `numpy` and `matplotlib` to render the graphic mathematically.                 |
-| **Desmos**          | `.html`     | Generates a local HTML file with an embedded Desmos Graphing API drawing the mathematical equations.           |
-| **GeoGebra**        | `.html`     | Generates a local HTML file utilizing GeoGebra's Javascript injection to render parametric equations.          |
-| **Scratch**         | `.sb3`      | Packages a Scratch 3.0 project file that utilizes the Scratch "Pen" extension to animate the line drawing.     |
-| **Kmplot**          | `.fkt`      | Outputs a raw XML structure compliant with the Kmplot utility.                                                 |
-| **Latex**           | `.tex`      | Generates a TeX document utilizing PGFPlots/TikZ for high-quality mathematical PDF typesetting.                |
-| **Wolfram**         | `.wl`       | Outputs Mathematica compatible ParametricPlot instructions.                                                    |
-| **JSON**            | `.json`     | Raw output of the parsed Vectomancy Math Abstract Syntax Tree (AST).                                           |
+| Format              | Output Type             | Description                                                                                                    |
+| ------------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **Image (Default)** | `.png`, `.jpg`, `.webp` | Native fast rendering. Rasterizes the calculated math data directly into an image using the internal renderer. |
+| **Python**          | `.py`                   | Generates a Python script using `numpy` and `matplotlib` to render the graphic mathematically.                 |
+| **Desmos**          | `.html`                 | Generates a local HTML file with an embedded Desmos Graphing API drawing the mathematical equations.           |
+| **HTML**            | `.html`                 | Generates a local HTML file rendering parametric equations via Canvas API.                                     |
+| **JSON**            | `.json`                 | Raw output of the parsed Vectomancy Math Abstract Syntax Tree (AST).                                           |
 
 ### 3. Math Engine Parameters
 
@@ -60,9 +56,9 @@ These settings allow you to fine-tune the mathematical transformations applied t
 - **`terms`** (`usize`, Default: `1000`)
   - _CLI Equivalent:_ `-n, --terms`
   - _Description:_ Specifies the number of frequency terms used when running in **Fourier mode**. Higher values yield higher accuracy but slow down calculation and target rendering performance.
-- **`tolerance`** (`f64`, Default: `0.5`)
-  - _CLI Equivalent:_ `--tolerance`
-  - _Description:_ The epsilon factor used in the Ramer-Douglas-Peucker (RDP) algorithm. A higher tolerance aggressively simplifies paths (reducing points), leading to faster outputs at the cost of shape accuracy.
+- **`detail`** (`u8`, Default: `50`)
+  - _CLI Equivalent:_ `--detail`
+  - _Description:_ A percentage-based parameter (1-100) that controls the amount of retained detail in curves (mapping internally to RDP algorithm tolerance). A lower detail aggressively simplifies paths (reducing equations), leading to faster rendering outputs in platforms like Desmos at the cost of shape accuracy.
 - **`chaikin_iters`** (`usize`, Default: `None`)
   - _CLI Equivalent:_ `-c, --chaikin-iters`
   - _Description:_ Used specifically for `mode = "chaikin"`. Determines the recursive depth of the corner-cutting algorithm. More iterations result in smoother curves.

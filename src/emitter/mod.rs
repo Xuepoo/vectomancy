@@ -1,5 +1,4 @@
 pub mod native;
-pub mod scratch;
 
 use crate::cli::OutputFormat;
 use crate::error::VectomancyError;
@@ -50,45 +49,21 @@ pub fn emit_file(
         fs::write(output_path, json_output)?;
         return Ok(());
     }
-    if let OutputFormat::Scratch = format {
-        info!("Emitting Scratch 3.0 project");
-        return scratch::emit_scratch(ast, output_path, original_dimensions);
-    }
 
     let template_name = match format {
         OutputFormat::Python => {
             tera.add_raw_template("python", include_str!("../../templates/python.tera"))?;
             "python"
         }
-        OutputFormat::Latex => {
-            tera.add_raw_template("latex", include_str!("../../templates/latex.tera"))?;
-            "latex"
-        }
         OutputFormat::Html => {
             tera.add_raw_template("html", include_str!("../../templates/html.tera"))?;
             "html"
-        }
-        OutputFormat::Geogebra => {
-            tera.add_raw_template("geogebra", include_str!("../../templates/geogebra.tera"))?;
-            "geogebra"
-        }
-        OutputFormat::Wolfram => {
-            tera.add_raw_template("wolfram", include_str!("../../templates/wolfram.tera"))?;
-            "wolfram"
-        }
-        OutputFormat::Kmplot => {
-            tera.add_raw_template("kmplot", include_str!("../../templates/kmplot.tera"))?;
-            "kmplot"
         }
         OutputFormat::Desmos => {
             tera.add_raw_template("desmos", include_str!("../../templates/desmos.tera"))?;
             "desmos"
         }
-        OutputFormat::Scratch
-        | OutputFormat::Json
-        | OutputFormat::Png
-        | OutputFormat::Jpg
-        | OutputFormat::Webp => {
+        OutputFormat::Json | OutputFormat::Png | OutputFormat::Jpg | OutputFormat::Webp => {
             unreachable!()
         }
     };
@@ -128,20 +103,7 @@ pub fn emit_file(
     let rendered = tera.render(template_name, &context)?;
 
     info!("Writing output to {:?}", output_path);
-    if let OutputFormat::Geogebra = format {
-        let file = std::fs::File::create(output_path)?;
-        let mut zip = zip::ZipWriter::new(file);
-        let options = zip::write::SimpleFileOptions::default()
-            .compression_method(zip::CompressionMethod::Deflated);
-        zip.start_file("geogebra.xml", options)
-            .map_err(|e| VectomancyError::InvalidInput(format!("Zip error: {}", e)))?;
-        zip.write_all(rendered.as_bytes())
-            .map_err(|e| VectomancyError::InvalidInput(format!("Zip write error: {}", e)))?;
-        zip.finish()
-            .map_err(|e| VectomancyError::InvalidInput(format!("Zip finish error: {}", e)))?;
-    } else {
-        fs::write(output_path, rendered)?;
-    }
+    fs::write(output_path, rendered)?;
 
     Ok(())
 }

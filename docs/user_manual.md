@@ -4,12 +4,12 @@ Welcome to **Vectomancy**! Vectomancy is a high-performance command-line image c
 
 ## 1. Core Features
 
-- **Multi-format Mathematical Equation Export**: Supports Python (Matplotlib), LaTeX (TikZ), Wolfram, GeoGebra (`.ggb`), Kmplot (`.fkt`), HTML5 Canvas, and native JSON.
+- **Multi-format Mathematical Equation Export**: Supports Python (Matplotlib), HTML5 Canvas, Desmos (`.html`), JSON, WebP, JPEG, and PNG.
 - **AST Size Optimization**: Uses `Zlib + Base64` encoding to store massive floating-point matrices. This keeps the generated files compact and prevents editors and rendering engines from freezing or crashing when parsing large Abstract Syntax Trees (AST).
 - **Controllable Smoothness and Rendering Modes**:
   - `--mode spline`: Reconstructs shapes with precise Bezier curve interpolation, combined with the Chaikin algorithm for smoothing to eliminate jagged, staircase-like edges.
   - `--mode fourier`: Utilizes Fourier series (based on TSP path planning) to approximate a continuous, single-stroke curve of the image.
-- **Lightweight & Tolerance Configuration**: For pure math-parsing software like GeoGebra/Kmplot, `--tolerance` (RDP algorithm tolerance) and `--min-path-len` parameters are provided. This filters out noise paths and drastically reduces the number of generated equations without excessive distortion, effectively avoiding rendering lag.
+- **Detail Level Configuration**: For math-parsing web renderers like Desmos, the `--detail` parameter (1-100) controls the level of simplification. This filters out noise paths and reduces the number of generated equations without excessive distortion, effectively avoiding rendering lag.
 
 ## 2. Quick Start
 
@@ -33,13 +33,13 @@ If you have an image (e.g., `assets/Tux.png`), you can convert it to a Python sc
 vectomancy run assets/Tux.png --output Tux.py --format python --mode spline
 ```
 
-If you want to double-click and directly open the rendered equations in mathematical software (like GeoGebra), you can run:
+If you want to view the mathematical rendering directly in your browser using Desmos, you can run:
 
 ```bash
-vectomancy run assets/Tux.png --output Tux.ggb --format geogebra --mode spline --chaikin-iters 2 --tolerance 2.0
+vectomancy run assets/Tux.png --output Tux.html --format desmos --mode spline --chaikin-iters 2 --detail 30
 ```
 
-_(Note: For GeoGebra, it is recommended to increase the `--tolerance`, such as 2.0, to significantly reduce the total number of equations and ensure the software runs smoothly.)_
+_(Note: For complex images, it is recommended to decrease `--detail` (e.g., to 20 or 30) to significantly reduce the total number of equations and ensure the browser renders smoothly.)_
 
 ## 3. Parameter Tuning Guide (How to Get the Best Results)
 
@@ -53,13 +53,13 @@ Vectomancy provides several parameters that significantly affect the visual qual
 - **Effect when increased** (e.g., `10` - `20`): Removes small "dust" particles, compression artifacts, and tiny stray lines. Makes the final image cleaner and drastically reduces output file size. Highly recommended for noisy web images or complex backgrounds.
 - **Effect when decreased** (e.g., `2` - `5`): Retains maximum detail, including stippling, fine textures, and short strokes. Best for clean, high-contrast logos.
 
-### 3.2 `tolerance` (RDP Simplification Tolerance)
+### 3.2 `detail` (Detail Level)
 
-- **Flag**: `--tolerance`
-- **Default**: `0.5`
-- **What it does**: Controls how strictly the Ramer-Douglas-Peucker (RDP) algorithm simplifies paths before generating equations.
-- **Effect when increased** (e.g., `1.0` - `2.0`): Aggressively simplifies paths by removing points that don't deviate much from a straight line. Results in much smaller files and a more angular, low-poly aesthetic. Recommended for rendering in math software like GeoGebra to prevent lag.
-- **Effect when decreased** (e.g., `0.1` - `0.3`): Keeps almost all points, hugging the original curve precisely. Generates larger file sizes and is better for highly detailed curves where exact shapes matter.
+- **Flag**: `--detail`
+- **Default**: `50`
+- **What it does**: Controls how strictly the paths are simplified before generating equations (scale of 1-100).
+- **Effect when decreased** (e.g., `10` - `30`): Aggressively simplifies paths by removing points that don't deviate much from a straight line. Results in much smaller files and a more angular, low-poly aesthetic. Recommended for rendering in math software like Desmos to prevent lag.
+- **Effect when increased** (e.g., `70` - `100`): Keeps almost all points, hugging the original curve precisely. Generates larger file sizes and is better for highly detailed curves where exact shapes matter.
 
 ### 3.3 `chaikin-iters` (Chaikin Smoothing Iterations)
 

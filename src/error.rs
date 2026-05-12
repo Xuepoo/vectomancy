@@ -19,4 +19,7 @@ pub enum VectomancyError {
 
     #[error("Math error: {0}")]
     MathError(String),
+
+    #[error("Zip archive error: {0}")]
+    ZipError(#[from] zip::result::ZipError),
 }

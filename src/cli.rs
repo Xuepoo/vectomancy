@@ -31,21 +31,25 @@ pub struct Cli {
     #[arg(short = 'c', long)]
     pub chaikin_iters: Option<usize>,
 
-    /// Tolerance for RDP simplification
-    #[arg(long, default_value_t = 0.5)]
-    pub tolerance: f64,
+    /// Detail level for paths (1-100), higher = more equations/detail
+    #[arg(long)]
+    pub detail: Option<u8>,
+
+    /// Tolerance for RDP simplification (overrides detail)
+    #[arg(long)]
+    pub tolerance: Option<f64>,
 
     /// Minimum path length to process
     #[arg(long, default_value_t = 5)]
     pub min_path_len: usize,
 
     /// Enable color sampling and drawing
-    #[arg(long, default_value_t = false)]
-    pub color: bool,
+    #[arg(long, action = clap::ArgAction::Set)]
+    pub color: Option<bool>,
 
     /// Transparent background for native image rendering
-    #[arg(long, default_value_t = false)]
-    pub bg_transparent: bool,
+    #[arg(long, action = clap::ArgAction::Set)]
+    pub bg_transparent: Option<bool>,
 
     /// Target width for native image rendering
     #[arg(long)]
@@ -72,8 +76,8 @@ pub struct Cli {
     pub color_space: Option<String>,
 
     /// Enable GPU acceleration (wgpu) - Defaults to CPU
-    #[arg(long)]
-    pub gpu: bool,
+    #[arg(long, action = clap::ArgAction::Set)]
+    pub gpu: Option<bool>,
 
     /// Number of threads for CPU multithreading (default: 1)
     #[arg(long)]
@@ -82,20 +86,19 @@ pub struct Cli {
     /// GPU Power Preference (HighPerformance, LowPower, None)
     #[arg(long)]
     pub gpu_power: Option<String>,
+
+    /// Generate shell completions
+    #[arg(long)]
+    pub generate_completions: Option<clap_complete::Shell>,
 }
 
 #[derive(ValueEnum, Clone, Debug, serde::Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum OutputFormat {
     Python,
-    Latex,
     Html,
     Json,
-    Geogebra,
-    Wolfram,
-    Kmplot,
     Desmos,
-    Scratch,
     Png,
     Jpg,
     Webp,

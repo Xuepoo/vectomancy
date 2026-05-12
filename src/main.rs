@@ -1,4 +1,4 @@
-use clap::Parser;
+use clap::{CommandFactory, Parser};
 use rayon::prelude::*;
 use tracing::{info, Level};
 use tracing_subscriber::FmtSubscriber;
@@ -10,6 +10,12 @@ use vectomancy::{cli, emitter, math, models, parser};
 fn main() -> Result<(), VectomancyError> {
     let cli = Cli::parse();
 
+    if let Some(shell) = cli.generate_completions {
+        let mut cmd = Cli::command();
+        clap_complete::generate(shell, &mut cmd, "vectomancy", &mut std::io::stdout());
+        return Ok(());
+    }
+
     let verbose = cli.verbose;
     let log_level = if verbose { Level::DEBUG } else { Level::INFO };
     let subscriber = FmtSubscriber::builder().with_max_level(log_level).finish();
@@ -19,7 +25,12 @@ fn main() -> Result<(), VectomancyError> {
     info!("Starting Vectomancy");
 
     let config = vectomancy::config::Config::load(cli.config.clone());
-    let use_gpu = cli.gpu || config.gpu.unwrap_or(false);
+    let use_gpu = cli.gpu.unwrap_or_else(|| config.gpu.unwrap_or(false));
+    let color = cli.color.unwrap_or_else(|| config.color.unwrap_or(false));
+    let bg_transparent = cli
+        .bg_transparent
+        .unwrap_or_else(|| config.bg_transparent.unwrap_or(false));
+
     if use_gpu {
         tracing::info!("GPU acceleration (wgpu) is enabled.");
 
@@ -86,11 +97,6 @@ fn main() -> Result<(), VectomancyError> {
 
     for input_path in flattened_inputs.iter() {
         info!("Running with input: {:?}", input_path);
-        let color = if cli.color {
-            true
-        } else {
-            config.color.unwrap_or(false)
-        };
         let output = parser::parse_file(input_path, color)?;
 
         let (ast, original_dimensions) = match output {
@@ -100,11 +106,13 @@ fn main() -> Result<(), VectomancyError> {
             } => {
                 info!("Successfully extracted {} paths.", paths.len());
                 let iters = cli.chaikin_iters.or(config.chaikin_iters).unwrap_or(0);
-                let tolerance = if cli.tolerance != 0.5 {
-                    cli.tolerance
-                } else {
-                    config.tolerance.unwrap_or(0.5)
-                };
+                let detail_val = cli.detail.or(config.detail).unwrap_or(50);
+                let tolerance = cli.tolerance.or(config.tolerance).unwrap_or_else(|| {
+                    // Map detail (1-100) to tolerance (approx 5.0 to 0.1)
+                    // higher detail = lower tolerance = more equations
+                    let detail_clamped = detail_val.clamp(1, 100) as f64;
+                    5.0 * (1.0 - (detail_clamped / 100.0)).powi(2) + 0.1
+                });
                 let min_path_len = if cli.min_path_len != 5 {
                     cli.min_path_len
                 } else {
@@ -299,14 +307,9 @@ fn main() -> Result<(), VectomancyError> {
             cli::OutputFormat::Jpg => "jpg",
             cli::OutputFormat::Webp => "webp",
             cli::OutputFormat::Python => "py",
-            cli::OutputFormat::Latex => "tex",
             cli::OutputFormat::Html => "html",
             cli::OutputFormat::Json => "json",
-            cli::OutputFormat::Geogebra => "ggb",
-            cli::OutputFormat::Wolfram => "txt",
-            cli::OutputFormat::Kmplot => "fkt",
             cli::OutputFormat::Desmos => "html",
-            cli::OutputFormat::Scratch => "sb3",
         };
 
         let base_name = input_path.file_stem().unwrap().to_string_lossy();
@@ -350,11 +353,7 @@ fn main() -> Result<(), VectomancyError> {
                     .color_space
                     .clone()
                     .or_else(|| config.color_space.clone());
-                let bg_transparent = if cli.bg_transparent {
-                    true
-                } else {
-                    config.bg_transparent.unwrap_or(false)
-                };
+                let bg_transparent = bg_transparent;
 
                 emitter::native::render_to_image(
                     &ast,
