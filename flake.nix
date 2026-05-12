@@ -12,6 +12,15 @@
         pkgs = nixpkgs.legacyPackages.${system};
       in
       {
+        packages.default = pkgs.rustPlatform.buildRustPackage {
+          pname = "vectomancy";
+          version = "3.0.0";
+          src = ./.;
+          cargoLock = {
+            lockFile = ./Cargo.lock;
+          };
+          buildInputs = with pkgs; [ vulkan-loader pkg-config ];
+        };
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
             cargo
@@ -19,7 +28,9 @@
             rustfmt
             clippy
             pkg-config
+            vulkan-loader
           ];
+          LD_LIBRARY_PATH = "${pkgs.vulkan-loader}/lib";
         };
       }
     );
