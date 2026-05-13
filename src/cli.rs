@@ -15,7 +15,7 @@ pub struct Cli {
     #[arg(short, long)]
     pub output: Option<PathBuf>,
 
-    /// Output format (python, latex, html, json, geogebra)
+    /// Output format
     #[arg(short, long)]
     pub format: Option<OutputFormat>,
 
