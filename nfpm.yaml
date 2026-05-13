@@ -8,5 +8,5 @@ maintainer: "vectomancy developers"
 description: "Vectomancy - Image to vector math CLI"
 license: "MIT"
 contents:
-  - src: ./target/release/vectomancy
+  - src: ./vectomancy-linux-x86_64
     dst: /usr/bin/vectomancy

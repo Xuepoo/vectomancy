@@ -353,7 +353,6 @@ fn main() -> Result<(), VectomancyError> {
                     .color_space
                     .clone()
                     .or_else(|| config.color_space.clone());
-                let bg_transparent = bg_transparent;
 
                 emitter::native::render_to_image(
                     &ast,
