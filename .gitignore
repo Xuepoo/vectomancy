@@ -21,8 +21,6 @@ tests
 *.swo
 .DS_Store
 perf.data
-tests/output/
 .worktrees/
 .agents/
-.worktrees/
-/tmp/
+packaging/
