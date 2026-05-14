@@ -1,7 +1,6 @@
 # Generated files
 target/
 **/*.rs.bk
-Cargo.lock
 .ruff_cache/
 
 # Python artifacts
@@ -13,6 +12,7 @@ __pycache__/
 
 # Test artifacts
 tests
+packaging
 
 # IDEs and OS
 .idea/
