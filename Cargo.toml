@@ -2,13 +2,15 @@
 name = "vectomancy"
 version = "4.0.1"
 edition = "2021"
+description = "Vectomancy - Image to vector math CLI"
+license = "MIT"
+repository = "https://github.com/Xuepoo/vectomancy"
 exclude = [
     "assets/",
     "tests/",
     "benches/",
     ".github/",
-    "docs/",
-    "templates/"
+    "docs/"
 ]
 
 [dependencies]
