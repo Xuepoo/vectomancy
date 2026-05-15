@@ -22,7 +22,7 @@ Vectomancy est un outil d'interface en ligne de commande très performant conçu
 
 ## Fonctionnalités
 
-- **Exportation d'équations mathématiques multi-formats** : Supporte Python (Matplotlib), LaTeX (TikZ), Wolfram, GeoGebra (`.ggb`), Kmplot (`.fkt`), HTML5 Canvas et JSON natif.
+- **Exportation d'équations mathématiques multi-formats** : Supporte Python (Matplotlib), HTML5 Canvas et JSON natif.
 - **Optimisation de la taille de l'AST** : Utilise l'encodage `Zlib + Base64` pour stocker des matrices massives de points flottants. Cela garde les fichiers générés compacts et empêche les éditeurs et les moteurs de rendu de planter lors de l'analyse de fichiers volumineux.
 - **Mode de lissage et de rendu contrôlable** :
   - `--mode spline` : Reconstruit les formes avec une interpolation précise par courbe de Bézier, combinée à l'algorithme de Chaikin pour un lissage qui élimine les bords en escalier.
@@ -51,7 +51,7 @@ vectomancy run [OPTIONS] --output <OUTPUT> <INPUT>
 Options :
 
 - `-o, --output <OUTPUT>` : Chemin du fichier de sortie généré.
-- `-f, --format <FORMAT>` : Format de sortie (python, latex, html, json, geogebra, wolfram, kmplot).
+- `-f, --format <FORMAT>` : Format de sortie (python, html, json).
 - `-m, --mode <MODE>` : Mode de conversion (fourier, spline).
 - `-n, --terms <TERMS>` : Nombre de termes pour l'approximation de Fourier (par défaut : 1000).
 
@@ -62,8 +62,7 @@ La configuration est chargée à partir de `~/.config/vectomancy/config.toml` co
 **Q: Mon VSCode va-t-il geler lors de l'ouverture des fichiers Python ou HTML générés ?**
 **A:** Non. Nous injectons automatiquement des directives anti-analyse (comme `# pylint: disable=all` ou `<!-- eslint-disable -->`) au début des scripts générés. Grâce à la compression Zlib, les tailles de fichiers restent petites, ce qui permet aux IDE grand public de les ouvrir en toute sécurité.
 
-**Q: Pourquoi GeoGebra gèle-t-il lors de l'importation du fichier ?**
-**A:** Les logiciels de rendu de formules mathématiques sont limités par des restrictions d'analyse d'arbres XML internes. Si une image contient trop de bruit entraînant des dizaines de milliers d'équations, le logiciel ralentira. Nous recommandons d'augmenter la tolérance `--tolerance` (par ex., 2.0 ou 3.0) et de spécifier `--min-path-len` pour filtrer les petites lignes bruyantes. Consultez le [Manuel de l'utilisateur](docs/user_manual.md) pour les options de réglage détaillées.
+
 
 ## Licence
 

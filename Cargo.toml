@@ -1,6 +1,6 @@
 [package]
 name = "vectomancy"
-version = "4.0.2"
+version = "4.0.3"
 edition = "2021"
 description = "Vectomancy - Image to vector math CLI"
 license = "MIT"

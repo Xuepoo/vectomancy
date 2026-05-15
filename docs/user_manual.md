@@ -105,10 +105,7 @@ For full details on advanced global configurations, multi-file batch processing,
 ## 5. Prerequisites and Output Usage
 
 - **Python**: Requires `python3` and `matplotlib` (`pip install matplotlib`). Run command: `python3 output.py`.
-- **LaTeX**: Requires `texlive-latexextra` or a TeX distribution with TikZ support. Compile command: `pdflatex output.tex`.
-- **Wolfram**: Requires Wolfram Engine (`wolframscript`). Run command: `wolframscript -f output.txt`.
-- **GeoGebra**: Open the generated `.ggb` (ZIP archive) directly in the GeoGebra application.
-- **Kmplot**: Open the generated `.fkt` XML file directly in Kmplot.
+
 - **HTML**: Open directly in modern browsers (Chrome, Firefox).
 
 ## 6. Examples
@@ -123,9 +120,7 @@ For full details on advanced global configurations, multi-file batch processing,
 **Q: Will my VSCode freeze when opening the generated Python or HTML files?**
 **A:** No. Since version 1.0, we automatically inject anti-scanning directives (like `# pylint: disable=all` or `<!-- eslint-disable -->`) at the beginning of the generated scripts. Also, via Zlib compression, file sizes stay in the hundreds of KBs, which mainstream IDEs can open safely.
 
-**Q: Why does GeoGebra freeze when I import the file?**
 
-**A:** Math formula rendering software like GeoGebra is limited by internal XML tree parsing restrictions. If an image contains too much noise resulting in tens of thousands of equations, it will lag. We recommend increasing `--tolerance` (e.g., to 2.0 or 3.0) and specifying `--min-path-len` to filter out tiny noisy lines.
 
 ## 8. Container & Docker Usage
 

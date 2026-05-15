@@ -22,7 +22,7 @@ Vectomancy は、画像ファイルを解析し、数学的なパラメータ方
 
 ## 主な機能
 
-- **マルチフォーマットでの数式エクスポート**: Python (Matplotlib)、LaTeX (TikZ)、Wolfram、GeoGebra (`.ggb`)、Kmplot (`.fkt`)、HTML5 Canvas、およびネイティブ JSON をサポートしています。
+- **マルチフォーマットでの数式エクスポート**: Python (Matplotlib)、HTML5 Canvas、およびネイティブ JSON をサポートしています。
 - **AST サイズの最適化**: 膨大な浮点数マトリックスを保存するために `Zlib + Base64` エンコーディングを使用しています。これにより、生成されたファイルがコンパクトに保たれ、大きなファイルをパースする際のエディターやレンダリングエンジンのフリーズやクラッシュを防ぎます。
 - **制御可能な滑らかさとレンダリングモード**:
   - `--mode spline`: 正確なベジェ曲線補間で形状を再構築し、Chaikinアルゴリズムと組み合わせてギザギザの階段状のエッジを排除する平滑化を行います。
@@ -51,7 +51,7 @@ vectomancy run [OPTIONS] --output <OUTPUT> <INPUT>
 オプション:
 
 - `-o, --output <OUTPUT>`: 生成される出力ファイルのパス。
-- `-f, --format <FORMAT>`: 出力フォーマット (python, latex, html, json, geogebra, wolfram, kmplot)。
+- `-f, --format <FORMAT>`: 出力フォーマット (python, html, json)。
 - `-m, --mode <MODE>`: 変換モード (fourier, spline)。
 - `-n, --terms <TERMS>`: フーリエ近似の項数 (デフォルト: 1000)。
 
@@ -62,8 +62,7 @@ vectomancy run [OPTIONS] --output <OUTPUT> <INPUT>
 **Q: 生成された Python や HTML ファイルを開くと VSCode がフリーズしますか？**
 **A:** いいえ。生成されたスクリプトの先頭にアンチスキャンディレクティブ（`# pylint: disable=all` や `<!-- eslint-disable -->` など）を自動的に挿入します。Zlib 圧縮によりファイルサイズは小さく保たれ、主要な IDE で安全に開くことができます。
 
-**Q: GeoGebra にファイルをインポートするとフリーズするのはなぜですか？**
-**A:** 数式レンダリングソフトウェアは、内部の XML ツリーパース制限によって制限されています。画像にノイズが多く含まれ、何万もの方程式が生成されると、遅延が発生します。 `--tolerance` を増やし（例：2.0 または 3.0）、`--min-path-len` を指定して、小さくてノイズの多い線をフィルタリングすることをお勧めします。詳細なチューニングオプションについては、[ユーザーマニュアル](docs/user_manual.md)をご覧ください。
+
 
 ## ライセンス
 

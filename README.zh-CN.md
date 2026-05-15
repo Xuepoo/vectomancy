@@ -22,7 +22,7 @@ Vectomancy 是一个高性能的命令行图像转换工具。它能深入解析
 
 ## 核心功能
 
-- **多格式数学公式导出**：支持 Python (Matplotlib), LaTeX (TikZ), Wolfram, GeoGebra (`.ggb`), Kmplot (`.fkt`), HTML5 Canvas, 以及原生 JSON。
+- **多格式数学公式导出**：支持 Python (Matplotlib), HTML5 Canvas, 以及原生 JSON。
 - **AST 体积优化**：使用 `Zlib + Base64` 编码来存储巨大的浮点数矩阵，不仅使生成文件小巧，更避免了编辑器和渲染引擎在打开文件时发生的解析树(AST)卡死崩溃问题。
 - **可控的光滑度与渲染模式**：
   - `--mode spline`：以精确的贝塞尔曲线插值还原形状，搭配 Chaikin 算法平滑处理，解决阶梯锯齿感。
@@ -60,7 +60,7 @@ vectomancy run [OPTIONS] --output <OUTPUT> <INPUT>
 常用选项:
 
 - `-o, --output <OUTPUT>`: 导出生成文件的路径。
-- `-f, --format <FORMAT>`: 输出文件格式 (python, latex, html, json, geogebra, wolfram, kmplot)。
+- `-f, --format <FORMAT>`: 输出文件格式 (python, html, json)。
 - `-m, --mode <MODE>`: 计算模式 (fourier, spline)。
 - `-n, --terms <TERMS>`: 傅里叶级数逼近项数 (默认: 1000)。
 
@@ -71,8 +71,7 @@ vectomancy run [OPTIONS] --output <OUTPUT> <INPUT>
 **Q: 打开生成的 Python 或 HTML 文件，我的 VSCode 会卡死吗？**
 **A:** 不会。我们在生成的脚本开头自动注入了防扫描指令（如 `# pylint: disable=all` 或 `<!-- eslint-disable -->`）。且通过 Zlib 压缩，文件体积极小，主流 IDE 都可以安全打开。
 
-**Q: 为什么我导入 GeoGebra 会卡死？**
-**A:** 纯数学公式渲染软件受限于内部 XML 树解析限制，如果图片包含过多噪点导致方程多达上万条就会卡顿。建议通过增加 `--tolerance`（比如设定为 2.0 或 3.0）并指定 `--min-path-len` 以滤除细碎线条。详情请参考 [用户使用手册](docs/user_manual.md) 了解相关调优说明。
+
 
 ## 许可证
 

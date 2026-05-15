@@ -22,7 +22,7 @@ Vectomancy is a high-performance command-line interface tool designed to parse g
 
 ## Features
 
-- **Multi-format Mathematical Equation Export**: Supports Python (Matplotlib), LaTeX (TikZ), Wolfram, GeoGebra (`.ggb`), Kmplot (`.fkt`), HTML5 Canvas, and native JSON.
+- **Multi-format Mathematical Equation Export**: Supports Python (Matplotlib), HTML5 Canvas, and native JSON.
 - **AST Size Optimization**: Uses `Zlib + Base64` encoding to store massive floating-point matrices. This keeps the generated files compact and prevents editors and rendering engines from freezing or crashing when parsing large files.
 - **Controllable Smoothness and Rendering Modes**:
   - `--mode spline`: Reconstructs shapes with precise Bezier curve interpolation, combined with the Chaikin algorithm for smoothing to eliminate jagged, staircase-like edges.
@@ -60,7 +60,7 @@ vectomancy run [OPTIONS] --output <OUTPUT> <INPUT>
 Options:
 
 - `-o, --output <OUTPUT>`: Path for the generated output file.
-- `-f, --format <FORMAT>`: Output format (python, latex, html, json, geogebra, wolfram, kmplot).
+- `-f, --format <FORMAT>`: Output format (python, html, json).
 - `-m, --mode <MODE>`: Conversion mode (fourier, spline).
 - `-n, --terms <TERMS>`: Number of terms for Fourier approximation (default: 1000).
 
@@ -71,8 +71,7 @@ Configuration loads from `~/.config/vectomancy/config.toml` following the XDG Ba
 **Q: Will my VSCode freeze when opening the generated Python or HTML files?**
 **A:** No. We automatically inject anti-scanning directives (like `# pylint: disable=all` or `<!-- eslint-disable -->`) at the beginning of the generated scripts. Via Zlib compression, file sizes stay small, which mainstream IDEs can open safely.
 
-**Q: Why does GeoGebra freeze when I import the file?**
-**A:** Math formula rendering software is limited by internal XML tree parsing restrictions. If an image contains too much noise resulting in tens of thousands of equations, it will lag. We recommend increasing `--tolerance` (e.g., to 2.0 or 3.0) and specifying `--min-path-len` to filter out tiny noisy lines. See the [User Manual](docs/user_manual.md) for detailed tuning options.
+
 
 ## License
 
