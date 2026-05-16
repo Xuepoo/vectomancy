@@ -1,9 +1,11 @@
 use crate::error::VectomancyError;
 use crate::models::{ColoredPath, Point2D};
 use image::Luma;
-use rayon::prelude::*;
 use std::path::Path;
 use tracing::{debug, info};
+
+#[cfg(not(target_arch = "wasm32"))]
+use rayon::prelude::*;
 
 #[allow(clippy::type_complexity)]
 pub fn process_raster_image(
@@ -12,7 +14,24 @@ pub fn process_raster_image(
 ) -> Result<(Vec<ColoredPath<Vec<Point2D>>>, (u32, u32)), VectomancyError> {
     info!("Processing raster image: {:?}", path);
     let img = image::open(path).map_err(|e| VectomancyError::ImageProcessing(e.to_string()))?;
+    process_raster_image_core(img, color)
+}
 
+#[allow(clippy::type_complexity)]
+pub fn process_raster_from_memory(
+    bytes: &[u8],
+    color: bool,
+) -> Result<(Vec<ColoredPath<Vec<Point2D>>>, (u32, u32)), VectomancyError> {
+    info!("Processing raster image from memory");
+    let img = image::load_from_memory(bytes).map_err(|e| VectomancyError::ImageProcessing(e.to_string()))?;
+    process_raster_image_core(img, color)
+}
+
+#[allow(clippy::type_complexity)]
+fn process_raster_image_core(
+    img: image::DynamicImage,
+    color: bool,
+) -> Result<(Vec<ColoredPath<Vec<Point2D>>>, (u32, u32)), VectomancyError> {
     // 1. Grayscale
     debug!("Converting to grayscale");
     let grayscale = img.to_luma8();
@@ -69,8 +88,12 @@ pub fn process_raster_image(
 
     let rgb_image = if color { Some(img.to_rgb8()) } else { None };
 
-    let colored_paths: Vec<_> = all_paths
-        .into_par_iter()
+    #[cfg(not(target_arch = "wasm32"))]
+    let path_iter = all_paths.into_par_iter();
+    #[cfg(target_arch = "wasm32")]
+    let path_iter = all_paths.into_iter();
+
+    let colored_paths: Vec<_> = path_iter
         .map(|path| {
             let color_rgb = if let Some(ref rgb) = rgb_image {
                 let mut r_sum = 0u64;

@@ -1,4 +1,5 @@
 pub mod spline;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod wgpu_math;
 
 use crate::error::VectomancyError;
@@ -129,6 +130,7 @@ pub fn perform_fft(
     terms: usize,
     use_gpu: bool,
 ) -> Result<Vec<crate::models::FourierTerm>, VectomancyError> {
+    #[cfg(not(target_arch = "wasm32"))]
     if use_gpu {
         match wgpu_math::perform_fft_gpu(points, terms) {
             Ok(res) => return Ok(res),
@@ -223,6 +225,7 @@ pub fn perform_fft_batch(
     terms: usize,
     use_gpu: bool,
 ) -> Result<Vec<Vec<crate::models::FourierTerm>>, VectomancyError> {
+    #[cfg(not(target_arch = "wasm32"))]
     if use_gpu {
         match wgpu_math::perform_fft_batch_gpu(paths, terms) {
             Ok(res) => return Ok(res),

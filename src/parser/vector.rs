@@ -1,5 +1,6 @@
 use crate::error::VectomancyError;
 use crate::models::{BezierSegment, ColoredPath, Point2D};
+#[cfg(not(target_arch = "wasm32"))]
 use rayon::prelude::*;
 use std::path::Path;
 use usvg::{Options, Tree, TreeParsing};
@@ -10,8 +11,16 @@ pub fn process_svg(
     color: bool,
 ) -> Result<(Vec<ColoredPath<Vec<BezierSegment>>>, (u32, u32)), VectomancyError> {
     let svg_data = std::fs::read(path).map_err(|e| VectomancyError::InvalidInput(e.to_string()))?;
+    process_svg_from_memory(&svg_data, color)
+}
+
+#[allow(clippy::type_complexity)]
+pub fn process_svg_from_memory(
+    svg_data: &[u8],
+    color: bool,
+) -> Result<(Vec<ColoredPath<Vec<BezierSegment>>>, (u32, u32)), VectomancyError> {
     let opt = Options::default();
-    let tree = Tree::from_data(&svg_data, &opt)
+    let tree = Tree::from_data(svg_data, &opt)
         .map_err(|e| VectomancyError::InvalidInput(e.to_string()))?;
 
     let width = tree.size.width() as u32;
@@ -59,8 +68,12 @@ pub fn process_svg(
 
     traverse(&tree.root, &mut all_segments, color);
 
-    let colored_paths: Vec<_> = all_segments
-        .into_par_iter()
+    #[cfg(not(target_arch = "wasm32"))]
+    let segment_iter = all_segments.into_par_iter();
+    #[cfg(target_arch = "wasm32")]
+    let segment_iter = all_segments.into_iter();
+
+    let colored_paths: Vec<_> = segment_iter
         .map(|(color_rgb, segments, transform)| {
             let mut bezier_segments = Vec::new();
             for seg in segments {

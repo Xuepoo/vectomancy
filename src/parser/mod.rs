@@ -31,3 +31,26 @@ pub fn parse_file(path: &Path, color: bool) -> Result<ParserOutput, VectomancyEr
         ))),
     }
 }
+
+pub fn parse_memory(bytes: &[u8], format: &str, color: bool) -> Result<ParserOutput, VectomancyError> {
+    match format.to_lowercase().as_str() {
+        "png" | "jpg" | "jpeg" | "webp" => {
+            let (paths, original_dimensions) = raster::process_raster_from_memory(bytes, color)?;
+            Ok(ParserOutput::Paths {
+                paths,
+                original_dimensions,
+            })
+        }
+        "svg" => {
+            let (segments, original_dimensions) = vector::process_svg_from_memory(bytes, color)?;
+            Ok(ParserOutput::Segments {
+                segments,
+                original_dimensions,
+            })
+        }
+        _ => Err(VectomancyError::InvalidInput(format!(
+            "Unsupported file format: {}",
+            format
+        ))),
+    }
+}

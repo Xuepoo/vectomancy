@@ -45,6 +45,7 @@ fn main() -> Result<(), VectomancyError> {
             "none" => wgpu::PowerPreference::None,
             _ => wgpu::PowerPreference::HighPerformance,
         };
+        #[cfg(not(target_arch = "wasm32"))]
         vectomancy::math::wgpu_math::init_context(power_pref);
     }
 
