@@ -23,7 +23,8 @@ pub fn process_raster_from_memory(
     color: bool,
 ) -> Result<(Vec<ColoredPath<Vec<Point2D>>>, (u32, u32)), VectomancyError> {
     info!("Processing raster image from memory");
-    let img = image::load_from_memory(bytes).map_err(|e| VectomancyError::ImageProcessing(e.to_string()))?;
+    let img = image::load_from_memory(bytes)
+        .map_err(|e| VectomancyError::ImageProcessing(e.to_string()))?;
     process_raster_image_core(img, color)
 }
 

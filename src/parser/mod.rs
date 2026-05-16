@@ -32,7 +32,11 @@ pub fn parse_file(path: &Path, color: bool) -> Result<ParserOutput, VectomancyEr
     }
 }
 
-pub fn parse_memory(bytes: &[u8], format: &str, color: bool) -> Result<ParserOutput, VectomancyError> {
+pub fn parse_memory(
+    bytes: &[u8],
+    format: &str,
+    color: bool,
+) -> Result<ParserOutput, VectomancyError> {
     match format.to_lowercase().as_str() {
         "png" | "jpg" | "jpeg" | "webp" => {
             let (paths, original_dimensions) = raster::process_raster_from_memory(bytes, color)?;
