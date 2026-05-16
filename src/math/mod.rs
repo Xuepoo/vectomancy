@@ -128,7 +128,7 @@ pub fn solve_tsp_nearest_neighbor(points: Vec<Point2D>) -> Vec<Point2D> {
 pub fn perform_fft(
     points: &[Point2D],
     terms: usize,
-    use_gpu: bool,
+    #[allow(unused_variables)] use_gpu: bool,
 ) -> Result<Vec<crate::models::FourierTerm>, VectomancyError> {
     #[cfg(not(target_arch = "wasm32"))]
     if use_gpu {
@@ -223,7 +223,7 @@ pub fn chaikin_smooth(points: &[Point2D], iterations: usize) -> Vec<Point2D> {
 pub fn perform_fft_batch(
     paths: &[&[Point2D]],
     terms: usize,
-    use_gpu: bool,
+    #[allow(unused_variables)] use_gpu: bool,
 ) -> Result<Vec<Vec<crate::models::FourierTerm>>, VectomancyError> {
     #[cfg(not(target_arch = "wasm32"))]
     if use_gpu {
