@@ -25,7 +25,7 @@
         {% for path in equations %}
         expressions.push({
             id: String(exprId++),
-            latex: '\\left(' + 
+            latex: '\\left(' +
                 '\\left\\{ ' +
                 '{% for eq in path.data %}' +
                 '{% set eq_index = loop.index0 %}' +
@@ -106,7 +106,7 @@
                 }, 2000);
             }
         }
-        
+
         loadBatch();
     </script>
 </body>

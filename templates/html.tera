@@ -14,7 +14,7 @@
     <script>
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
-        
+
         {% if equations %}
         {% for path in equations %}
         {% if path.color_rgb %}

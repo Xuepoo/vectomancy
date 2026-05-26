@@ -8,10 +8,10 @@ Vectomancy 是一个高性能的命令行图像转换工具。它能深入解析
 
 | 原始图像                                                      | 渲染输出 (无颜色)                                                     | 渲染输出 (彩色)                                                             |
 | :------------------------------------------------------------ | :-------------------------------------------------------------------- | :-------------------------------------------------------------------------- |
-| ![Original Image](https://cdn.xuepoo.xyz/dolphin.jpg)         | ![Rendered Output](https://cdn.xuepoo.xyz/dolphin_render.png)         | ![Rendered Output](https://cdn.xuepoo.xyz/dolphin_render_color.png)         |
-| ![Original Image](https://cdn.xuepoo.xyz/Hatsune_miku_v2.png) | ![Rendered Output](https://cdn.xuepoo.xyz/Hatsune_miku_v2_render.png) | ![Rendered Output](https://cdn.xuepoo.xyz/Hatsune_miku_v2_render_color.png) |
-| ![Original Image](https://cdn.xuepoo.xyz/Tux.png)             | ![Rendered Output](https://cdn.xuepoo.xyz/Tux_render.png)             | ![Rendered Output](https://cdn.xuepoo.xyz/Tux_render_color.png)             |
-| ![Original Image](https://cdn.xuepoo.xyz/01_khafre_north.jpg) | ![Rendered Output](https://cdn.xuepoo.xyz/01_khafre_north_render.png) | ![Rendered Output](https://cdn.xuepoo.xyz/01_khafre_north_render_color.png) |
+| ![Original Image](https://cdn.xuepoo.xyz/vectomancy/assets/dolphin.jpg)         | ![Rendered Output](https://cdn.xuepoo.xyz/vectomancy/assets/dolphin_render.png)         | ![Rendered Output](https://cdn.xuepoo.xyz/vectomancy/assets/dolphin_render_color.png)         |
+| ![Original Image](https://cdn.xuepoo.xyz/vectomancy/assets/Hatsune_miku_v2.png) | ![Rendered Output](https://cdn.xuepoo.xyz/vectomancy/assets/Hatsune_miku_v2_render.png) | ![Rendered Output](https://cdn.xuepoo.xyz/vectomancy/assets/Hatsune_miku_v2_render_color.png) |
+| ![Original Image](https://cdn.xuepoo.xyz/vectomancy/assets/Tux.png)             | ![Rendered Output](https://cdn.xuepoo.xyz/vectomancy/assets/Tux_render.png)             | ![Rendered Output](https://cdn.xuepoo.xyz/vectomancy/assets/Tux_render_color.png)             |
+| ![Original Image](https://cdn.xuepoo.xyz/vectomancy/assets/01_khafre_north.jpg) | ![Rendered Output](https://cdn.xuepoo.xyz/vectomancy/assets/01_khafre_north_render.png) | ![Rendered Output](https://cdn.xuepoo.xyz/vectomancy/assets/01_khafre_north_render_color.png) |
 
 ### 图像来源
 
