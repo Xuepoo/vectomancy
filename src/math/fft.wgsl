@@ -47,7 +47,7 @@ fn butterfly(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let offset = path_idx * params.n;
     let group = k / half_step;
     let index = k % half_step;
-    
+
     let even_idx = offset + group * step + index;
     let odd_idx = even_idx + half_step;
 

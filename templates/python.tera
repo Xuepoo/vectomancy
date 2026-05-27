@@ -22,7 +22,7 @@ def render():
     fig_w = 8
     fig_h = 8 * (height / width)
     plt.figure(figsize=(fig_w, fig_h))
-    
+
     {% if is_fourier %}
     t = np.linspace(0, 2 * np.pi, 10000)
     strokes_data = _load_data()
@@ -74,7 +74,7 @@ def render():
     plt.axis('equal')
     plt.gca().invert_yaxis()
     plt.axis('off')
-    
+
     out_path = sys.argv[1] if len(sys.argv) > 1 else '{{ base_name }}.png'
     plt.savefig(out_path, bbox_inches='tight', dpi=300)
 
