@@ -23,8 +23,8 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
 # Runtime Stage
 FROM debian:bookworm-slim
 
-# Install wgpu runtime dependencies (Vulkan and graphics libraries)
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Install wgpu runtime dependencies (Vulkan and graphics libraries) and patch CVE vulnerabilities
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
     libvulkan1 \
     mesa-vulkan-drivers \
     vulkan-tools \
