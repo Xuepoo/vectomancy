@@ -14,7 +14,7 @@
       {
         packages.default = pkgs.rustPlatform.buildRustPackage {
           pname = "vectomancy";
-          version = "4.1.2";
+          version = "4.1.3";
           src = ./.;
           cargoLock = {
             lockFile = ./Cargo.lock;

@@ -143,6 +143,7 @@ jobs:
 
       - name: Configure Git
         run: |
+          git config --system --add safe.directory '*'
           git config --global user.name "Xuepoo (CI)"
           git config --global user.email "xuepoofoter@gmail.com"
 
