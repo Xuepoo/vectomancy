@@ -135,6 +135,12 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -t ed25519 aur.archlinux.org >> ~/.ssh/known_hosts
 
+          # Sync to /root/.ssh for standard ssh client compatibility in containers
+          mkdir -p /root/.ssh
+          cp -r ~/.ssh/* /root/.ssh/
+          chmod 700 /root/.ssh
+          chmod 600 /root/.ssh/*
+
       - name: Configure Git
         run: |
           git config --global user.name "Xuepoo (CI)"
