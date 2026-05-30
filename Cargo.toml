@@ -46,3 +46,13 @@ criterion = "0.5"
 [[bench]]
 name = "math_benchmarks"
 harness = false
+
+[profile.release]
+lto = true
+strip = true
+panic = "abort"
+opt-level = "z"
+codegen-units = 1
+
+[profile.release.package."*"]
+opt-level = "z"
