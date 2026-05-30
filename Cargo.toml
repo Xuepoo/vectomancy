@@ -19,7 +19,7 @@ clap_complete = "4.4"
 env_logger = "0.11"
 log = "0.4"
 directories = "5.0"
-thiserror = "1.0"
+thiserror = "2.0"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 rayon = "1.8"
