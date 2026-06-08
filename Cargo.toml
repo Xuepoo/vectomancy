@@ -37,7 +37,7 @@ base64 = "0.22"
 toml = "1.1.2"
 zip = "8.6.0"
 lyon_tessellation = { version = "1.0.20", features = ["std"] }
-kiddo = "5.3.1"
+kiddo = "5.3.2"
 imageproc = "0.26.2"
 
 [dev-dependencies]
