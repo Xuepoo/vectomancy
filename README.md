@@ -53,16 +53,41 @@ Precompiled binaries for Linux (Debian, Arch, RedHat, openSUSE, NixOS), Windows,
 
 ## CLI Usage
 
+Vectomancy is split into three main subcommands: `image`, `text`, and `video`.
+
+### 1. Image Subcommand
+
+Process raster (`.png`, `.jpg`) or vector (`.svg`) images:
+
 ```bash
-vectomancy run [OPTIONS] --output <OUTPUT> <INPUT>
+vectomancy image [OPTIONS] <INPUTS...>
 ```
 
-Options:
-
+Key Options:
 - `-o, --output <OUTPUT>`: Path for the generated output file.
-- `-f, --format <FORMAT>`: Output format (python, html, json).
-- `-m, --mode <MODE>`: Conversion mode (fourier, spline).
-- `-n, --terms <TERMS>`: Number of terms for Fourier approximation (default: 1000).
+- `-f, --format <FORMAT>`: Output format (`python`, `html`, `json`, `desmos`, `png`, `jpg`, `webp`).
+- `-m, --mode <MODE>`: Fitting mode (`fourier`, `spline`, `chaikin`).
+- `-n, --terms <TERMS>`: Number of Fourier terms.
+- `-c, --chaikin-iters <ITERS>`: Number of Chaikin smoothing iterations.
+- `--color <true|false>`: Enable color sampling.
+- `--gpu <true|false>`: Enable GPU acceleration (wgpu).
+- `--threads <THREADS>`: Number of CPU threads.
+
+### 2. Text Subcommand
+
+Extract outlines directly from a font file (`.ttf` or `.otf`) and fit to curves:
+
+```bash
+vectomancy text --font <FONT_PATH> --output <OUTPUT> <TEXT>
+```
+
+### 3. Video Subcommand
+
+Process video frames sequentially to extract parametric motion formulas:
+
+```bash
+vectomancy video --output <OUTPUT> <INPUT_VIDEO>
+```
 
 Configuration loads from `~/.config/vectomancy/config.toml` following the XDG Base Directory specification.
 

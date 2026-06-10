@@ -53,16 +53,41 @@ docker run --rm -v $(pwd):/data vectomancy run --output /data/output.json /data/
 
 ## CLI 基础用法
 
+Vectomancy 主要分为三个子命令：`image`、`text` 和 `video`。
+
+### 1. 图像处理子命令 (image)
+
+处理光栅图（`.png`, `.jpg`）或矢量图（`.svg`）：
+
 ```bash
-vectomancy run [OPTIONS] --output <OUTPUT> <INPUT>
+vectomancy image [OPTIONS] <INPUTS...>
 ```
 
 常用选项:
+- `-o, --output <OUTPUT>`: 导出文件路径或目录。
+- `-f, --format <FORMAT>`: 输出格式 (`python`, `html`, `json`, `desmos`, `png`, `jpg`, `webp`)。
+- `-m, --mode <MODE>`: 拟合模式 (`fourier`, `spline`, `chaikin`)。
+- `-n, --terms <TERMS>`: 傅里叶级数逼近项数。
+- `-c, --chaikin-iters <ITERS>`: Chaikin 平滑迭代次数。
+- `--color <true|false>`: 是否开启色彩采样。
+- `--gpu <true|false>`: 是否开启 GPU 加速 (wgpu)。
+- `--threads <THREADS>`: CPU 线程数。
 
-- `-o, --output <OUTPUT>`: 导出生成文件的路径。
-- `-f, --format <FORMAT>`: 输出文件格式 (python, html, json)。
-- `-m, --mode <MODE>`: 计算模式 (fourier, spline)。
-- `-n, --terms <TERMS>`: 傅里叶级数逼近项数 (默认: 1000)。
+### 2. 文本拟合子命令 (text)
+
+直接从字体文件（`.ttf` 或 `.otf`）中提取文字轮廓并拟合为参数曲线：
+
+```bash
+vectomancy text --font <FONT_PATH> --output <OUTPUT> <TEXT>
+```
+
+### 3. 视频处理子命令 (video)
+
+按顺序提取视频帧并进行多帧连续拟合，导出参数化动画脚本：
+
+```bash
+vectomancy video --output <OUTPUT> <INPUT_VIDEO>
+```
 
 系统配置默认从 `~/.config/vectomancy/config.toml` 中加载，遵循 XDG 规范。
 

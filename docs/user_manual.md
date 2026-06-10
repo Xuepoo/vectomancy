@@ -27,19 +27,34 @@ We provide compiled binaries for various platforms:
 
 ### 2.2 Basic Usage
 
+#### 2.2.1 Image Processing
 If you have an image (e.g., `assets/Tux.png`), you can convert it to a Python script with the following command:
 
 ```bash
-vectomancy run assets/Tux.png --output Tux.py --format python --mode spline
+vectomancy image assets/Tux.png --output Tux.py --format python --mode spline
 ```
 
 If you want to view the mathematical rendering directly in your browser using Desmos, you can run:
 
 ```bash
-vectomancy run assets/Tux.png --output Tux.html --format desmos --mode spline --chaikin-iters 2 --detail 30
+vectomancy image assets/Tux.png --output Tux.html --format desmos --mode spline --chaikin-iters 2 --detail 30
 ```
 
 _(Note: For complex images, it is recommended to decrease `--detail` (e.g., to 20 or 30) to significantly reduce the total number of equations and ensure the browser renders smoothly.)_
+
+#### 2.2.2 Text Outline Extraction
+Extract mathematical outlines directly from a font file (`.ttf` or `.otf`):
+
+```bash
+vectomancy text "Vectomancy" --font path/to/font.ttf --output text_curves.json
+```
+
+#### 2.2.3 Video Processing
+Process video frames sequentially to extract parametric equations:
+
+```bash
+vectomancy video input.mp4 --output video_animation.json
+```
 
 ## 3. Parameter Tuning Guide (How to Get the Best Results)
 
