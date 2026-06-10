@@ -34,7 +34,7 @@ pub enum ColorStyle {
 
 ### 2.3 WGPU Rendering Pipeline (`src/emitter/native/`)
 - **Shader (`shader.wgsl`)**: The fragment shader must be updated. Instead of a flat `uniform` color, it will calculate its relative position `(x, y)` mapped against the text's global Bounding Box, projecting that onto the gradient's angle vector to interpolate between `start_color` and `end_color`.
-- **Bounding Box Calculation**: The emitter must calculate the `(min_x, min_y, max_x, max_y)` of the entire `MathExpressionAST` before pushing vertices to the GPU. This calculation MUST use `rayon` (`par_iter().reduce()`) for multi-threaded performance on the CPU (using `#[cfg(not(target_arch = "wasm32"))]`), and fallback to a standard single-threaded `.iter().fold()` under `#[cfg(target_arch = "wasm32")]` to ensure WASM compilation succeeds.
+- **Bounding Box Calculation**: The Bounding Box limits of all the generated math splines are calculated using `rayon` (`par_iter().reduce()`) since text geometry can be massively parallelized. This Bounding Box is necessary because mathematical curves have infinite canvas scope, and the GPU fragment shader needs boundaries to map the relative `(x, y)` coordinate into a `[0.0, 1.0]` ratio for gradient interpolation.
 
 ## 3. Data Flow
 1. User invokes `vectomancy-cli text "Art" --font ./font.ttf --gradient "#FF0000,#0000FF,45" -o out.png`.
