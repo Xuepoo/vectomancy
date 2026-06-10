@@ -1,0 +1,23 @@
+[package]
+name = "vectomancy-cli"
+version = "5.0.0"
+edition = "2021"
+description = "Vectomancy - CLI tool"
+
+[dependencies]
+vectomancy = { path = "..", version = "5.0.0", features = ["gpu"] }
+vectomancy-video = { path = "../video", version = "5.0.0" }
+vectomancy-text = { path = "../text", version = "5.0.0" }
+clap_complete = "4.4"
+log = "0.4"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Workspace dependencies inherited
+clap = { workspace = true }
+rayon = { workspace = true }
+wgpu = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+image = { version = "0.25", features = ["png"] }
+tempfile = "3.8"

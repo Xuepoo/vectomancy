@@ -1,6 +1,7 @@
 use ab_glyph::{Font, FontArc, OutlineCurve, Point, ScaleFont};
 use vectomancy::models::{BezierSegment, ColoredPath, Point2D};
 
+#[allow(clippy::type_complexity)]
 pub fn extract_text_outlines(
     text: &str,
     font_bytes: &[u8],

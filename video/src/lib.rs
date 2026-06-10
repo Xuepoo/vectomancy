@@ -81,7 +81,7 @@ impl AVFrameWrap {
             let sws_ctx = sws_getContext(
                 width,
                 height,
-                std::mem::transmute(src_format),
+                std::mem::transmute::<i32, AVPixelFormat>(src_format),
                 width,
                 height,
                 dst_format,
@@ -153,6 +153,7 @@ impl Drop for AVFrameWrap {
     }
 }
 
+#[allow(clippy::type_complexity)]
 pub fn decode_video_to_channel(
     video_path: &Path,
 ) -> Result<
