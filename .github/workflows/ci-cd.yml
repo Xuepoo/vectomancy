@@ -409,11 +409,8 @@ jobs:
         with:
           path: vectomancy
 
-      - name: Checkout vectomancy-website
-        uses: actions/checkout@v4.1.7
-        with:
-          repository: Xuepoo/vectomancy-website
-          path: vectomancy-web
+      - name: Clone vectomancy-website
+        run: git clone https://github.com/Xuepoo/vectomancy-website.git vectomancy-web
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
