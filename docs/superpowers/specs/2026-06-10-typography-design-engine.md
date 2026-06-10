@@ -18,8 +18,10 @@ Extend `TextArgs` to include:
 ### 2.2 AST & Model Updates (`src/models.rs`)
 Currently, `ColoredPath` holds `color_rgb: [f32; 3]`. We will introduce a new styling paradigm to support gradients:
 ```rust
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type")]
 pub enum ColorStyle {
-    Solid([f32; 3]),
+    Solid { color: [f32; 3] },
     LinearGradient {
         start_color: [f32; 3],
         end_color: [f32; 3],
@@ -27,11 +29,12 @@ pub enum ColorStyle {
     }
 }
 ```
-`ColoredPath` will be updated to use `ColorStyle` instead of a raw float array, or a wrapper will be passed down to the native emitter.
+`ColoredPath` will be updated to use `ColorStyle`.
+**Critical:** To prevent WASM serialization breakage, `vectomancy-web/wasm-engine/src/lib.rs` and the frontend `zola-site/templates/app.html` must be updated to handle the new JSON structure, adapting the `ColorStyle` into Canvas API `createLinearGradient` calls.
 
 ### 2.3 WGPU Rendering Pipeline (`src/emitter/native/`)
 - **Shader (`shader.wgsl`)**: The fragment shader must be updated. Instead of a flat `uniform` color, it will calculate its relative position `(x, y)` mapped against the text's global Bounding Box, projecting that onto the gradient's angle vector to interpolate between `start_color` and `end_color`.
-- **Bounding Box Calculation**: The emitter must calculate the `(min_x, min_y, max_x, max_y)` of the entire `MathExpressionAST` before pushing vertices to the GPU, passing these limits as uniform variables.
+- **Bounding Box Calculation**: The emitter must calculate the `(min_x, min_y, max_x, max_y)` of the entire `MathExpressionAST` before pushing vertices to the GPU. This calculation MUST use `rayon` (`par_iter().reduce()`) for multi-threaded performance on the CPU (using `#[cfg(not(target_arch = "wasm32"))]`).
 
 ## 3. Data Flow
 1. User invokes `vectomancy-cli text "Art" --font ./font.ttf --gradient "#FF0000,#0000FF,45" -o out.png`.
@@ -39,16 +42,18 @@ pub enum ColorStyle {
 3. `vectomancy_text::parser` reads the TTF and generates geometric segments.
 4. Splines are built and packaged into `MathExpressionAST` alongside the parsed `ColorStyle::LinearGradient`.
 5. `emitter::native::render_to_image` initializes WGPU:
-   - Calculates the global bounding box of the splines.
-   - Adds padding to the bounding box equal to `stroke_width / 2.0` to prevent clipping.
+   - Calculates the global bounding box of the splines using `rayon`.
+   - Modifies the Orthographic Projection matrix to scale the viewport to accommodate `stroke_width / 2.0` padding (DO NOT increase physical Canvas pixel dimensions to prevent GPU OOM).
    - Uploads gradient colors, angle, and bounding box via Uniform Buffers.
 6. The GPU renders the splines; the fragment shader paints the gradient.
 7. The output is saved to `out.png`.
 
 ## 4. Error Handling & Edge Cases
 - **Invalid Colors**: Hex parsing errors (e.g. `#ZZZZZZ` or malformed gradient strings) will halt execution gracefully with a `VectomancyError::InvalidInput`.
-- **Clipping**: Mathematical splines can easily exceed canvas bounds when stroke width is large. The canvas dimensions and view matrix MUST be scaled to accommodate `stroke_width`.
-- **Format Incompatibility**: If the user asks for a gradient but outputs to JSON or Python, the gradient metadata should be embedded if possible, or gracefully ignored/fallback to a solid color without crashing.
+- **Invalid Stroke Width**: Missing or invalid stroke width validation (`<= 0` or `NaN`) will be rejected at the CLI parsing layer. A hard maximum (e.g., `100.0`) will be enforced.
+- **Empty AST / Empty String**: If the input string is empty `""`, the parser will immediately return an error or an empty transparent image without passing undefined `NaN` bounding boxes to the GPU.
+- **Clipping Safety**: Mathematical splines can easily exceed canvas bounds when stroke width is large. Instead of inflating texture allocations, the View/Projection Matrix will be zoomed out.
+- **Format Incompatibility**: If the user asks for a gradient but outputs to JSON or Python, the emitter will fall back to using `start_color` for the solid export color.
 
 ## 5. Testing Strategy
 - **Unit Tests**:
