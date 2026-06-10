@@ -52,11 +52,23 @@ jobs:
         with:
           targets: ${{ matrix.target }}
 
-      - name: Install LLVM/Clang & FFmpeg Headers
+      - name: Install LLVM/Clang & FFmpeg Headers (Linux)
         if: matrix.os_name == 'linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y clang libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev libavdevice-dev libavfilter-dev pkg-config
+
+      - name: Install FFmpeg Headers (macOS)
+        if: matrix.os_name == 'macos'
+        run: |
+          brew install ffmpeg pkg-config
+
+      - name: Install FFmpeg Headers (Windows)
+        if: matrix.os_name == 'windows'
+        run: |
+          choco install ffmpeg -y
+          # Set PKG_CONFIG_PATH or FFMPEG_DIR if needed, choco install puts it in Path
+          echo "FFMPEG_DIR=C:\ProgramData\chocolatey\lib\ffmpeg\tools\ffmpeg" >> $GITHUB_ENV
 
       - name: Build release
         run: cargo build --release --target ${{ matrix.target }} --bin vectomancy-cli
