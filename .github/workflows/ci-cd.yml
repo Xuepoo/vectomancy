@@ -414,7 +414,6 @@ jobs:
         with:
           repository: Xuepoo/vectomancy-website
           path: vectomancy-web
-          token: ${{ secrets.SYNC_TOKEN }}
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
