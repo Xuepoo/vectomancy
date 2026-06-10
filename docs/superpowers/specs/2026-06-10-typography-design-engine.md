@@ -9,7 +9,7 @@ Transform `vectomancy-cli text` into a Typography Design Engine capable of produ
 
 ## 2. Architecture & Components
 
-### 2.1 CLI Interface (`cli/src/cli.rs`)
+### 2.1 CLI Interface (`cli/src/cli.rs` or `src/cli.rs`)
 Extend `TextArgs` to include:
 - `--color <HEX>`: Solid color for the text (e.g., `#FF0000`).
 - `--gradient <HEX_START,HEX_END,ANGLE>`: Linear gradient definition. `ANGLE` is in degrees (0 = left to right, 90 = bottom to top).
@@ -39,11 +39,11 @@ pub enum ColorStyle {
 ## 3. Data Flow
 1. User invokes `vectomancy-cli text "Art" --font ./font.ttf --gradient "#FF0000,#0000FF,45" -o out.png`.
 2. Argument parser extracts the string, gradient definition, and stroke weight.
-3. `vectomancy_text::parser` reads the TTF and generates geometric segments.
+3. `vectomancy::parser::text` (or equivalent parsing module) reads the TTF and generates geometric segments.
 4. Splines are built and packaged into `MathExpressionAST` alongside the parsed `ColorStyle::LinearGradient`.
 5. `emitter::native::render_to_image` initializes WGPU:
    - Calculates the global bounding box of the splines using `rayon` (or `fold` in WASM).
-   - The `angle_degrees` must be normalized to `[0, 360)` modulo 360 before uniform upload.
+   - The `angle_degrees` must be normalized to `[0, 360)` using `f32::rem_euclid(360.0)` before uniform upload.
    - Modifies the Orthographic Projection matrix to scale the viewport to accommodate `stroke_width / 2.0` padding (DO NOT increase physical Canvas pixel dimensions to prevent GPU OOM).
    - Uploads gradient colors, angle, and bounding box via Uniform Buffers.
 6. The GPU renders the splines; the fragment shader paints the gradient.
@@ -51,10 +51,11 @@ pub enum ColorStyle {
 
 ## 4. Error Handling & Edge Cases
 - **Invalid Colors**: Hex parsing errors (e.g. `#ZZZZZZ` or malformed gradient strings) will halt execution gracefully with a `VectomancyError::InvalidInput`.
-- **Invalid Stroke Width**: Missing or invalid stroke width validation (`< 0.0` or `NaN`) will be rejected at the CLI parsing layer. A value of `0.0` will be explicitly treated as a 1-pixel "hairline" render, while a hard maximum (e.g., `100.0`) will be enforced.
+- **Invalid Stroke Width & Hairlines**: Missing or invalid stroke width validation (`< 0.0` or `NaN`) will be rejected. A value of `0.0` will map to WGPU's native `LineList` / `LineStrip` topology (letting the GPU render true 1-pixel hairlines regardless of Viewport scaling), while positive values will be expanded into polygons.
 - **Empty AST / Empty String**: If the input string is empty `""`, the parser will immediately return an error or an empty transparent image without passing undefined `NaN` bounding boxes to the GPU.
 - **Font File Safety**: If the user provides a corrupted, 0-byte, or unsupported font file, the parser must intercept this before panic and return a safe `VectomancyError::FontParseError`.
-- **WASM OOM Prevention**: The `process_image` WASM binding must enforce a strict hard limit on maximum input characters (e.g., 500) and generated spline nodes to prevent `serde-wasm-bindgen` serialization from exhausting the browser heap.
+- **WASM Binding Separation**: To maintain Separation of Concerns, a new dedicated WASM API `process_text(font_bytes: &[u8], text: &str)` MUST be introduced instead of overloading `process_image`.
+- **WASM OOM Prevention**: The `process_text` WASM binding must enforce a strict hard limit on maximum input characters (e.g., 500) and generated spline nodes to prevent `serde-wasm-bindgen` serialization from exhausting the browser heap.
 - **Clipping Safety**: Mathematical splines can easily exceed canvas bounds when stroke width is large. Instead of inflating texture allocations, the View/Projection Matrix will be zoomed out.
 - **Format Incompatibility**: If the user asks for a gradient but outputs to JSON or Python, the emitter will fall back to using `start_color` for the solid export color.
 
