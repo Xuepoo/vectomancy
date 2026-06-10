@@ -1,6 +1,6 @@
 [package]
 name = "vectomancy-video"
-version = "5.0.5"
+version = "5.0.6"
 edition = "2021"
 description = "Video frame processor extension for Vectomancy"
 
