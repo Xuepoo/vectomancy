@@ -32,7 +32,7 @@ jobs:
             artifact_name: vectomancy-windows-x86_64.exe
             arch: amd64
             os_name: windows
-          - os: macos-latest
+          - os: macos-13
             target: x86_64-apple-darwin
             artifact_name: vectomancy-macos-x86_64
             arch: amd64
