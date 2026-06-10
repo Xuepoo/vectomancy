@@ -1,10 +1,10 @@
 [package]
 name = "vectomancy-text"
-version = "5.0.0"
+version = "5.0.1"
 edition = "2021"
 description = "Font outline extraction plugin for Vectomancy"
 
 [dependencies]
-vectomancy = { path = "..", version = "5.0.0" }
+vectomancy = { path = "..", version = "5.0.1" }
 ab_glyph = "0.2"
 thiserror = "1.0"
