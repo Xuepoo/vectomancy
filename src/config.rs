@@ -1,11 +1,30 @@
-use crate::cli::{Mode, OutputFormat};
 use directories::ProjectDirs;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum OutputFormat {
+    Python,
+    Html,
+    Json,
+    Desmos,
+    Png,
+    Jpg,
+    Webp,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum Mode {
+    Fourier,
+    Spline,
+    Chaikin,
+}
 use std::fs;
 use std::path::PathBuf;
 
-#[derive(Deserialize, Debug, Default)]
-pub struct Config {
+#[derive(Deserialize, Serialize, Debug, Default, Clone)]
+pub struct ImageConfig {
     pub mode: Option<Mode>,
     pub terms: Option<usize>,
     pub epsilon: Option<f64>,
@@ -22,6 +41,23 @@ pub struct Config {
     pub bg_transparent: Option<bool>,
     pub threads: Option<usize>,
     pub gpu_power: Option<String>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Default, Clone)]
+pub struct VideoConfig {
+    pub enabled: Option<bool>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Default, Clone)]
+pub struct TextConfig {
+    pub font: Option<String>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Default, Clone)]
+pub struct Config {
+    pub image: Option<ImageConfig>,
+    pub video: Option<VideoConfig>,
+    pub text: Option<TextConfig>,
 }
 
 impl Config {

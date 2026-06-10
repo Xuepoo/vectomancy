@@ -1,4 +1,4 @@
-use crate::cli::OutputFormat;
+use crate::config::OutputFormat;
 use crate::error::VectomancyError;
 use crate::models::MathExpressionAST;
 use lyon_tessellation::{
@@ -82,7 +82,7 @@ async fn render_wgpu(
             force_fallback_adapter: false,
         })
         .await
-        .unwrap();
+        .map_err(|e| VectomancyError::MathError(format!("Failed to request GPU adapter: {}", e)))?;
 
     let (device, queue) = adapter
         .request_device(&wgpu::DeviceDescriptor::default())

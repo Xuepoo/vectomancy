@@ -1,6 +1,7 @@
+#[cfg(feature = "gpu")]
 pub mod native;
 
-use crate::cli::OutputFormat;
+use crate::config::OutputFormat;
 use crate::error::VectomancyError;
 use crate::models::MathExpressionAST;
 use base64::Engine;
