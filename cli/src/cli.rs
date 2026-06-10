@@ -1,5 +1,6 @@
-use clap::{Parser, ValueEnum};
+use clap::Parser;
 use std::path::PathBuf;
+pub use vectomancy::config::{Mode, OutputFormat};
 
 #[derive(Parser, Debug)]
 #[command(name = "vectomancy", version, author, about = "Image-to-Equation Converter", long_about = None)]
@@ -90,24 +91,4 @@ pub struct Cli {
     /// Generate shell completions
     #[arg(long)]
     pub generate_completions: Option<clap_complete::Shell>,
-}
-
-#[derive(ValueEnum, Clone, Debug, serde::Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum OutputFormat {
-    Python,
-    Html,
-    Json,
-    Desmos,
-    Png,
-    Jpg,
-    Webp,
-}
-
-#[derive(ValueEnum, Clone, Debug, serde::Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum Mode {
-    Fourier,
-    Spline,
-    Chaikin,
 }

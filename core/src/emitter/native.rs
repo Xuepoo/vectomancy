@@ -82,7 +82,7 @@ async fn render_wgpu(
             force_fallback_adapter: false,
         })
         .await
-        .map_err(|e| VectomancyError::MathError(format!("Failed to request GPU adapter: {}", e)))?;
+        .unwrap();
 
     let (device, queue) = adapter
         .request_device(&wgpu::DeviceDescriptor::default())

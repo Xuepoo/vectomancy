@@ -1,0 +1,27 @@
+# cargo-deny configuration file
+# Ref: https://embarkstudios.github.io/cargo-deny/
+
+[graph]
+targets = []
+
+[licenses]
+unlicensed = "deny"
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "BSD-3-Clause",
+    "BSD-2-Clause",
+    "CC0-1.0",
+    "ISC",
+    "OpenSSL",
+    "Zlib",
+]
+exceptions = []
+
+[advisories]
+db-path = "~/.cargo-deny/advisory-db"
+db-urls = ["https://github.com/rustsec/advisory-db"]
+vulnerability = "deny"
+unmaintained = "warn"
+unsound = "warn"
+notice = "warn"

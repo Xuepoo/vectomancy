@@ -1,6 +1,4 @@
-#[cfg(feature = "image")]
 pub mod raster;
-#[cfg(feature = "svg")]
 pub mod vector;
 
 use crate::error::VectomancyError;
@@ -13,7 +11,6 @@ pub fn parse_file(path: &Path, color: bool) -> Result<ParserOutput, VectomancyEr
         .and_then(|s| s.to_str())
         .unwrap_or_default();
     match ext_str.to_lowercase().as_str() {
-        #[cfg(feature = "image")]
         "png" | "jpg" | "jpeg" | "webp" => {
             let (paths, original_dimensions) = raster::process_raster_image(path, color)?;
             Ok(ParserOutput::Paths {
@@ -21,7 +18,6 @@ pub fn parse_file(path: &Path, color: bool) -> Result<ParserOutput, VectomancyEr
                 original_dimensions,
             })
         }
-        #[cfg(feature = "svg")]
         "svg" => {
             let (segments, original_dimensions) = vector::process_svg(path, color)?;
             Ok(ParserOutput::Segments {
@@ -42,7 +38,6 @@ pub fn parse_memory(
     color: bool,
 ) -> Result<ParserOutput, VectomancyError> {
     match format.to_lowercase().as_str() {
-        #[cfg(feature = "image")]
         "png" | "jpg" | "jpeg" | "webp" => {
             let (paths, original_dimensions) = raster::process_raster_from_memory(bytes, color)?;
             Ok(ParserOutput::Paths {
@@ -50,7 +45,6 @@ pub fn parse_memory(
                 original_dimensions,
             })
         }
-        #[cfg(feature = "svg")]
         "svg" => {
             let (segments, original_dimensions) = vector::process_svg_from_memory(bytes, color)?;
             Ok(ParserOutput::Segments {

@@ -1,0 +1,86 @@
+<!-- prettier-ignore -->
+<!-- eslint-disable -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Vectomancy Output</title>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #333; display: flex; justify-content: center; align-items: center; }
+        canvas { background: #fff; max-width: 100%; max-height: 100vh; object-fit: contain; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" width="{{ width | default(value=4000) }}" height="{{ height | default(value=4000) }}"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        {% if equations %}
+        {% for path in equations %}
+        {% if path.color_rgb %}
+        ctx.strokeStyle = `rgb({{ path.color_rgb.0 }}, {{ path.color_rgb.1 }}, {{ path.color_rgb.2 }})`;
+        {% else %}
+        ctx.strokeStyle = 'rgb(0, 0, 0)';
+        {% endif %}
+        {% for eq in path.data %}
+        ctx.beginPath();
+        {
+            let first = true;
+            for (let t = 0; t <= 1; t += 0.01) {
+                let x = {% for c in eq.x_poly %}{{ c }}{% if loop.index0 == 1 %}*t{% elif loop.index0 > 1 %}*Math.pow(t, {{ loop.index0 }}){% endif %}{% if not loop.last %} + {% endif %}{% endfor %};
+                let y = {% for c in eq.y_poly %}{{ c }}{% if loop.index0 == 1 %}*t{% elif loop.index0 > 1 %}*Math.pow(t, {{ loop.index0 }}){% endif %}{% if not loop.last %} + {% endif %}{% endfor %};
+                if (first) {
+                    ctx.moveTo(x, y);
+                    first = false;
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+        }
+        ctx.stroke();
+        {% endfor %}
+        {% endfor %}
+        {% elif strokes %}
+        {% for stroke_path in strokes %}
+        {% if stroke_path.color_rgb %}
+        ctx.strokeStyle = `rgb({{ stroke_path.color_rgb.0 }}, {{ stroke_path.color_rgb.1 }}, {{ stroke_path.color_rgb.2 }})`;
+        {% else %}
+        ctx.strokeStyle = 'rgb(0, 0, 0)';
+        {% endif %}
+        ctx.beginPath();
+        {
+            let first = true;
+            for (let t = 0; t <= Math.PI * 2; t += 0.01) {
+                let x = 0;
+                let y = 0;
+                {% for term in stroke_path.data %}
+                x += {{ term.amplitude }} * Math.cos({{ term.frequency }} * t + {{ term.phase }});
+                y += {{ term.amplitude }} * Math.sin({{ term.frequency }} * t + {{ term.phase }});
+                {% endfor %}
+                if (first) {
+                    ctx.moveTo(x, y);
+                    first = false;
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+        }
+        ctx.stroke();
+        {% endfor %}
+        {% elif paths %}
+        {% for path in paths %}
+        {% if path.color_rgb %}
+        ctx.strokeStyle = `rgb({{ path.color_rgb.0 }}, {{ path.color_rgb.1 }}, {{ path.color_rgb.2 }})`;
+        {% else %}
+        ctx.strokeStyle = 'rgb(0, 0, 0)';
+        {% endif %}
+        ctx.beginPath();
+        {% for p in path.data %}
+        {% if loop.first %}ctx.moveTo({{ p.x }}, {{ p.y }});{% else %}ctx.lineTo({{ p.x }}, {{ p.y }});{% endif %}
+        {% endfor %}
+        ctx.stroke();
+        {% endfor %}
+        {% endif %}
+    </script>
+</body>
+</html>

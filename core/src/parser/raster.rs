@@ -4,7 +4,7 @@ use image::Luma;
 use std::path::Path;
 use tracing::{debug, info};
 
-#[cfg(feature = "parallel")]
+#[cfg(not(target_arch = "wasm32"))]
 use rayon::prelude::*;
 
 #[allow(clippy::type_complexity)]
@@ -29,7 +29,7 @@ pub fn process_raster_from_memory(
 }
 
 #[allow(clippy::type_complexity)]
-pub fn process_raster_image_core(
+fn process_raster_image_core(
     img: image::DynamicImage,
     color: bool,
 ) -> Result<(Vec<ColoredPath<Vec<Point2D>>>, (u32, u32)), VectomancyError> {
@@ -89,9 +89,9 @@ pub fn process_raster_image_core(
 
     let rgb_image = if color { Some(img.to_rgb8()) } else { None };
 
-    #[cfg(feature = "parallel")]
+    #[cfg(not(target_arch = "wasm32"))]
     let path_iter = all_paths.into_par_iter();
-    #[cfg(not(feature = "parallel"))]
+    #[cfg(target_arch = "wasm32")]
     let path_iter = all_paths.into_iter();
 
     let colored_paths: Vec<_> = path_iter

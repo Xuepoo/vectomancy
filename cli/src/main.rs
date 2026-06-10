@@ -2,10 +2,12 @@ use clap::{CommandFactory, Parser};
 use rayon::prelude::*;
 use tracing::{info, Level};
 use tracing_subscriber::FmtSubscriber;
-use vectomancy::cli::Cli;
+mod cli;
+
+use cli::Cli;
 use vectomancy::error::VectomancyError;
 use vectomancy::models::MathExpressionAST;
-use vectomancy::{cli, emitter, math, models, parser};
+use vectomancy::{emitter, math, models, parser};
 
 fn main() -> Result<(), VectomancyError> {
     let cli = Cli::parse();
@@ -119,11 +121,7 @@ fn main() -> Result<(), VectomancyError> {
                 } else {
                     config.min_path_len.unwrap_or(5)
                 };
-                let mode = cli
-                    .mode
-                    .clone()
-                    .or(config.mode.clone())
-                    .unwrap_or(cli::Mode::Spline);
+                let mode = cli.mode.or(config.mode).unwrap_or(cli::Mode::Spline);
                 let ast = match mode {
                     cli::Mode::Fourier => {
                         let mut valid_paths = Vec::new();
@@ -212,11 +210,7 @@ fn main() -> Result<(), VectomancyError> {
                 original_dimensions,
             } => {
                 info!("Successfully extracted {} segments.", segs.len());
-                let mode = cli
-                    .mode
-                    .clone()
-                    .or(config.mode.clone())
-                    .unwrap_or(cli::Mode::Spline);
+                let mode = cli.mode.or(config.mode).unwrap_or(cli::Mode::Spline);
                 let ast = match mode {
                     cli::Mode::Spline => {
                         let all_equations: Vec<_> = segs

@@ -1,5 +1,5 @@
 pub mod spline;
-#[cfg(all(feature = "gpu", not(target_arch = "wasm32")))]
+#[cfg(not(target_arch = "wasm32"))]
 pub mod wgpu_math;
 
 use crate::error::VectomancyError;
@@ -130,7 +130,7 @@ pub fn perform_fft(
     terms: usize,
     #[allow(unused_variables)] use_gpu: bool,
 ) -> Result<Vec<crate::models::FourierTerm>, VectomancyError> {
-    #[cfg(all(feature = "gpu", not(target_arch = "wasm32")))]
+    #[cfg(not(target_arch = "wasm32"))]
     if use_gpu {
         match wgpu_math::perform_fft_gpu(points, terms) {
             Ok(res) => return Ok(res),
@@ -225,7 +225,7 @@ pub fn perform_fft_batch(
     terms: usize,
     #[allow(unused_variables)] use_gpu: bool,
 ) -> Result<Vec<Vec<crate::models::FourierTerm>>, VectomancyError> {
-    #[cfg(all(feature = "gpu", not(target_arch = "wasm32")))]
+    #[cfg(not(target_arch = "wasm32"))]
     if use_gpu {
         match wgpu_math::perform_fft_batch_gpu(paths, terms) {
             Ok(res) => return Ok(res),
@@ -240,23 +240,11 @@ pub fn perform_fft_batch(
         paths.len(),
         terms
     );
-
-    #[cfg(feature = "parallel")]
-    {
-        use rayon::prelude::*;
-        paths
-            .par_iter()
-            .map(|points| perform_fft(points, terms, false))
-            .collect::<Result<Vec<_>, _>>()
+    let mut all_results = Vec::with_capacity(paths.len());
+    for points in paths {
+        all_results.push(perform_fft(points, terms, false)?);
     }
-    #[cfg(not(feature = "parallel"))]
-    {
-        let mut all_results = Vec::with_capacity(paths.len());
-        for points in paths {
-            all_results.push(perform_fft(points, terms, false)?);
-        }
-        Ok(all_results)
-    }
+    Ok(all_results)
 }
 
 #[cfg(test)]

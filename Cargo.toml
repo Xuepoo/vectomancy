@@ -1,8 +1,8 @@
 [package]
 name = "vectomancy"
-version = "4.1.3"
+version = "5.0.0"
 edition = "2021"
-description = "Vectomancy - Image to vector math CLI"
+description = "Vectomancy - Image to vector math CLI core"
 license = "MIT"
 repository = "https://github.com/Xuepoo/vectomancy"
 exclude = [
@@ -14,45 +14,42 @@ exclude = [
 ]
 
 [dependencies]
-clap = { version = "4.4", features = ["derive"] }
-clap_complete = "4.4"
-env_logger = "0.11"
 log = "0.4"
-directories = "6.0"
-thiserror = "1.0"
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-rayon = "1.8"
+directories = "5.0"
 tera = "1.19"
-image = { version = "0.25", features = ["webp"] }
-usvg = "0.38"
 rustfft = "6.1"
-wgpu = "29.0.3"
-pollster = "0.4.0"
-bytemuck = { version = "1.25.0", features = ["derive"] }
-serde = { version = "1.0.228", features = ["derive"] }
-serde_json = "1.0.150"
 flate2 = "1.0"
 base64 = "0.22"
-toml = "1.1.2"
 zip = "8.6.0"
-lyon_tessellation = { version = "1.0.20", features = ["std"] }
-kiddo = "5.3.2"
-imageproc = "0.26.2"
+kiddo = "5.3.1"
+
+# Workspace dependencies inherited
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+toml = { workspace = true }
+
+# Optional dependencies based on features
+rayon = { workspace = true, optional = true }
+wgpu = { workspace = true, optional = true }
+pollster = { version = "0.4.0", optional = true }
+bytemuck = { version = "1.25.0", features = ["derive"], optional = true }
+lyon_tessellation = { version = "1.0.20", features = ["std"], optional = true }
+image = { version = "0.25", features = ["webp"], optional = true }
+imageproc = { version = "0.26.2", optional = true }
+usvg = { version = "0.38", optional = true }
 
 [dev-dependencies]
 criterion = "0.5"
 
+[features]
+default = ["parallel", "image", "svg"]
+gpu = ["dep:wgpu", "dep:pollster", "dep:bytemuck", "dep:lyon_tessellation"]
+parallel = ["dep:rayon"]
+image = ["dep:image", "dep:imageproc"]
+svg = ["dep:usvg"]
+
 [[bench]]
 name = "math_benchmarks"
 harness = false
-
-[profile.release]
-lto = true
-strip = true
-panic = "abort"
-opt-level = "z"
-codegen-units = 1
-
-[profile.release.package."*"]
-opt-level = "z"

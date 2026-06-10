@@ -1,0 +1,440 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+    tags: [ "v*" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  check-fmt-and-test:
+    name: Format, Lint & Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.1.7
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Install LLVM/Clang & FFmpeg Headers
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev libavdevice-dev libavfilter-dev pkg-config
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - name: Lint with Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Run tests
+        run: cargo test --workspace --verbose
+
+  build-and-release:
+    name: Build Binary for ${{ matrix.target }}
+    needs: check-fmt-and-test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact_name: vectomancy-linux-x86_64
+            arch: amd64
+            os_name: linux
+          - os: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
+            artifact_name: vectomancy-linux-aarch64
+            arch: arm64
+            os_name: linux
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact_name: vectomancy-windows-x86_64.exe
+            arch: amd64
+            os_name: windows
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            artifact_name: vectomancy-macos-x86_64
+            arch: amd64
+            os_name: macos
+          - os: macos-14
+            target: aarch64-apple-darwin
+            artifact_name: vectomancy-macos-aarch64
+            arch: arm64
+            os_name: macos
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.1.7
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install LLVM/Clang & FFmpeg Headers
+        if: matrix.os_name == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev libavdevice-dev libavfilter-dev pkg-config
+
+      - name: Build release
+        run: cargo build --release --target ${{ matrix.target }} --bin vectomancy-cli
+
+      - name: Rename artifact (Linux/macOS)
+        if: matrix.os_name != 'windows'
+        run: mv target/${{ matrix.target }}/release/vectomancy-cli ${{ matrix.artifact_name }}
+
+      - name: Rename artifact (Windows)
+        if: matrix.os_name == 'windows'
+        run: move target/${{ matrix.target }}/release/vectomancy-cli.exe ${{ matrix.artifact_name }}
+
+      # Docker build (Linux only) - natively without QEMU
+      - name: Log in to Docker Hub
+        if: matrix.os_name == 'linux'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Set up Docker Buildx
+        if: matrix.os_name == 'linux'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push Docker platform image
+        if: matrix.os_name == 'linux'
+        run: |
+          cat << 'EOF' > Dockerfile.light
+          FROM alpine:latest
+          RUN apk add --no-cache libgcc libstdc++
+          COPY ${{ matrix.artifact_name }} /usr/local/bin/vectomancy
+          ENTRYPOINT ["/usr/local/bin/vectomancy"]
+          EOF
+
+          # Push tag version or latest
+          IMAGE_TAG="latest"
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            IMAGE_TAG="${{ github.ref_name }}"
+          fi
+
+          docker buildx build \
+            --platform linux/${{ matrix.arch }} \
+            -f Dockerfile.light \
+            -t xuepoo/vectomancy:${IMAGE_TAG}-${{ matrix.arch }} \
+            --push .
+
+      - name: Package for Linux distributions (nfpm)
+        if: matrix.os_name == 'linux'
+        run: |
+          if [ "${{ matrix.arch }}" = "arm64" ]; then
+            NFPM_ARCH="arm64"
+            PKG_ARCH="aarch64"
+          else
+            NFPM_ARCH="x86_64"
+            PKG_ARCH="x86_64"
+          fi
+          curl -sL https://github.com/goreleaser/nfpm/releases/download/v2.37.1/nfpm_2.37.1_Linux_${NFPM_ARCH}.tar.gz | tar xz nfpm
+          sed -i "s/amd64/${NFPM_ARCH}/g" nfpm.yaml
+          sed -i "s/vectomancy-linux-x86_64/${{ matrix.artifact_name }}/g" nfpm.yaml
+          ./nfpm pkg --packager deb --target vectomancy-linux-${PKG_ARCH}.deb
+          ./nfpm pkg --packager rpm --target vectomancy-linux-${PKG_ARCH}.rpm
+          ./nfpm pkg --packager archlinux --target vectomancy-linux-${PKG_ARCH}.pkg.tar.zst
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4.4.0
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: |
+            ${{ matrix.artifact_name }}
+            *.deb
+            *.rpm
+            *.pkg.tar.zst
+
+  release-github:
+    name: Create GitHub Release
+    needs: build-and-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4.1.8
+        with:
+          path: artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/*
+          generate_release_notes: true
+
+  docker-manifest:
+    name: Create and Push Docker Manifest
+    needs: build-and-release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Create and push manifest
+        run: |
+          IMAGE_TAG="latest"
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            IMAGE_TAG="${{ github.ref_name }}"
+          fi
+
+          docker manifest create xuepoo/vectomancy:${IMAGE_TAG} \
+            xuepoo/vectomancy:${IMAGE_TAG}-amd64 \
+            xuepoo/vectomancy:${IMAGE_TAG}-arm64
+          docker manifest push xuepoo/vectomancy:${IMAGE_TAG}
+
+  publish-crates:
+    name: Publish to Crates.io
+    needs: release-github
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.1.7
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install LLVM/Clang & FFmpeg Headers
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev libavdevice-dev libavfilter-dev pkg-config
+
+      - name: Publish to crates.io
+        run: |
+          # 1. Publish core
+          cargo publish --manifest-path vectomancy/Cargo.toml --token ${{ secrets.CRATES_TOKEN }}
+          sleep 30
+          # 2. Publish text
+          cargo publish --manifest-path vectomancy/text/Cargo.toml --token ${{ secrets.CRATES_TOKEN }}
+          sleep 30
+          # 3. Publish video
+          cargo publish --manifest-path vectomancy/video/Cargo.toml --token ${{ secrets.CRATES_TOKEN }}
+          sleep 30
+          # 4. Publish cli
+          cargo publish --manifest-path vectomancy-cli/Cargo.toml --token ${{ secrets.CRATES_TOKEN }}
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_TOKEN }}
+
+  publish-aur:
+    name: Publish to AUR
+    needs: release-github
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Install Arch build dependencies
+        run: |
+          pacman -Syu --noconfirm git openssh pacman-contrib sudo fakeroot binutils make gcc pkgconf
+
+      - name: Configure SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.AUR_SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -t ed25519 aur.archlinux.org >> ~/.ssh/known_hosts
+
+          # Sync to /root/.ssh for standard ssh client compatibility in containers
+          mkdir -p /root/.ssh
+          cp -r ~/.ssh/* /root/.ssh/
+          chmod 700 /root/.ssh
+          chmod 600 /root/.ssh/*
+
+      - name: Configure Git
+        run: |
+          git config --system --add safe.directory '*'
+          git config --global user.name "Xuepoo (CI)"
+          git config --global user.email "xuepoofoter@gmail.com"
+
+      - name: Update AUR source package (vectomancy)
+        run: |
+          git clone ssh://aur@aur.archlinux.org/vectomancy.git aur-src
+          cd aur-src
+          CLEAN_VERSION=${{ github.ref_name }}
+          CLEAN_VERSION=${CLEAN_VERSION#v}
+          sed -i "s/^pkgver=.*/pkgver=${CLEAN_VERSION}/" PKGBUILD
+          sed -i "s/^pkgrel=.*/pkgrel=1/" PKGBUILD
+          useradd -m builder && echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+          chown -R builder:builder .
+          su builder -c "updpkgsums && makepkg --printsrcinfo > .SRCINFO"
+          git add PKGBUILD .SRCINFO
+          git commit -m "Update to v${CLEAN_VERSION}" || true
+          git push origin master
+
+      - name: Update AUR binary package (vectomancy-bin)
+        run: |
+          git clone ssh://aur@aur.archlinux.org/vectomancy-bin.git aur-bin
+          cd aur-bin
+          CLEAN_VERSION=${{ github.ref_name }}
+          CLEAN_VERSION=${CLEAN_VERSION#v}
+          sed -i "s/^pkgver=.*/pkgver=${CLEAN_VERSION}/" PKGBUILD
+          sed -i "s/^pkgrel=.*/pkgrel=1/" PKGBUILD
+          useradd -m builder && echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+          chown -R builder:builder .
+          su builder -c "updpkgsums && makepkg --printsrcinfo > .SRCINFO"
+          git add PKGBUILD .SRCINFO
+          git commit -m "Update to v${CLEAN_VERSION}" || true
+          git push origin master
+
+  sync-brew:
+    name: Sync Brew Formula
+    needs: release-github
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Checkout tap repository
+        uses: actions/checkout@v4.1.7
+        with:
+          repository: Xuepoo/homebrew-tap
+          token: ${{ secrets.SYNC_TOKEN }}
+          path: homebrew-tap
+
+      - name: Update Formula
+        run: |
+          VERSION=${{ github.ref_name }}
+          CLEAN_VERSION=${VERSION#v}
+          curl -sL -O "https://github.com/Xuepoo/vectomancy/releases/download/${VERSION}/vectomancy-macos-x86_64"
+          curl -sL -O "https://github.com/Xuepoo/vectomancy/releases/download/${VERSION}/vectomancy-macos-aarch64"
+          SHA_INTEL=$(sha256sum vectomancy-macos-x86_64 | awk '{print $1}')
+          SHA_ARM=$(sha256sum vectomancy-macos-aarch64 | awk '{print $1}')
+
+          mkdir -p homebrew-tap/Formula
+          cat << EOF > homebrew-tap/Formula/vectomancy.rb
+          class Vectomancy < Formula
+            desc "Image to vector math CLI"
+            homepage "https://github.com/Xuepoo/vectomancy"
+            version "${CLEAN_VERSION}"
+
+            if OS.mac? && Hardware::CPU.intel?
+              url "https://github.com/Xuepoo/vectomancy/releases/download/${VERSION}/vectomancy-macos-x86_64"
+              sha256 "${SHA_INTEL}"
+            elsif OS.mac? && Hardware::CPU.arm?
+              url "https://github.com/Xuepoo/vectomancy/releases/download/${VERSION}/vectomancy-macos-aarch64"
+              sha256 "${SHA_ARM}"
+            end
+
+            def install
+              bin.install "vectomancy-macos-x86_64" => "vectomancy" if Hardware::CPU.intel?
+              bin.install "vectomancy-macos-aarch64" => "vectomancy" if Hardware::CPU.arm?
+            end
+
+            test do
+              system "#{bin}/vectomancy", "--version"
+            end
+          end
+          EOF
+
+          cd homebrew-tap
+          git config user.name "Xuepoo (CI)"
+          git config user.email "xuepoofoter@gmail.com"
+          git add Formula/vectomancy.rb
+          git commit -m "Update Vectomancy to ${CLEAN_VERSION}" || true
+          git push origin main
+
+  sync-scoop:
+    name: Sync Scoop Manifest
+    needs: release-github
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Checkout scoop repository
+        uses: actions/checkout@v4.1.7
+        with:
+          repository: Xuepoo/scoop-bucket
+          token: ${{ secrets.SYNC_TOKEN }}
+          path: scoop-bucket
+
+      - name: Update Manifest
+        run: |
+          VERSION=${{ github.ref_name }}
+          CLEAN_VERSION=${VERSION#v}
+          curl -sL -O "https://github.com/Xuepoo/vectomancy/releases/download/${VERSION}/vectomancy-windows-x86_64.exe"
+          SHA_WIN=$(sha256sum vectomancy-windows-x86_64.exe | awk '{print $1}')
+
+          mkdir -p scoop-bucket/bucket
+          cat << EOF > scoop-bucket/bucket/vectomancy.json
+          {
+            "version": "${CLEAN_VERSION}",
+            "description": "Image to vector math CLI",
+            "homepage": "https://github.com/Xuepoo/vectomancy",
+            "license": "MIT",
+            "architecture": {
+              "64bit": {
+                "url": "https://github.com/Xuepoo/vectomancy/releases/download/${VERSION}/vectomancy-windows-x86_64.exe",
+                "hash": "${SHA_WIN}"
+              }
+            },
+            "bin": "vectomancy-windows-x86_64.exe",
+            "checkver": {
+              "github": "https://github.com/Xuepoo/vectomancy"
+            }
+          }
+          EOF
+
+          cd scoop-bucket
+          git config user.name "Xuepoo (CI)"
+          git config user.email "xuepoofoter@gmail.com"
+          git add bucket/vectomancy.json
+          git commit -m "Update Vectomancy to ${CLEAN_VERSION}" || true
+          git push origin main
+
+  deploy-cloudflare-pages:
+    name: Deploy Cloudflare Pages
+    needs: check-fmt-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.1.7
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Install wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+      - name: Build WASM Engine
+        run: |
+          cd vectomancy-web/wasm-engine
+          wasm-pack build --target web --out-dir ../zola-site/static/wasm
+
+      - name: Install Zola
+        run: |
+          ZOLA_VERSION="0.19.2"
+          curl -L -o zola.tar.gz https://github.com/getzola/zola/releases/download/v${ZOLA_VERSION}/zola-v${ZOLA_VERSION}-x86_64-unknown-linux-gnu.tar.gz
+          tar -xzf zola.tar.gz
+          sudo mv zola /usr/local/bin/
+
+      - name: Build Zola site
+        run: |
+          cd vectomancy-web/zola-site
+          zola build
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy vectomancy-web/zola-site/public --project-name=vectomancy --branch=main

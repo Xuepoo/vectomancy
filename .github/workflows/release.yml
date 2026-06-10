@@ -34,7 +34,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@v4.1.7
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -89,12 +89,12 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v4.1.8
         with:
           path: artifacts
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@v2
         with:
           files: artifacts/**/*
           generate_release_notes: true
@@ -106,7 +106,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@v4.1.7
 
       - name: Install Rust toolchain
         # Pinning stable rust toolchain
@@ -176,140 +176,3 @@ jobs:
           git add PKGBUILD .SRCINFO
           git commit -m "Update to v${CLEAN_VERSION}" || true
           git push origin master
-
-  publish-homebrew:
-    name: Publish to Homebrew Tap
-    needs: release
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
-    steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v8
-        with:
-          path: artifacts
-
-      - name: Calculate SHA256
-        id: sha
-        run: |
-          VERSION="${{ github.ref_name }}"
-          CLEAN_VERSION=${VERSION#v}
-          echo "version=${CLEAN_VERSION}" >> "$GITHUB_OUTPUT"
-
-          sleep 15
-
-          SHA_LINUX=$(sha256sum artifacts/vectomancy-linux-x86_64/vectomancy-linux-x86_64 | awk '{print $1}')
-          SHA_MACOS_X86=$(sha256sum artifacts/vectomancy-macos-x86_64/vectomancy-macos-x86_64 | awk '{print $1}')
-          SHA_MACOS_ARM=$(sha256sum artifacts/vectomancy-macos-aarch64/vectomancy-macos-aarch64 | awk '{print $1}')
-
-          echo "sha_linux=${SHA_LINUX}" >> "$GITHUB_OUTPUT"
-          echo "sha_macos_x86=${SHA_MACOS_X86}" >> "$GITHUB_OUTPUT"
-          echo "sha_macos_arm=${SHA_MACOS_ARM}" >> "$GITHUB_OUTPUT"
-
-      - name: Update Formula
-        run: |
-          VERSION="${{ steps.sha.outputs.version }}"
-          REPO_URL="https://x-access-token:${{ secrets.GH_PAT }}@github.com/Xuepoo/homebrew-tap.git"
-
-          git clone "${REPO_URL}" tap
-          cd tap
-          mkdir -p Formula
-
-          cat > Formula/vectomancy.rb << FORMULA
-          class Vectomancy < Formula
-            desc "Use curve equations to draw"
-            homepage "https://github.com/Xuepoo/vectomancy"
-            version "${VERSION}"
-            license "MIT"
-
-            on_macos do
-              if Hardware::CPU.arm?
-                url "https://github.com/Xuepoo/vectomancy/releases/download/v${VERSION}/vectomancy-macos-aarch64"
-                sha256 "${{ steps.sha.outputs.sha_macos_arm }}"
-              else
-                url "https://github.com/Xuepoo/vectomancy/releases/download/v${VERSION}/vectomancy-macos-x86_64"
-                sha256 "${{ steps.sha.outputs.sha_macos_x86 }}"
-              end
-            end
-
-            on_linux do
-              url "https://github.com/Xuepoo/vectomancy/releases/download/v${VERSION}/vectomancy-linux-x86_64"
-              sha256 "${{ steps.sha.outputs.sha_linux }}"
-            end
-
-            def install
-              if OS.mac?
-                if Hardware::CPU.arm?
-                  bin.install "vectomancy-macos-aarch64" => "vectomancy"
-                else
-                  bin.install "vectomancy-macos-x86_64" => "vectomancy"
-                end
-              elsif OS.linux?
-                bin.install "vectomancy-linux-x86_64" => "vectomancy"
-              end
-            end
-
-            test do
-              assert_match version.to_s, shell_output("#{bin}/vectomancy --version")
-            end
-          end
-          FORMULA
-
-          git config user.name "Xuepoo (CI)"
-          git config user.email "xuepoofoter@gmail.com"
-          git add Formula/vectomancy.rb
-          git commit -m "chore: update vectomancy to v${VERSION}" || true
-          git push
-
-  publish-scoop:
-    name: Publish to Scoop Bucket
-    needs: release
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
-    steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v8
-        with:
-          path: artifacts
-
-      - name: Calculate SHA256 and Update
-        run: |
-          VERSION="${{ github.ref_name }}"
-          CLEAN_VERSION=${VERSION#v}
-          SHA_WIN=$(sha256sum artifacts/vectomancy-windows-x86_64/vectomancy-windows-x86_64.exe | awk '{print $1}')
-
-          REPO_URL="https://x-access-token:${{ secrets.GH_PAT }}@github.com/Xuepoo/scoop-bucket.git"
-          git clone "${REPO_URL}" bucket-repo
-          cd bucket-repo
-          mkdir -p bucket
-
-          cat > bucket/vectomancy.json << EOF
-          {
-            "version": "${CLEAN_VERSION}",
-            "description": "Use curve equations to draw",
-            "homepage": "https://github.com/Xuepoo/vectomancy",
-            "license": "MIT",
-            "architecture": {
-              "64bit": {
-                "url": "https://github.com/Xuepoo/vectomancy/releases/download/v${CLEAN_VERSION}/vectomancy-windows-x86_64.exe",
-                "hash": "${SHA_WIN}",
-                "bin": [["vectomancy-windows-x86_64.exe", "vectomancy"]]
-              }
-            },
-            "checkver": {
-              "github": "https://github.com/Xuepoo/vectomancy"
-            },
-            "autoupdate": {
-              "architecture": {
-                "64bit": {
-                  "url": "https://github.com/Xuepoo/vectomancy/releases/download/v\$version/vectomancy-windows-x86_64.exe"
-                }
-              }
-            }
-          }
-          EOF
-
-          git config user.name "Xuepoo (CI)"
-          git config user.email "xuepoofoter@gmail.com"
-          git add bucket/vectomancy.json
-          git commit -m "chore: update vectomancy to v${CLEAN_VERSION}" || true
-          git push

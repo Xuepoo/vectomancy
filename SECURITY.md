@@ -2,29 +2,13 @@
 
 ## Supported Versions
 
+Only the latest major version (v5.x) is actively supported with security updates.
+
 | Version | Supported          |
-|---------|--------------------|
-| latest  | :white_check_mark: |
-| < latest| :x:                |
+| ------- | ------------------ |
+| 5.x     | :white_check_mark: |
+| < 5.x   | :x:                |
 
 ## Reporting a Vulnerability
 
-**Please do NOT open a public issue.**
-
-Report privately via [GitHub Security Advisories](https://github.com/Xuepoo/vectomancy/security/advisories/new).
-
-### What to include
-
-- Description of the vulnerability
-- Steps to reproduce
-- Potential impact
-
-### Response timeline
-
-- **Acknowledgment**: within 48 hours
-- **Fix**: critical issues within 2 weeks
-
-## Dependency Security
-
-- **cargo-deny** in CI for dependency auditing
-- **Dependabot** for automated dependency updates
+If you discover a security vulnerability in Vectomancy, please do not open a public issue. Instead, report it via email to the project maintainers. We aim to respond within 48 hours to coordinate a security fix and release path.

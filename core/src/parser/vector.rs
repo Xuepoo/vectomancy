@@ -1,6 +1,6 @@
 use crate::error::VectomancyError;
 use crate::models::{BezierSegment, ColoredPath, Point2D};
-#[cfg(feature = "parallel")]
+#[cfg(not(target_arch = "wasm32"))]
 use rayon::prelude::*;
 use std::path::Path;
 use usvg::{Options, Tree, TreeParsing};
@@ -68,9 +68,9 @@ pub fn process_svg_from_memory(
 
     traverse(&tree.root, &mut all_segments, color);
 
-    #[cfg(feature = "parallel")]
+    #[cfg(not(target_arch = "wasm32"))]
     let segment_iter = all_segments.into_par_iter();
-    #[cfg(not(feature = "parallel"))]
+    #[cfg(target_arch = "wasm32")]
     let segment_iter = all_segments.into_iter();
 
     let colored_paths: Vec<_> = segment_iter

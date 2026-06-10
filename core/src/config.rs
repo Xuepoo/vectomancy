@@ -1,7 +1,8 @@
+use clap::ValueEnum;
 use directories::ProjectDirs;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(ValueEnum, Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum OutputFormat {
     Python,
@@ -13,7 +14,7 @@ pub enum OutputFormat {
     Webp,
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(ValueEnum, Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum Mode {
     Fourier,
@@ -23,8 +24,8 @@ pub enum Mode {
 use std::fs;
 use std::path::PathBuf;
 
-#[derive(Deserialize, Serialize, Debug, Default, Clone)]
-pub struct ImageConfig {
+#[derive(Deserialize, Debug, Default)]
+pub struct Config {
     pub mode: Option<Mode>,
     pub terms: Option<usize>,
     pub epsilon: Option<f64>,
@@ -41,23 +42,6 @@ pub struct ImageConfig {
     pub bg_transparent: Option<bool>,
     pub threads: Option<usize>,
     pub gpu_power: Option<String>,
-}
-
-#[derive(Deserialize, Serialize, Debug, Default, Clone)]
-pub struct VideoConfig {
-    pub enabled: Option<bool>,
-}
-
-#[derive(Deserialize, Serialize, Debug, Default, Clone)]
-pub struct TextConfig {
-    pub font: Option<String>,
-}
-
-#[derive(Deserialize, Serialize, Debug, Default, Clone)]
-pub struct Config {
-    pub image: Option<ImageConfig>,
-    pub video: Option<VideoConfig>,
-    pub text: Option<TextConfig>,
 }
 
 impl Config {

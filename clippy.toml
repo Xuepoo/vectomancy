@@ -1,0 +1,8 @@
+# Clippy configuration file
+# Ref: https://rust-lang.github.io/rust-clippy/master/index.html
+
+# Avoid warning about these names
+allow-unwrap-in-tests = true
+
+# Maximum complexity of a function before clippy alerts
+cognitive-complexity-threshold = 30

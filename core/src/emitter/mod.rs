@@ -1,4 +1,3 @@
-#[cfg(feature = "gpu")]
 pub mod native;
 
 use crate::config::OutputFormat;
