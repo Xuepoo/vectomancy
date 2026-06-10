@@ -43,11 +43,11 @@ pub enum ColorStyle {
 4. Splines are built and packaged into `MathExpressionAST` alongside the parsed `ColorStyle::LinearGradient`.
 5. `emitter::native::render_to_image` initializes WGPU:
    - Evaluates `stroke_width`. If `> 0.0`, calculates the polygon expansion on the CPU using `rayon` (or `fold` in WASM), and performs Vertex Batching before uploading to the GPU.
-   - Calculates the global bounding box of the splines using `rayon` (or `fold` in WASM).
+   - Calculates the global bounding box of the splines using `rayon` (or `fold` in WASM). To prevent Shader divide-by-zero errors (e.g. `NaN` from degenerate BBox or whitespace), the CPU must pad the bounding box if `max_x - min_x < f32::EPSILON` or `max_y - min_y < f32::EPSILON`.
    - The `angle_degrees` must be normalized to `[0, 360)` using `f32::rem_euclid(360.0)` before uniform upload.
    - Modifies the Orthographic Projection matrix to scale the viewport. The padding must explicitly incorporate the Miter Limit to prevent sharp corners from clipping: `padding = (stroke_width / 2.0) * miter_limit`. DO NOT increase physical Canvas pixel dimensions.
    - Uploads gradient colors, angle, and bounding box via Uniform Buffers.
-6. The GPU renders the splines. The engine must use **Lazy Initialization** for its pipelines: instead of always compiling both, it must only compile and bind the specific `wgpu::RenderPipeline` descriptor required for the current run (`LineList` if `stroke_width == 0.0`, or `TriangleList` if `> 0.0`) to avoid unnecessary shader compilation overhead in CLI mode. The fragment shader paints the gradient.
+6. The GPU renders the splines. The engine must use **Lazy Initialization** for its pipelines: instead of always compiling both, it must only compile and bind the specific `wgpu::RenderPipeline` descriptor required for the current run (`LineList` if `stroke_width == 0.0`, or `TriangleList` if `> 0.0`) to avoid unnecessary shader compilation overhead in CLI mode. Furthermore, to prevent Index Buffer overflow from high-complexity text polygons, the `TriangleList` pipeline descriptor MUST be configured to use `wgpu::IndexFormat::Uint32`. The fragment shader paints the gradient.
 7. The output is saved to `out.png`.
 
 ## 4. Error Handling & Edge Cases
@@ -64,8 +64,11 @@ pub enum ColorStyle {
 
 ## 5. Testing Strategy
 - **Unit Tests**:
-  - `cli::parse_gradient`: Verify parsing of `#FF0000,#0000FF,45` into proper f32 arrays and angles.
-  - `math::bounding_box`: Verify the AST correctly reports its min/max boundaries.
-- **Integration Tests**:
-  - Run the CLI with `--gradient` and `--stroke-width 5.0` outputting to `.png`. Verify exit code 0 and file creation.
-  - **Golden Image Visual Testing:** Use WGPU headless rendering to generate output and compare its pixels/perceptual hash against a known-good Golden Image reference to guarantee Shader gradient interpolations and clipping rules are mathematically precise.
+  - Valid and invalid stroke weights.
+  - Correct gradient argument parsing.
+- **Visual Tests (Golden Images)**:
+  - Requires generating baseline `out.png` files with WGPU headless rendering.
+  - **CI Dependency**: CI runners (e.g. GitHub Actions) lacking physical GPUs must explicitly pre-install a software Vulkan driver (e.g., `mesa-vulkan-drivers` or `lavapipe`) to ensure `wgpu::Instance::request_adapter` successfully returns a fallback adapter.
+  - Comparing output for: "Solid Art", "Gradient Art", and "Transparent Output".
+- **Performance Tests**:
+  - Benchmark vertex count limitations for different stroke widths vs hairline rendering.
