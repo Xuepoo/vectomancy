@@ -59,15 +59,15 @@ jobs:
           sudo apt-get install -y clang libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev libavdevice-dev libavfilter-dev pkg-config
 
       - name: Build release
-        run: cargo build --release --target ${{ matrix.target }} --bin vectomancy-cli
+        run: cargo build --release --target ${{ matrix.target }} --bin vectomancy
 
       - name: Rename artifact (Linux/macOS)
         if: matrix.os_name != 'windows'
-        run: mv target/${{ matrix.target }}/release/vectomancy-cli ${{ matrix.artifact_name }}
+        run: mv target/${{ matrix.target }}/release/vectomancy ${{ matrix.artifact_name }}
 
       - name: Rename artifact (Windows)
         if: matrix.os_name == 'windows'
-        run: move target/${{ matrix.target }}/release/vectomancy-cli.exe ${{ matrix.artifact_name }}
+        run: move target/${{ matrix.target }}/release/vectomancy.exe ${{ matrix.artifact_name }}
 
       - name: Package for Linux distributions (nfpm)
         if: matrix.os_name == 'linux'
