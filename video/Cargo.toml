@@ -1,11 +1,11 @@
 [package]
 name = "vectomancy-video"
-version = "5.0.1"
+version = "5.0.2"
 edition = "2021"
 description = "Video frame processor extension for Vectomancy"
 
 [dependencies]
-vectomancy = { path = "..", version = "5.0.1" }
+vectomancy = { path = "..", version = "5.0.2" }
 ffmpeg-next = "8.1"
 crossbeam-channel = "0.5"
 thiserror = "1.0"
