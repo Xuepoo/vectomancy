@@ -31,23 +31,30 @@ pub enum ColorStyle {
 ```
 `ColoredPath` will be updated to use `ColorStyle`.
 **Critical:** To prevent WASM serialization breakage, `vectomancy-web/wasm-engine/src/lib.rs` and the frontend `zola-site/templates/app.html` must be updated to handle the new JSON structure, adapting the `ColorStyle` into Canvas API `createLinearGradient` calls.
+```rust
+#[derive(Serialize, Deserialize)]
+pub struct MathExpressionAST {
+    pub primitives: Vec<ColoredPath>,
+    // The global bounding box limits necessary for Canvas/Shader gradient mappings
+    pub bounding_box: [f32; 4], // [min_x, min_y, max_x, max_y]
+}
+```
 
 ### 2.3 WGPU Rendering Pipeline (`src/emitter/native/`)
-- **Shader (`shader.wgsl`)**: The fragment shader must be updated. Instead of a flat `uniform` color, it will calculate its relative position `(x, y)` mapped against the text's global Bounding Box, projecting that onto the gradient's angle vector to interpolate between `start_color` and `end_color`.
-- **Bounding Box Calculation**: The Bounding Box limits of all the generated math splines are calculated using `rayon` (`par_iter().reduce()`) since text geometry can be massively parallelized. This Bounding Box is necessary because mathematical curves have infinite canvas scope, and the GPU fragment shader needs boundaries to map the relative `(x, y)` coordinate into a `[0.0, 1.0]` ratio for gradient interpolation.
+- **Shader (`shader.wgsl`)**: The fragment shader must be updated. Instead of a flat `uniform` color, it will calculate its relative position `(x, y)` mapped against the text's global Bounding Box, projecting that onto the gradient's angle vector to interpolate between `start_color` and `end_color`. To avoid the "muddy middle" artifact, colors must be interpolated in **Linear RGB** space, not sRGB.
+- **Bounding Box Calculation**: The global `bounding_box` must be calculated during AST Generation (`vectomancy::parser` or `math`), NOT in the emitter. This calculation uses `rayon` (`par_iter().reduce()`) for native builds, and falls back to a standard single-threaded `.iter().fold()` under `#[cfg(target_arch = "wasm32")]`. This ensures the WASM frontend receives the Bounding Box required to invoke `createLinearGradient()`.
 
 ## 3. Data Flow
 1. User invokes `vectomancy-cli text "Art" --font ./font.ttf --gradient "#FF0000,#0000FF,45" -o out.png`.
 2. Argument parser extracts the string, gradient definition, and stroke weight.
 3. `vectomancy::parser::text` (or equivalent parsing module) reads the TTF and generates geometric segments.
-4. Splines are built and packaged into `MathExpressionAST` alongside the parsed `ColorStyle::LinearGradient`.
+4. Splines are built and the global bounding box is calculated. These are packaged into `MathExpressionAST` alongside the parsed `ColorStyle::LinearGradient`. To prevent Shader divide-by-zero errors (e.g. `NaN` from degenerate BBox or whitespace), the padding must be applied if `max_x - min_x < f32::EPSILON` or `max_y - min_y < f32::EPSILON`.
 5. `emitter::native::render_to_image` initializes WGPU (this module is strictly `#[cfg(not(target_arch = "wasm32"))]`):
    - Evaluates `stroke_width`. If `> 0.0`, calculates the polygon expansion on the CPU using `rayon`, and performs Vertex Batching before uploading to the GPU.
-   - Calculates the global bounding box of the splines using `rayon`. To prevent Shader divide-by-zero errors (e.g. `NaN` from degenerate BBox or whitespace), the CPU must pad the bounding box if `max_x - min_x < f32::EPSILON` or `max_y - min_y < f32::EPSILON`.
    - The `angle_degrees` must be normalized to `[0, 360)` using `f32::rem_euclid(360.0)` before uniform upload.
-   - Modifies the Orthographic Projection matrix to scale the viewport. The padding must explicitly incorporate the Miter Limit to prevent sharp corners from clipping: `padding = (stroke_width / 2.0) * miter_limit`. DO NOT increase physical Canvas pixel dimensions.
-   - Uploads gradient colors, angle, and bounding box via Uniform Buffers.
-6. The GPU renders the splines. The engine must use **Lazy Initialization** for its pipelines: instead of always compiling both, it must only compile and bind the specific `wgpu::RenderPipeline` descriptor required for the current run (`LineList` if `stroke_width == 0.0`, or `TriangleList` if `> 0.0`) to avoid unnecessary shader compilation overhead in CLI mode. Furthermore, to prevent Index Buffer overflow from high-complexity text polygons, the `TriangleList` pipeline descriptor MUST be configured to use `wgpu::IndexFormat::Uint32`. The fragment shader paints the gradient.
+   - Modifies the Orthographic Projection matrix to scale the viewport. The padding must explicitly incorporate the Miter Limit to prevent sharp corners from clipping: `padding = ((stroke_width / 2.0) * miter_limit).max(2.0)`. (The `.max(2.0)` guarantees a minimum 2-pixel buffer to prevent hairline anti-aliasing clipping when `stroke_width == 0.0`). DO NOT increase physical Canvas pixel dimensions.
+   - Uploads gradient colors (converted to Linear RGB), angle, and bounding box via Uniform Buffers.
+6. The GPU renders the splines. The engine must use **Lazy Initialization** for its pipelines: instead of always compiling both, it must only compile and bind the specific `wgpu::RenderPipeline` descriptor required for the current run (`LineList` if `stroke_width == 0.0`, or `TriangleList` if `> 0.0`) to avoid unnecessary shader compilation overhead in CLI mode. Furthermore, to prevent Index Buffer overflow from high-complexity text polygons and hairlines, BOTH the `TriangleList` and `LineList` pipeline descriptors MUST be configured to use `wgpu::IndexFormat::Uint32`. The fragment shader paints the gradient.
 7. The output is saved to `out.png`.
 
 ## 4. Error Handling & Edge Cases
