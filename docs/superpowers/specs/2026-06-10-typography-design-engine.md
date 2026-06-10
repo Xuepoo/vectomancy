@@ -18,14 +18,14 @@ Extend `TextArgs` to include:
 ### 2.2 AST & Model Updates (`src/models.rs`)
 Currently, `ColoredPath` holds `color_rgb: [f32; 3]`. We will introduce a new styling paradigm to support gradients:
 ```rust
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type")]
+#[derive(Serialize, Deserialize)]
+#[serde(untagged)] // For backwards compatibility with old `color_rgb: [f32; 3]` JSON ASTs
 pub enum ColorStyle {
-    Solid { color: [f32; 3] },
+    Solid([f32; 3]),
     LinearGradient {
-        start_color: [f32; 3],
-        end_color: [f32; 3],
-        angle_degrees: f32,
+        start: [f32; 3],
+        end: [f32; 3],
+        angle: f32, // Stored in normalized degrees [0, 360)
     }
 }
 ```
@@ -42,6 +42,7 @@ pub enum ColorStyle {
 3. `vectomancy::parser::text` (or equivalent parsing module) reads the TTF and generates geometric segments.
 4. Splines are built and packaged into `MathExpressionAST` alongside the parsed `ColorStyle::LinearGradient`.
 5. `emitter::native::render_to_image` initializes WGPU:
+   - For `stroke_width > 0.0`, calculates the polygon expansion of the splines on the CPU using `rayon` (or `fold` in WASM), and performs Vertex Batching for identical materials before uploading to the GPU Vertex Buffer to ensure rendering performance.
    - Calculates the global bounding box of the splines using `rayon` (or `fold` in WASM).
    - The `angle_degrees` must be normalized to `[0, 360)` using `f32::rem_euclid(360.0)` before uniform upload.
    - Modifies the Orthographic Projection matrix to scale the viewport to accommodate `stroke_width / 2.0` padding (DO NOT increase physical Canvas pixel dimensions to prevent GPU OOM).
@@ -55,9 +56,11 @@ pub enum ColorStyle {
 - **Empty AST / Empty String**: If the input string is empty `""`, the parser will immediately return an error or an empty transparent image without passing undefined `NaN` bounding boxes to the GPU.
 - **Font File Safety**: If the user provides a corrupted, 0-byte, or unsupported font file, the parser must intercept this before panic and return a safe `VectomancyError::FontParseError`.
 - **WASM Binding Separation**: To maintain Separation of Concerns, a new dedicated WASM API `process_text(font_bytes: &[u8], text: &str)` MUST be introduced instead of overloading `process_image`.
+- **WASM Font Size Safety**: To prevent FFI memory overflow, the `process_text` WASM API must reject `font_bytes` larger than 10MB before any memory allocation or parsing occurs.
 - **WASM OOM Prevention**: The `process_text` WASM binding must enforce a strict hard limit on maximum input characters (e.g., 500) and generated spline nodes to prevent `serde-wasm-bindgen` serialization from exhausting the browser heap.
 - **Clipping Safety**: Mathematical splines can easily exceed canvas bounds when stroke width is large. Instead of inflating texture allocations, the View/Projection Matrix will be zoomed out.
 - **Format Incompatibility**: If the user asks for a gradient but outputs to JSON or Python, the emitter will fall back to using `start_color` for the solid export color.
+- **Animation / Frame Assembly**: Animated WebP generation and out-of-order frame assembly for dynamic typography are strictly Out-of-Scope for this iteration.
 
 ## 5. Testing Strategy
 - **Unit Tests**:
