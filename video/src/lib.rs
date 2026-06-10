@@ -78,6 +78,7 @@ impl AVFrameWrap {
                 ));
             }
 
+            const SWS_BILINEAR: i32 = 2;
             let sws_ctx = sws_getContext(
                 width,
                 height,
@@ -85,7 +86,7 @@ impl AVFrameWrap {
                 width,
                 height,
                 dst_format,
-                SwsFlags::SWS_BILINEAR as i32,
+                SWS_BILINEAR,
                 std::ptr::null_mut(),
                 std::ptr::null_mut(),
                 std::ptr::null_mut(),
