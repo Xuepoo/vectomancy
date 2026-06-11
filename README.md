@@ -32,7 +32,13 @@ For a deeper dive into the mathematical algorithms (like Otsu Binarization, Rame
 
 ## Installation
 
-You will need the Rust toolchain installed to build from source.
+Install via crates.io:
+
+```bash
+cargo install vectomancy-cli
+```
+
+Or build from source (requires the Rust toolchain):
 
 ```bash
 git clone https://github.com/Xuepoo/vectomancy.git

@@ -32,7 +32,13 @@ Vectomancy 是一个高性能的命令行图像转换工具。它能深入解析
 
 ## 安装方式
 
-从源码编译需要预先安装 Rust 工具链：
+通过 crates.io 安装：
+
+```bash
+cargo install vectomancy-cli
+```
+
+或从源码编译（需要预先安装 Rust 工具链）：
 
 ```bash
 git clone https://github.com/Xuepoo/vectomancy.git
