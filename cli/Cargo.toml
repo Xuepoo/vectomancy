@@ -3,6 +3,8 @@ name = "vectomancy-cli"
 version = "5.0.8"
 edition = "2021"
 description = "Vectomancy - CLI tool"
+license = "MIT"
+repository = "https://github.com/Xuepoo/vectomancy"
 
 [dependencies]
 vectomancy = { path = "..", version = "5.0.8", features = ["gpu"] }

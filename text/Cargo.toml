@@ -3,6 +3,8 @@ name = "vectomancy-text"
 version = "5.0.8"
 edition = "2021"
 description = "Font outline extraction plugin for Vectomancy"
+license = "MIT"
+repository = "https://github.com/Xuepoo/vectomancy"
 
 [dependencies]
 vectomancy = { path = "..", version = "5.0.8" }
