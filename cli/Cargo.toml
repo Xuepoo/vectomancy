@@ -1,6 +1,6 @@
 [package]
 name = "vectomancy-cli"
-version = "5.0.9"
+version = "5.0.10"
 edition = "2021"
 description = "Vectomancy - CLI tool"
 license = "MIT"
@@ -11,9 +11,9 @@ name = "vectomancy"
 path = "src/main.rs"
 
 [dependencies]
-vectomancy = { path = "..", version = "5.0.9", features = ["gpu"] }
-vectomancy-video = { path = "../video", version = "5.0.9" }
-vectomancy-text = { path = "../text", version = "5.0.9" }
+vectomancy = { path = "..", version = "5.0.10", features = ["gpu"] }
+vectomancy-video = { path = "../video", version = "5.0.10" }
+vectomancy-text = { path = "../text", version = "5.0.10" }
 clap_complete = "4.4"
 log = "0.4"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
