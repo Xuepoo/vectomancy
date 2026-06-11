@@ -817,13 +817,53 @@ fn main() -> Result<(), VectomancyError> {
                     let bit_depth = image_config.bit_depth;
                     let color_space = image_config.color_space.clone();
 
+                    let mut target_w = original_dimensions.0;
+                    let mut target_h = original_dimensions.1;
+
+                    let dpi = args.dpi.or(text_config.dpi);
+                    if let Some(d) = dpi {
+                        if d > 0.0 {
+                            let scale = d / 72.0;
+                            target_w = (target_w as f32 * scale).round().max(1.0) as u32;
+                            target_h = (target_h as f32 * scale).round().max(1.0) as u32;
+                        }
+                    }
+
+                    let width = args.width.or(text_config.width);
+                    let height = args.height.or(text_config.height);
+
+                    let target_dimensions = match (width, height) {
+                        (None, None) => (target_w, target_h),
+                        (Some(w), None) => {
+                            let h = if target_w > 0 {
+                                (w as f32 * target_h as f32 / target_w as f32)
+                                    .round()
+                                    .max(1.0) as u32
+                            } else {
+                                1
+                            };
+                            (w, h)
+                        }
+                        (None, Some(h)) => {
+                            let w = if target_h > 0 {
+                                (h as f32 * target_w as f32 / target_h as f32)
+                                    .round()
+                                    .max(1.0) as u32
+                            } else {
+                                1
+                            };
+                            (w, h)
+                        }
+                        (Some(w), Some(h)) => (w, h),
+                    };
+
                     emitter::native::render_to_image(
                         &ast,
                         &final_output,
                         &format,
                         bg_transparent,
                         original_dimensions,
-                        original_dimensions,
+                        target_dimensions,
                         stroke_width,
                         bit_depth,
                         color_space,

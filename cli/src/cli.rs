@@ -193,4 +193,16 @@ pub struct TextArgs {
     /// Stroke width for native image rendering
     #[arg(long)]
     pub stroke_width: Option<f32>,
+
+    /// Target width for native image rendering
+    #[arg(long)]
+    pub width: Option<u32>,
+
+    /// Target height for native image rendering
+    #[arg(long)]
+    pub height: Option<u32>,
+
+    /// Target DPI for native image rendering (default: 72)
+    #[arg(long)]
+    pub dpi: Option<f32>,
 }

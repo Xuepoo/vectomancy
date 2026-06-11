@@ -55,6 +55,9 @@ pub struct TextConfig {
     pub color: Option<String>,
     pub gradient: Option<String>,
     pub stroke_width: Option<f32>,
+    pub width: Option<u32>,
+    pub height: Option<u32>,
+    pub dpi: Option<f32>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Default, Clone)]
