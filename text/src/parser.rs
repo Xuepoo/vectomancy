@@ -104,7 +104,7 @@ pub fn extract_text_outlines(
 
             if !segments.is_empty() {
                 paths.push(ColoredPath {
-                    color_rgb: None,
+                    color_style: None,
                     data: segments,
                 });
             }

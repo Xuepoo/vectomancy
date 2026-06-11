@@ -71,19 +71,28 @@ pub fn emit_file(
 
     let mut context = Context::new();
     match ast {
-        MathExpressionAST::Fourier { strokes } => {
+        MathExpressionAST::Fourier {
+            strokes,
+            bounding_box: _,
+        } => {
             let encoded = encode_math_data(strokes)?;
             context.insert("encoded_data", &encoded);
             context.insert("is_fourier", &true);
             context.insert("strokes", strokes);
         }
-        MathExpressionAST::Spline { equations } => {
+        MathExpressionAST::Spline {
+            equations,
+            bounding_box: _,
+        } => {
             let encoded = encode_math_data(equations)?;
             context.insert("encoded_data", &encoded);
             context.insert("is_spline", &true);
             context.insert("equations", equations);
         }
-        MathExpressionAST::Polyline { paths } => {
+        MathExpressionAST::Polyline {
+            paths,
+            bounding_box: _,
+        } => {
             let encoded = encode_math_data(paths)?;
             context.insert("encoded_data", &encoded);
             context.insert("is_polyline", &true);

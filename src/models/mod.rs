@@ -31,9 +31,23 @@ pub struct SplineEquation {
     pub y_poly: Vec<f64>,
 }
 
+use serde::Deserialize;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)] // For backwards compatibility with old `color_rgb: [f32; 3]` JSON ASTs
+pub enum ColorStyle {
+    Solid([f32; 3]),
+    LinearGradient {
+        start: [f32; 3],
+        end: [f32; 3],
+        angle: f32, // Degrees
+    },
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct ColoredPath<T> {
-    pub color_rgb: Option<(u8, u8, u8)>,
+    #[serde(rename = "color_rgb")]
+    pub color_style: Option<ColorStyle>,
     pub data: T,
 }
 
@@ -42,12 +56,15 @@ pub struct ColoredPath<T> {
 pub enum MathExpressionAST {
     Fourier {
         strokes: Vec<ColoredPath<Vec<FourierTerm>>>,
+        bounding_box: [f32; 4],
     },
     Spline {
         equations: Vec<ColoredPath<Vec<SplineEquation>>>,
+        bounding_box: [f32; 4],
     },
     Polyline {
         paths: Vec<ColoredPath<Vec<Point2D>>>,
+        bounding_box: [f32; 4],
     },
 }
 

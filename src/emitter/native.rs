@@ -206,7 +206,10 @@ async fn render_wgpu(
     };
 
     match ast {
-        MathExpressionAST::Polyline { paths } => {
+        MathExpressionAST::Polyline {
+            paths,
+            bounding_box: _,
+        } => {
             for path in paths {
                 let mut builder = LyonPath::builder();
                 let mut first = true;
@@ -223,8 +226,13 @@ async fn render_wgpu(
                     builder.end(false);
                 }
                 let lyon_path = builder.build();
-                let color = if let Some((r, g, b)) = path.color_rgb {
-                    [r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0, 1.0]
+                let color = if let Some(style) = &path.color_style {
+                    match style {
+                        crate::models::ColorStyle::Solid(rgb) => [rgb[0], rgb[1], rgb[2], 1.0],
+                        crate::models::ColorStyle::LinearGradient { start, .. } => {
+                            [start[0], start[1], start[2], 1.0]
+                        }
+                    }
                 } else {
                     [0.0, 0.0, 0.0, 1.0]
                 };
@@ -243,7 +251,10 @@ async fn render_wgpu(
                     .unwrap();
             }
         }
-        MathExpressionAST::Spline { equations } => {
+        MathExpressionAST::Spline {
+            equations,
+            bounding_box: _,
+        } => {
             for path in equations {
                 let mut builder = LyonPath::builder();
                 let mut first = true;
@@ -272,8 +283,13 @@ async fn render_wgpu(
                     builder.end(false);
                 }
                 let lyon_path = builder.build();
-                let color = if let Some((r, g, b)) = path.color_rgb {
-                    [r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0, 1.0]
+                let color = if let Some(style) = &path.color_style {
+                    match style {
+                        crate::models::ColorStyle::Solid(rgb) => [rgb[0], rgb[1], rgb[2], 1.0],
+                        crate::models::ColorStyle::LinearGradient { start, .. } => {
+                            [start[0], start[1], start[2], 1.0]
+                        }
+                    }
                 } else {
                     [0.0, 0.0, 0.0, 1.0]
                 };
@@ -292,7 +308,10 @@ async fn render_wgpu(
                     .unwrap();
             }
         }
-        MathExpressionAST::Fourier { strokes } => {
+        MathExpressionAST::Fourier {
+            strokes,
+            bounding_box: _,
+        } => {
             let steps = target_dimensions.0.max(target_dimensions.1) as usize;
             for path in strokes {
                 let mut builder = LyonPath::builder();
@@ -318,8 +337,13 @@ async fn render_wgpu(
                     builder.end(false);
                 }
                 let lyon_path = builder.build();
-                let color = if let Some((r, g, b)) = path.color_rgb {
-                    [r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0, 1.0]
+                let color = if let Some(style) = &path.color_style {
+                    match style {
+                        crate::models::ColorStyle::Solid(rgb) => [rgb[0], rgb[1], rgb[2], 1.0],
+                        crate::models::ColorStyle::LinearGradient { start, .. } => {
+                            [start[0], start[1], start[2], 1.0]
+                        }
+                    }
                 } else {
                     [0.0, 0.0, 0.0, 1.0]
                 };

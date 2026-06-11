@@ -138,8 +138,15 @@ pub fn process_svg_from_memory(
                 }
             }
 
+            let color_style = color_rgb.map(|(r, g, b)| {
+                crate::models::ColorStyle::Solid([
+                    r as f32 / 255.0,
+                    g as f32 / 255.0,
+                    b as f32 / 255.0,
+                ])
+            });
             ColoredPath {
-                color_rgb,
+                color_style,
                 data: bezier_segments,
             }
         })

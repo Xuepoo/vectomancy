@@ -51,6 +51,10 @@ pub struct VideoConfig {
 #[derive(Deserialize, Serialize, Debug, Default, Clone)]
 pub struct TextConfig {
     pub font: Option<String>,
+    pub bg_transparent: Option<bool>,
+    pub color: Option<String>,
+    pub gradient: Option<String>,
+    pub stroke_width: Option<f32>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Default, Clone)]
