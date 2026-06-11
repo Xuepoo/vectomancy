@@ -28,8 +28,8 @@ COPY templates ./templates
 # Build the release binary for the CLI subcommand
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/src/app/target \
-    cargo build --release --bin vectomancy-cli && \
-    cp ./target/release/vectomancy-cli /tmp/vectomancy
+    cargo build --release --bin vectomancy && \
+    cp ./target/release/vectomancy /tmp/vectomancy
 
 # Runtime Stage
 FROM debian:bookworm-slim
