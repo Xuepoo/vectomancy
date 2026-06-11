@@ -15,6 +15,7 @@ jobs:
     name: Build Binary for ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: ubuntu-latest
@@ -32,7 +33,7 @@ jobs:
             artifact_name: vectomancy-windows-x86_64.exe
             arch: amd64
             os_name: windows
-          - os: macos-13
+          - os: macos-15-intel
             target: x86_64-apple-darwin
             artifact_name: vectomancy-macos-x86_64
             arch: amd64
@@ -65,6 +66,7 @@ jobs:
 
       - name: Install FFmpeg Headers (Windows)
         if: matrix.os_name == 'windows'
+        shell: pwsh
         run: |
           choco install pkgconfiglite -y
           vcpkg integrate install
