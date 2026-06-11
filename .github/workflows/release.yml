@@ -75,15 +75,15 @@ jobs:
           echo "PKG_CONFIG_PATH=$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows\lib\pkgconfig" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - name: Build release
-        run: cargo build --release --target ${{ matrix.target }} --bin vectomancy-cli
+        run: cargo build --release --target ${{ matrix.target }} --bin vectomancy
 
       - name: Rename artifact (Linux/macOS)
         if: matrix.os_name != 'windows'
-        run: mv target/${{ matrix.target }}/release/vectomancy-cli ${{ matrix.artifact_name }}
+        run: mv target/${{ matrix.target }}/release/vectomancy ${{ matrix.artifact_name }}
 
       - name: Rename artifact (Windows)
         if: matrix.os_name == 'windows'
-        run: move target/${{ matrix.target }}/release/vectomancy-cli.exe ${{ matrix.artifact_name }}
+        run: move target/${{ matrix.target }}/release/vectomancy.exe ${{ matrix.artifact_name }}
 
       - name: Package for Linux distributions (nfpm)
         if: matrix.os_name == 'linux'
