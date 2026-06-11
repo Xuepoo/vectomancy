@@ -3,7 +3,7 @@ use std::process::Command;
 
 #[test]
 fn test_invalid_subcommand() {
-    let bin_path = env!("CARGO_BIN_EXE_vectomancy-cli");
+    let bin_path = env!("CARGO_BIN_EXE_vectomancy");
     let output = Command::new(bin_path)
         .arg("invalid_subcommand_name")
         .output()
@@ -14,7 +14,7 @@ fn test_invalid_subcommand() {
 
 #[test]
 fn test_no_subcommand() {
-    let bin_path = env!("CARGO_BIN_EXE_vectomancy-cli");
+    let bin_path = env!("CARGO_BIN_EXE_vectomancy");
     let output = Command::new(bin_path)
         .output()
         .expect("Failed to execute command");
@@ -24,7 +24,7 @@ fn test_no_subcommand() {
 
 #[test]
 fn test_image_subcommand_workflow() {
-    let bin_path = env!("CARGO_BIN_EXE_vectomancy-cli");
+    let bin_path = env!("CARGO_BIN_EXE_vectomancy");
 
     // Create a temporary directory via tempfile
     let temp_dir = tempfile::tempdir().unwrap();
@@ -73,7 +73,7 @@ fn test_image_subcommand_workflow() {
 
 #[test]
 fn test_text_subcommand_workflow() {
-    let bin_path = env!("CARGO_BIN_EXE_vectomancy-cli");
+    let bin_path = env!("CARGO_BIN_EXE_vectomancy");
 
     // Create a temporary directory via tempfile
     let temp_dir = tempfile::tempdir().unwrap();
