@@ -205,4 +205,8 @@ pub struct TextArgs {
     /// Target DPI for native image rendering (default: 72)
     #[arg(long)]
     pub dpi: Option<f32>,
+
+    /// Letter spacing in pixels (can be negative, default: 0.0)
+    #[arg(long, default_value_t = 0.0)]
+    pub letter_spacing: f32,
 }
