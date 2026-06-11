@@ -719,9 +719,13 @@ fn main() -> Result<(), VectomancyError> {
             }
             let font_bytes = std::fs::read(&font_path)?;
 
-            let (segs, original_dimensions) =
-                vectomancy_text::parser::extract_text_outlines(&args.text, &font_bytes, 64.0)
-                    .map_err(VectomancyError::InvalidInput)?;
+            let (segs, original_dimensions) = vectomancy_text::parser::extract_text_outlines(
+                &args.text,
+                &font_bytes,
+                64.0,
+                args.letter_spacing,
+            )
+            .map_err(VectomancyError::InvalidInput)?;
 
             let bbox = math::compute_bounding_box_segments(&segs);
 

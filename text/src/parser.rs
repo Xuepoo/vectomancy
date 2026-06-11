@@ -6,6 +6,7 @@ pub fn extract_text_outlines(
     text: &str,
     font_bytes: &[u8],
     size: f32,
+    letter_spacing: f32,
 ) -> Result<(Vec<ColoredPath<Vec<BezierSegment>>>, (u32, u32)), String> {
     let font = FontArc::try_from_vec(font_bytes.to_vec()).map_err(|e| e.to_string())?;
     let scaled = font.as_scaled(size);
@@ -56,7 +57,7 @@ pub fn extract_text_outlines(
 
         let current_x = x_offset;
         let h_advance = scaled.h_advance(glyph_id);
-        x_offset += h_advance;
+        x_offset += h_advance + letter_spacing;
         prev_glyph_id = Some(glyph_id);
 
         if c == ' ' {
@@ -154,6 +155,6 @@ pub fn extract_char_outline(
     font_bytes: &[u8],
     size: f32,
 ) -> Result<Vec<ColoredPath<Vec<BezierSegment>>>, String> {
-    let (paths, _) = extract_text_outlines(&c.to_string(), font_bytes, size)?;
+    let (paths, _) = extract_text_outlines(&c.to_string(), font_bytes, size, 0.0)?;
     Ok(paths)
 }
