@@ -10,6 +10,20 @@ use vectomancy::error::VectomancyError;
 use vectomancy::models::MathExpressionAST;
 use vectomancy::{emitter, math, models, parser};
 
+fn parse_hex_color(col: &str) -> Option<[f32; 3]> {
+    let col = col.trim();
+    if !col.is_ascii() {
+        return None;
+    }
+    if !col.starts_with('#') || col.len() != 7 {
+        return None;
+    }
+    let r = u8::from_str_radix(&col[1..3], 16).ok()?;
+    let g = u8::from_str_radix(&col[3..5], 16).ok()?;
+    let b = u8::from_str_radix(&col[5..7], 16).ok()?;
+    Some([r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0])
+}
+
 fn main() -> Result<(), VectomancyError> {
     let cli = Cli::parse();
 
@@ -722,32 +736,31 @@ fn main() -> Result<(), VectomancyError> {
             if let Some(grad) = grad_str {
                 let parts: Vec<&str> = grad.split(',').collect();
                 if parts.len() == 3 {
-                    if let (Ok(r1), Ok(g1), Ok(b1), Ok(r2), Ok(g2), Ok(b2), Ok(angle)) = (
-                        u8::from_str_radix(&parts[0][1..3], 16),
-                        u8::from_str_radix(&parts[0][3..5], 16),
-                        u8::from_str_radix(&parts[0][5..7], 16),
-                        u8::from_str_radix(&parts[1][1..3], 16),
-                        u8::from_str_radix(&parts[1][3..5], 16),
-                        u8::from_str_radix(&parts[1][5..7], 16),
-                        parts[2].parse::<f32>(),
+                    if let (Some(start), Some(end), Ok(angle)) = (
+                        parse_hex_color(parts[0]),
+                        parse_hex_color(parts[1]),
+                        parts[2].trim().parse::<f32>(),
                     ) {
-                        final_color_style = Some(models::ColorStyle::LinearGradient {
-                            start: [r1 as f32, g1 as f32, b1 as f32],
-                            end: [r2 as f32, g2 as f32, b2 as f32],
-                            angle,
-                        });
+                        let rad = angle.to_radians();
+                        let start_pos = [0.0, 0.5];
+                        let end_pos = if rad.is_finite() {
+                            [0.5 + rad.cos() * 0.5, 0.5 + rad.sin() * 0.5]
+                        } else {
+                            [1.0, 0.5]
+                        };
+                        let stops = vec![(0.0, start), (1.0, end)];
+                        final_color_style = Some(models::ColorStyle::LinearGradient(
+                            std::sync::Arc::new(models::GradientData {
+                                stops,
+                                start_pos,
+                                end_pos,
+                            }),
+                        ));
                     }
                 }
             } else if let Some(col) = color_str {
-                if col.starts_with('#') && col.len() == 7 {
-                    if let (Ok(r), Ok(g), Ok(b)) = (
-                        u8::from_str_radix(&col[1..3], 16),
-                        u8::from_str_radix(&col[3..5], 16),
-                        u8::from_str_radix(&col[5..7], 16),
-                    ) {
-                        final_color_style =
-                            Some(models::ColorStyle::Solid([r as f32, g as f32, b as f32]));
-                    }
+                if let Some(rgb) = parse_hex_color(&col) {
+                    final_color_style = Some(models::ColorStyle::Solid(rgb));
                 }
             }
 

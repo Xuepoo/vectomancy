@@ -227,12 +227,7 @@ async fn render_wgpu(
                 }
                 let lyon_path = builder.build();
                 let color = if let Some(style) = &path.color_style {
-                    match style {
-                        crate::models::ColorStyle::Solid(rgb) => [rgb[0], rgb[1], rgb[2], 1.0],
-                        crate::models::ColorStyle::LinearGradient { start, .. } => {
-                            [start[0], start[1], start[2], 1.0]
-                        }
-                    }
+                    style.to_solid_rgba()
                 } else {
                     [0.0, 0.0, 0.0, 1.0]
                 };
@@ -284,12 +279,7 @@ async fn render_wgpu(
                 }
                 let lyon_path = builder.build();
                 let color = if let Some(style) = &path.color_style {
-                    match style {
-                        crate::models::ColorStyle::Solid(rgb) => [rgb[0], rgb[1], rgb[2], 1.0],
-                        crate::models::ColorStyle::LinearGradient { start, .. } => {
-                            [start[0], start[1], start[2], 1.0]
-                        }
-                    }
+                    style.to_solid_rgba()
                 } else {
                     [0.0, 0.0, 0.0, 1.0]
                 };
@@ -338,12 +328,7 @@ async fn render_wgpu(
                 }
                 let lyon_path = builder.build();
                 let color = if let Some(style) = &path.color_style {
-                    match style {
-                        crate::models::ColorStyle::Solid(rgb) => [rgb[0], rgb[1], rgb[2], 1.0],
-                        crate::models::ColorStyle::LinearGradient { start, .. } => {
-                            [start[0], start[1], start[2], 1.0]
-                        }
-                    }
+                    style.to_solid_rgba()
                 } else {
                     [0.0, 0.0, 0.0, 1.0]
                 };
