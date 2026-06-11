@@ -60,6 +60,77 @@ pub fn simplify_rdp(points: &[Point2D], epsilon: f64) -> Vec<Point2D> {
     result
 }
 
+pub fn compute_bounding_box(paths: &[crate::models::ColoredPath<Vec<Point2D>>]) -> [f32; 4] {
+    let mut min_x = f32::MAX;
+    let mut min_y = f32::MAX;
+    let mut max_x = f32::MIN;
+    let mut max_y = f32::MIN;
+
+    for path in paths {
+        for pt in &path.data {
+            if (pt.x as f32) < min_x {
+                min_x = pt.x as f32;
+            }
+            if (pt.y as f32) < min_y {
+                min_y = pt.y as f32;
+            }
+            if (pt.x as f32) > max_x {
+                max_x = pt.x as f32;
+            }
+            if (pt.y as f32) > max_y {
+                max_y = pt.y as f32;
+            }
+        }
+    }
+
+    if min_x == f32::MAX {
+        [0.0, 0.0, 0.0, 0.0]
+    } else {
+        [min_x, min_y, max_x, max_y]
+    }
+}
+
+pub fn compute_bounding_box_segments(
+    segments: &[crate::models::ColoredPath<Vec<crate::models::BezierSegment>>],
+) -> [f32; 4] {
+    let mut min_x = f32::MAX;
+    let mut min_y = f32::MAX;
+    let mut max_x = f32::MIN;
+    let mut max_y = f32::MIN;
+
+    for path in segments {
+        for seg in &path.data {
+            let pts = match seg {
+                crate::models::BezierSegment::MoveTo(p) => vec![*p],
+                crate::models::BezierSegment::LineTo(p) => vec![*p],
+                crate::models::BezierSegment::QuadraticTo(p1, p2) => vec![*p1, *p2],
+                crate::models::BezierSegment::CubicTo(p1, p2, p3) => vec![*p1, *p2, *p3],
+                crate::models::BezierSegment::Close => vec![],
+            };
+            for pt in pts {
+                if (pt.x as f32) < min_x {
+                    min_x = pt.x as f32;
+                }
+                if (pt.y as f32) < min_y {
+                    min_y = pt.y as f32;
+                }
+                if (pt.x as f32) > max_x {
+                    max_x = pt.x as f32;
+                }
+                if (pt.y as f32) > max_y {
+                    max_y = pt.y as f32;
+                }
+            }
+        }
+    }
+
+    if min_x == f32::MAX {
+        [0.0, 0.0, 0.0, 0.0]
+    } else {
+        [min_x, min_y, max_x, max_y]
+    }
+}
+
 use kiddo::KdTree;
 
 pub fn solve_tsp_nearest_neighbor(points: Vec<Point2D>) -> Vec<Point2D> {

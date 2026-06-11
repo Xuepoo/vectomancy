@@ -14,12 +14,31 @@ pub fn extract_text_outlines(
     let scale_factor = size / units_per_em;
     let ascent_scaled = scaled.ascent();
 
+    let line_height = size * 1.2;
     let mut x_offset = 0.0;
+    let mut max_x_offset = 0.0;
+    let mut y_offset = 0.0;
     let mut paths = Vec::new();
-
     let mut prev_glyph_id = None;
+    let processed_text = text.replace("\\n", "\n").replace("\\r", "\r");
 
-    for c in text.chars() {
+    for c in processed_text.chars() {
+        if c == '\n' || c == '\x0b' || c == '\x0c' || c == '\u{2028}' || c == '\u{2029}' {
+            if x_offset > max_x_offset {
+                max_x_offset = x_offset;
+            }
+            x_offset = 0.0;
+            y_offset += line_height;
+            prev_glyph_id = None;
+            continue;
+        }
+        if c == '\r' {
+            continue;
+        }
+        if c.is_control() {
+            continue;
+        }
+
         let mut glyph_id = font.glyph_id(c);
         if glyph_id.0 == 0 && c != ' ' {
             // Glyph missing fallback: replace with tofu block ⬚
@@ -48,7 +67,7 @@ pub fn extract_text_outlines(
             let scale_point = |p: Point| -> Point2D {
                 Point2D {
                     x: ((p.x * scale_factor) + current_x) as f64,
-                    y: (ascent_scaled - (p.y * scale_factor)) as f64,
+                    y: (ascent_scaled - (p.y * scale_factor) + y_offset) as f64,
                 }
             };
 
@@ -104,21 +123,25 @@ pub fn extract_text_outlines(
 
             if !segments.is_empty() {
                 paths.push(ColoredPath {
-                    color_rgb: None,
+                    color_style: None,
                     data: segments,
                 });
             }
         }
     }
 
+    if x_offset > max_x_offset {
+        max_x_offset = x_offset;
+    }
+
     // Calculate default dimensions
-    let width = if x_offset > 0.0 {
-        x_offset.ceil() as u32
+    let width = if max_x_offset > 0.0 {
+        max_x_offset.ceil() as u32
     } else {
         1
     };
     let height = if size > 0.0 {
-        (size * 1.5).ceil() as u32
+        (y_offset + size * 1.5).ceil() as u32
     } else {
         1
     };

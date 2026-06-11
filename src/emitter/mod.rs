@@ -29,6 +29,61 @@ pub fn encode_math_data<T: Serialize>(data: &T) -> Result<String, VectomancyErro
     Ok(base64::engine::general_purpose::STANDARD.encode(compressed_bytes))
 }
 
+fn process_value_colors(val: &mut serde_json::Value) {
+    match val {
+        serde_json::Value::Object(map) => {
+            if let Some(color_val) = map.get_mut("color_rgb") {
+                if let Some(arr) = color_val.as_array() {
+                    if arr.len() == 3 {
+                        let r = (arr[0].as_f64().unwrap_or(0.0) * 255.0).round() as u8;
+                        let g = (arr[1].as_f64().unwrap_or(0.0) * 255.0).round() as u8;
+                        let b = (arr[2].as_f64().unwrap_or(0.0) * 255.0).round() as u8;
+                        *color_val = serde_json::json!([r, g, b]);
+                    }
+                } else if let Some(obj) = color_val.as_object() {
+                    let mut fallback = [0u8; 3];
+                    if let Some(stops_val) = obj.get("stops").and_then(|s| s.as_array()) {
+                        if let Some(first_stop) = stops_val.first().and_then(|s| s.as_array()) {
+                            if first_stop.len() == 2 {
+                                if let Some(rgb_arr) = first_stop[1].as_array() {
+                                    if rgb_arr.len() == 3 {
+                                        let r = (rgb_arr[0].as_f64().unwrap_or(0.0) * 255.0).round()
+                                            as u8;
+                                        let g = (rgb_arr[1].as_f64().unwrap_or(0.0) * 255.0).round()
+                                            as u8;
+                                        let b = (rgb_arr[2].as_f64().unwrap_or(0.0) * 255.0).round()
+                                            as u8;
+                                        fallback = [r, g, b];
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    *color_val = serde_json::json!(fallback);
+                }
+            }
+            for (_, v) in map.iter_mut() {
+                process_value_colors(v);
+            }
+        }
+        serde_json::Value::Array(arr) => {
+            for v in arr.iter_mut() {
+                process_value_colors(v);
+            }
+        }
+        _ => {}
+    }
+}
+
+pub fn prepare_ast_for_template(
+    ast: &MathExpressionAST,
+) -> Result<serde_json::Value, VectomancyError> {
+    let mut val = serde_json::to_value(ast)
+        .map_err(|e| VectomancyError::InvalidInput(format!("JSON serialization error: {}", e)))?;
+    process_value_colors(&mut val);
+    Ok(val)
+}
+
 pub fn emit_file(
     ast: &MathExpressionAST,
     format: &OutputFormat,
@@ -69,25 +124,35 @@ pub fn emit_file(
         }
     };
 
+    let processed_ast = prepare_ast_for_template(ast)?;
     let mut context = Context::new();
     match ast {
-        MathExpressionAST::Fourier { strokes } => {
+        MathExpressionAST::Fourier {
+            strokes,
+            bounding_box: _,
+        } => {
             let encoded = encode_math_data(strokes)?;
             context.insert("encoded_data", &encoded);
             context.insert("is_fourier", &true);
-            context.insert("strokes", strokes);
+            context.insert("strokes", &processed_ast["strokes"]);
         }
-        MathExpressionAST::Spline { equations } => {
+        MathExpressionAST::Spline {
+            equations,
+            bounding_box: _,
+        } => {
             let encoded = encode_math_data(equations)?;
             context.insert("encoded_data", &encoded);
             context.insert("is_spline", &true);
-            context.insert("equations", equations);
+            context.insert("equations", &processed_ast["equations"]);
         }
-        MathExpressionAST::Polyline { paths } => {
+        MathExpressionAST::Polyline {
+            paths,
+            bounding_box: _,
+        } => {
             let encoded = encode_math_data(paths)?;
             context.insert("encoded_data", &encoded);
             context.insert("is_polyline", &true);
-            context.insert("paths", paths);
+            context.insert("paths", &processed_ast["paths"]);
         }
     }
 

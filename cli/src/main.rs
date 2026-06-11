@@ -10,6 +10,20 @@ use vectomancy::error::VectomancyError;
 use vectomancy::models::MathExpressionAST;
 use vectomancy::{emitter, math, models, parser};
 
+fn parse_hex_color(col: &str) -> Option<[f32; 3]> {
+    let col = col.trim();
+    if !col.is_ascii() {
+        return None;
+    }
+    if !col.starts_with('#') || col.len() != 7 {
+        return None;
+    }
+    let r = u8::from_str_radix(&col[1..3], 16).ok()?;
+    let g = u8::from_str_radix(&col[3..5], 16).ok()?;
+    let b = u8::from_str_radix(&col[5..7], 16).ok()?;
+    Some([r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0])
+}
+
 fn main() -> Result<(), VectomancyError> {
     let cli = Cli::parse();
 
@@ -176,6 +190,7 @@ fn main() -> Result<(), VectomancyError> {
                                 });
                         let min_path_len =
                             args.min_path_len.or(image_config.min_path_len).unwrap_or(5);
+                        let bbox = math::compute_bounding_box(&paths);
                         let mode = args
                             .mode
                             .map(Mode::from)
@@ -192,7 +207,7 @@ fn main() -> Result<(), VectomancyError> {
                                     let reduced = math::simplify_rdp(&path.data, tolerance);
                                     if reduced.len() > 3 {
                                         valid_paths.push(reduced);
-                                        valid_colors.push(path.color_rgb);
+                                        valid_colors.push(path.color_style.clone());
                                     }
                                 }
 
@@ -205,11 +220,14 @@ fn main() -> Result<(), VectomancyError> {
                                 let mut strokes = Vec::new();
                                 for (terms, color) in batch_results.into_iter().zip(valid_colors) {
                                     strokes.push(models::ColoredPath {
-                                        color_rgb: color,
+                                        color_style: color,
                                         data: terms,
                                     });
                                 }
-                                MathExpressionAST::Fourier { strokes }
+                                MathExpressionAST::Fourier {
+                                    strokes,
+                                    bounding_box: [0.0, 0.0, 0.0, 0.0],
+                                }
                             }
                             Mode::Spline => {
                                 let all_equations: Vec<_> = paths
@@ -223,7 +241,7 @@ fn main() -> Result<(), VectomancyError> {
                                             let segments = math::spline::fit_cubic_bezier(&reduced);
                                             let equations = math::spline::build_splines(&segments);
                                             Some(models::ColoredPath {
-                                                color_rgb: path.color_rgb,
+                                                color_style: path.color_style.clone(),
                                                 data: equations,
                                             })
                                         } else {
@@ -233,6 +251,7 @@ fn main() -> Result<(), VectomancyError> {
                                     .collect();
                                 MathExpressionAST::Spline {
                                     equations: all_equations,
+                                    bounding_box: bbox,
                                 }
                             }
                             Mode::Chaikin => {
@@ -249,13 +268,14 @@ fn main() -> Result<(), VectomancyError> {
                                             reduced
                                         };
                                         Some(models::ColoredPath {
-                                            color_rgb: path.color_rgb,
+                                            color_style: path.color_style.clone(),
                                             data: smoothed,
                                         })
                                     })
                                     .collect();
                                 MathExpressionAST::Polyline {
                                     paths: smoothed_paths,
+                                    bounding_box: bbox,
                                 }
                             }
                         };
@@ -266,6 +286,7 @@ fn main() -> Result<(), VectomancyError> {
                         original_dimensions,
                     } => {
                         info!("Successfully extracted {} segments.", segs.len());
+                        let bbox = math::compute_bounding_box_segments(&segs);
                         let mode = args
                             .mode
                             .map(Mode::from)
@@ -278,13 +299,14 @@ fn main() -> Result<(), VectomancyError> {
                                     .map(|seg| {
                                         let equations = math::spline::build_splines(&seg.data);
                                         models::ColoredPath {
-                                            color_rgb: seg.color_rgb,
+                                            color_style: seg.color_style.clone(),
                                             data: equations,
                                         }
                                     })
                                     .collect();
                                 MathExpressionAST::Spline {
                                     equations: all_equations,
+                                    bounding_box: [0.0, 0.0, 0.0, 0.0],
                                 }
                             }
                             Mode::Fourier => {
@@ -294,7 +316,7 @@ fn main() -> Result<(), VectomancyError> {
                                     let pts = math::spline::sample_segments(&seg.data, 100);
                                     let ordered_points = math::solve_tsp_nearest_neighbor(pts);
                                     valid_paths.push(ordered_points);
-                                    valid_colors.push(seg.color_rgb);
+                                    valid_colors.push(seg.color_style.clone());
                                 }
 
                                 let path_refs: Vec<&[models::Point2D]> =
@@ -306,11 +328,14 @@ fn main() -> Result<(), VectomancyError> {
                                 let mut strokes = Vec::new();
                                 for (terms, color) in batch_results.into_iter().zip(valid_colors) {
                                     strokes.push(models::ColoredPath {
-                                        color_rgb: color,
+                                        color_style: color,
                                         data: terms,
                                     });
                                 }
-                                MathExpressionAST::Fourier { strokes }
+                                MathExpressionAST::Fourier {
+                                    strokes,
+                                    bounding_box: [0.0, 0.0, 0.0, 0.0],
+                                }
                             }
                             Mode::Chaikin => {
                                 let iters = args
@@ -328,12 +353,15 @@ fn main() -> Result<(), VectomancyError> {
                                             ordered_points
                                         };
                                         models::ColoredPath {
-                                            color_rgb: seg.color_rgb,
+                                            color_style: seg.color_style.clone(),
                                             data: smoothed,
                                         }
                                     })
                                     .collect();
-                                MathExpressionAST::Polyline { paths }
+                                MathExpressionAST::Polyline {
+                                    paths,
+                                    bounding_box: bbox,
+                                }
                             }
                         };
                         (ast, original_dimensions)
@@ -341,13 +369,22 @@ fn main() -> Result<(), VectomancyError> {
                 };
 
                 match &ast {
-                    MathExpressionAST::Fourier { strokes } => {
+                    MathExpressionAST::Fourier {
+                        strokes,
+                        bounding_box: _,
+                    } => {
                         info!("Generated AST with {} strokes", strokes.len());
                     }
-                    MathExpressionAST::Spline { equations } => {
+                    MathExpressionAST::Spline {
+                        equations,
+                        bounding_box: _,
+                    } => {
                         info!("Generated AST with {} equations", equations.len());
                     }
-                    MathExpressionAST::Polyline { paths } => {
+                    MathExpressionAST::Polyline {
+                        paths,
+                        bounding_box: _,
+                    } => {
                         info!("Generated AST with {} paths", paths.len());
                     }
                 }
@@ -457,11 +494,35 @@ fn main() -> Result<(), VectomancyError> {
             let format = image_config.format.unwrap_or(OutputFormat::Json);
             let color = image_config.color.unwrap_or(false);
 
-            let out_dir = args
+            let mut is_video_output = false;
+            let out_target = args
                 .output
                 .clone()
                 .unwrap_or_else(|| std::path::PathBuf::from("output_video_frames"));
-            std::fs::create_dir_all(&out_dir)?;
+
+            if let Some(ext) = out_target.extension().and_then(|e| e.to_str()) {
+                if ["mp4", "mkv", "webm", "avi", "mov", "gif"]
+                    .contains(&ext.to_lowercase().as_str())
+                {
+                    is_video_output = true;
+                }
+            }
+
+            let temp_dir = if is_video_output {
+                let dir =
+                    std::env::temp_dir().join(format!("vectomancy_video_{}", std::process::id()));
+                std::fs::create_dir_all(&dir)?;
+                dir
+            } else {
+                std::fs::create_dir_all(&out_target)?;
+                out_target.clone()
+            };
+
+            let format = if is_video_output {
+                OutputFormat::Png
+            } else {
+                format
+            };
 
             let mut frame_idx = 0;
             while let Ok(frame_wrap) = receiver.recv() {
@@ -475,6 +536,7 @@ fn main() -> Result<(), VectomancyError> {
                 let (paths, original_dimensions) =
                     parser::raster::process_raster_image_core(img, color)?;
 
+                let bbox = math::compute_bounding_box(&paths);
                 let ast = match mode {
                     Mode::Spline => {
                         let all_equations: Vec<_> = paths
@@ -488,7 +550,7 @@ fn main() -> Result<(), VectomancyError> {
                                     let segments = math::spline::fit_cubic_bezier(&reduced);
                                     let equations = math::spline::build_splines(&segments);
                                     Some(models::ColoredPath {
-                                        color_rgb: path.color_rgb,
+                                        color_style: path.color_style.clone(),
                                         data: equations,
                                     })
                                 } else {
@@ -498,6 +560,7 @@ fn main() -> Result<(), VectomancyError> {
                             .collect();
                         MathExpressionAST::Spline {
                             equations: all_equations,
+                            bounding_box: bbox,
                         }
                     }
                     Mode::Fourier => {
@@ -510,7 +573,7 @@ fn main() -> Result<(), VectomancyError> {
                             let reduced = math::simplify_rdp(&path.data, tolerance);
                             if reduced.len() > 3 {
                                 valid_paths.push(reduced);
-                                valid_colors.push(path.color_rgb);
+                                valid_colors.push(path.color_style.clone());
                             }
                         }
 
@@ -523,11 +586,14 @@ fn main() -> Result<(), VectomancyError> {
                         let mut strokes = Vec::new();
                         for (terms, color) in batch_results.into_iter().zip(valid_colors) {
                             strokes.push(models::ColoredPath {
-                                color_rgb: color,
+                                color_style: color,
                                 data: terms,
                             });
                         }
-                        MathExpressionAST::Fourier { strokes }
+                        MathExpressionAST::Fourier {
+                            strokes,
+                            bounding_box: [0.0, 0.0, 0.0, 0.0],
+                        }
                     }
                     Mode::Chaikin => {
                         let iters = image_config.chaikin_iters.unwrap_or(0);
@@ -544,13 +610,14 @@ fn main() -> Result<(), VectomancyError> {
                                     reduced
                                 };
                                 Some(models::ColoredPath {
-                                    color_rgb: path.color_rgb,
+                                    color_style: path.color_style.clone(),
                                     data: smoothed,
                                 })
                             })
                             .collect();
                         MathExpressionAST::Polyline {
                             paths: smoothed_paths,
+                            bounding_box: bbox,
                         }
                     }
                 };
@@ -566,7 +633,7 @@ fn main() -> Result<(), VectomancyError> {
                 };
 
                 let frame_filename = format!("frame_{:04}.{}", frame_idx, ext);
-                let final_output = out_dir.join(&frame_filename);
+                let final_output = temp_dir.join(&frame_filename);
 
                 match format {
                     OutputFormat::Png | OutputFormat::Jpg | OutputFormat::Webp => {
@@ -600,28 +667,111 @@ fn main() -> Result<(), VectomancyError> {
                     VectomancyError::ImageProcessing("Decoder thread panicked".to_string())
                 })?
                 .map_err(|e| VectomancyError::ImageProcessing(e.to_string()))?;
+
+            if is_video_output {
+                info!("Stitching frames into video: {:?}", out_target);
+                let status = std::process::Command::new("ffmpeg")
+                    .arg("-y")
+                    .arg("-framerate")
+                    .arg("30")
+                    .arg("-i")
+                    .arg(temp_dir.join("frame_%04d.png").to_string_lossy().as_ref())
+                    .arg("-c:v")
+                    .arg("libx264")
+                    .arg("-pix_fmt")
+                    .arg("yuv420p")
+                    .arg(&out_target)
+                    .status();
+
+                match status {
+                    Ok(s) if s.success() => {
+                        info!("Successfully generated video {:?}", out_target);
+                        let _ = std::fs::remove_dir_all(&temp_dir);
+                    }
+                    Ok(s) => tracing::error!("ffmpeg exited with error status: {}", s),
+                    Err(e) => tracing::error!("Failed to execute ffmpeg: {}", e),
+                }
+            }
         }
 
         Commands::Text(args) => {
+            let text_config = config.text.clone().unwrap_or_default();
             info!("Running Text Subcommand with {:?}", args.text);
-            if !args.font.exists() {
+
+            let font_path = args
+                .font
+                .clone()
+                .or_else(|| text_config.font.map(std::path::PathBuf::from));
+            let font_path = match font_path {
+                Some(p) => p,
+                None => {
+                    return Err(VectomancyError::InvalidInput(
+                        "No font provided. Pass --font or configure it in config.toml".to_string(),
+                    ))
+                }
+            };
+
+            if !font_path.exists() {
                 return Err(VectomancyError::InvalidInput(format!(
                     "Font file path does not exist: {:?}",
-                    args.font
+                    font_path
                 )));
             }
-            let font_bytes = std::fs::read(&args.font)?;
+            let font_bytes = std::fs::read(&font_path)?;
 
             let (segs, original_dimensions) =
                 vectomancy_text::parser::extract_text_outlines(&args.text, &font_bytes, 64.0)
                     .map_err(VectomancyError::InvalidInput)?;
+
+            let bbox = math::compute_bounding_box_segments(&segs);
+
+            // Parse color or gradient from CLI or Config
+            let color_str = args.color.clone().or_else(|| text_config.color.clone());
+            let grad_str = args
+                .gradient
+                .clone()
+                .or_else(|| text_config.gradient.clone());
+
+            let mut final_color_style = None;
+            if let Some(grad) = grad_str {
+                let parts: Vec<&str> = grad.split(',').collect();
+                if parts.len() == 3 {
+                    if let (Some(start), Some(end), Ok(angle)) = (
+                        parse_hex_color(parts[0]),
+                        parse_hex_color(parts[1]),
+                        parts[2].trim().parse::<f32>(),
+                    ) {
+                        let rad = angle.to_radians();
+                        let start_pos = [0.0, 0.5];
+                        let end_pos = if rad.is_finite() {
+                            [0.5 + rad.cos() * 0.5, 0.5 + rad.sin() * 0.5]
+                        } else {
+                            [1.0, 0.5]
+                        };
+                        let stops = vec![(0.0, start), (1.0, end)];
+                        final_color_style = Some(models::ColorStyle::LinearGradient(
+                            std::sync::Arc::new(models::GradientData {
+                                stops,
+                                start_pos,
+                                end_pos,
+                            }),
+                        ));
+                    }
+                }
+            } else if let Some(col) = color_str {
+                if let Some(rgb) = parse_hex_color(&col) {
+                    final_color_style = Some(models::ColorStyle::Solid(rgb));
+                }
+            }
 
             let all_equations: Vec<_> = segs
                 .into_par_iter()
                 .map(|seg| {
                     let equations = math::spline::build_splines(&seg.data);
                     models::ColoredPath {
-                        color_rgb: seg.color_rgb,
+                        color_style: final_color_style
+                            .clone()
+                            .or_else(|| seg.color_style.clone()),
                         data: equations,
                     }
                 })
@@ -629,6 +779,7 @@ fn main() -> Result<(), VectomancyError> {
 
             let ast = MathExpressionAST::Spline {
                 equations: all_equations,
+                bounding_box: bbox,
             };
 
             let final_output = if let Some(ref out_path) = args.output {
@@ -643,13 +794,45 @@ fn main() -> Result<(), VectomancyError> {
                     "html" => OutputFormat::Html,
                     "json" => OutputFormat::Json,
                     "desmos" => OutputFormat::Desmos,
+                    "png" => OutputFormat::Png,
+                    "jpg" | "jpeg" => OutputFormat::Jpg,
+                    "webp" => OutputFormat::Webp,
                     _ => OutputFormat::Json,
                 }
             } else {
                 OutputFormat::Json
             };
 
-            emitter::emit_file(&ast, &format, &final_output, original_dimensions)?;
+            match format {
+                OutputFormat::Png | OutputFormat::Jpg | OutputFormat::Webp => {
+                    let image_config = config.image.unwrap_or_default();
+                    let bg_transparent = args
+                        .bg_transparent
+                        .or(text_config.bg_transparent)
+                        .unwrap_or_else(|| image_config.bg_transparent.unwrap_or(false));
+                    let stroke_width = args
+                        .stroke_width
+                        .or(text_config.stroke_width)
+                        .unwrap_or(1.0);
+                    let bit_depth = image_config.bit_depth;
+                    let color_space = image_config.color_space.clone();
+
+                    emitter::native::render_to_image(
+                        &ast,
+                        &final_output,
+                        &format,
+                        bg_transparent,
+                        original_dimensions,
+                        original_dimensions,
+                        stroke_width,
+                        bit_depth,
+                        color_space,
+                    )?;
+                }
+                _ => {
+                    emitter::emit_file(&ast, &format, &final_output, original_dimensions)?;
+                }
+            }
             info!("Saved text output to {:?}", final_output);
         }
     }

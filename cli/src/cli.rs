@@ -172,9 +172,25 @@ pub struct TextArgs {
 
     /// Font file path (.ttf or .otf)
     #[arg(short, long)]
-    pub font: PathBuf,
+    pub font: Option<PathBuf>,
 
     /// Output file path
     #[arg(short, long)]
     pub output: Option<PathBuf>,
+
+    /// Transparent background for native image rendering
+    #[arg(long, action = clap::ArgAction::Set)]
+    pub bg_transparent: Option<bool>,
+
+    /// Solid color in hex format (e.g. #FF0000)
+    #[arg(long)]
+    pub color: Option<String>,
+
+    /// Gradient in hex format (e.g. #FF0000,#0000FF,45)
+    #[arg(long)]
+    pub gradient: Option<String>,
+
+    /// Stroke width for native image rendering
+    #[arg(long)]
+    pub stroke_width: Option<f32>,
 }
