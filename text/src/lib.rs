@@ -25,4 +25,44 @@ mod tests {
             h
         );
     }
+
+    #[test]
+    fn test_woff2_decompression() {
+        let font_data_ttf = include_bytes!("../tests/font.ttf");
+        let font_data_woff2 = ttf2woff2::encode(font_data_ttf, Default::default())
+            .expect("Failed to compress TTF to WOFF2");
+        assert!(
+            woff2::decode::is_woff2(&font_data_woff2),
+            "Compressed data should be recognized as WOFF2"
+        );
+
+        let (paths_ttf, dim_ttf) =
+            crate::parser::extract_text_outlines("Hello WOFF2", font_data_ttf, 32.0, 0.0).unwrap();
+        let (paths_woff2, dim_woff2) =
+            crate::parser::extract_text_outlines("Hello WOFF2", &font_data_woff2, 32.0, 0.0)
+                .unwrap();
+
+        assert_eq!(dim_ttf, dim_woff2, "Dimensions should match");
+        assert_eq!(
+            paths_ttf.len(),
+            paths_woff2.len(),
+            "Path counts should match"
+        );
+        for (p_ttf, p_woff2) in paths_ttf.iter().zip(paths_woff2.iter()) {
+            assert_eq!(p_ttf.data, p_woff2.data);
+        }
+    }
+
+    #[test]
+    fn test_pressstart2p_woff2() {
+        let font_data_woff2 =
+            include_bytes!("../../../vectomancy-web/zola-site/static/fonts/pressstart2p.woff2");
+        assert!(
+            woff2::decode::is_woff2(font_data_woff2),
+            "pressstart2p should be recognized as WOFF2"
+        );
+        let (paths, _dim) =
+            crate::parser::extract_text_outlines("Hello", font_data_woff2, 32.0, 0.0).unwrap();
+        assert!(!paths.is_empty(), "Paths should not be empty");
+    }
 }
