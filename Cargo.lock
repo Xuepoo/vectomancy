@@ -3624,7 +3624,7 @@ checksum = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426"
 
 [[package]]
 name = "vectomancy"
-version = "5.0.13"
+version = "5.0.14"
 dependencies = [
  "base64 0.22.1",
  "bytemuck",
@@ -3652,7 +3652,7 @@ dependencies = [
 
 [[package]]
 name = "vectomancy-cli"
-version = "5.0.13"
+version = "5.0.14"
 dependencies = [
  "clap",
  "clap_complete",
@@ -3670,7 +3670,7 @@ dependencies = [
 
 [[package]]
 name = "vectomancy-text"
-version = "5.0.13"
+version = "5.0.14"
 dependencies = [
  "ab_glyph",
  "thiserror 1.0.69",
@@ -3679,7 +3679,7 @@ dependencies = [
 
 [[package]]
 name = "vectomancy-video"
-version = "5.0.13"
+version = "5.0.14"
 dependencies = [
  "crossbeam-channel",
  "ffmpeg-next",
