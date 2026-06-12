@@ -150,15 +150,38 @@ jobs:
 
       - name: Publish to crates.io
         run: |
+          wait_for_crate() {
+            local name=$1
+            local version=$2
+            echo "Waiting for $name $version to be available on crates.io..."
+            for i in {1..45}; do
+              if curl -H "User-Agent: vectomancy-release-ci" -s -I "https://crates.io/api/v1/crates/$name/$version" | grep -q "HTTP/2 200\|HTTP/1.1 200"; then
+                echo "$name $version is now available on crates.io."
+                return 0
+              fi
+              echo "Still waiting ($i/45)... sleeping 10s"
+              sleep 10
+            done
+            echo "Error: Timeout waiting for $name $version to sync on crates.io."
+            return 1
+          }
+
+          TAG_NAME="${{ github.ref_name }}"
+          VERSION="${TAG_NAME#v}"
+          echo "Extracted publish version: $VERSION"
+
           # 1. Publish core
           cargo publish --manifest-path Cargo.toml --token ${{ secrets.CRATES_TOKEN }}
-          sleep 45
+          wait_for_crate "vectomancy" "$VERSION"
+
           # 2. Publish text
           cargo publish --manifest-path text/Cargo.toml --token ${{ secrets.CRATES_TOKEN }} --no-verify
-          sleep 45
+          wait_for_crate "vectomancy-text" "$VERSION"
+
           # 3. Publish video
           cargo publish --manifest-path video/Cargo.toml --token ${{ secrets.CRATES_TOKEN }} --no-verify
-          sleep 45
+          wait_for_crate "vectomancy-video" "$VERSION"
+
           # 4. Publish cli
           cargo publish --manifest-path cli/Cargo.toml --token ${{ secrets.CRATES_TOKEN }} --no-verify
         env:
