@@ -171,19 +171,19 @@ jobs:
           echo "Extracted publish version: $VERSION"
 
           # 1. Publish core
-          cargo publish --manifest-path Cargo.toml --token ${{ secrets.CRATES_TOKEN }}
+          cargo publish --manifest-path Cargo.toml --package vectomancy --token ${{ secrets.CRATES_TOKEN }}
           wait_for_crate "vectomancy" "$VERSION"
 
           # 2. Publish text
-          cargo publish --manifest-path text/Cargo.toml --token ${{ secrets.CRATES_TOKEN }} --no-verify
+          cargo publish --manifest-path text/Cargo.toml --package vectomancy-text --token ${{ secrets.CRATES_TOKEN }} --no-verify
           wait_for_crate "vectomancy-text" "$VERSION"
 
           # 3. Publish video
-          cargo publish --manifest-path video/Cargo.toml --token ${{ secrets.CRATES_TOKEN }} --no-verify
+          cargo publish --manifest-path video/Cargo.toml --package vectomancy-video --token ${{ secrets.CRATES_TOKEN }} --no-verify
           wait_for_crate "vectomancy-video" "$VERSION"
 
           # 4. Publish cli
-          cargo publish --manifest-path cli/Cargo.toml --token ${{ secrets.CRATES_TOKEN }} --no-verify
+          cargo publish --manifest-path cli/Cargo.toml --package vectomancy-cli --token ${{ secrets.CRATES_TOKEN }} --no-verify
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_TOKEN }}
 
