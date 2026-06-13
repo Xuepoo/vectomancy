@@ -148,3 +148,134 @@ gpu = false
 threads = 8
 gpu_power = "HighPerformance"
 ```
+
+---
+
+## Video Processing
+
+Vectomancy supports converting video files frame-by-frame into parametric equations, then stitching them back into a video with the original audio preserved.
+
+### Basic Usage
+
+```bash
+# Convert video to parametric equations (Spline mode, default)
+vectomancy video input.mp4 -o output.mp4
+
+# Process with Fourier mode (set in config.toml first)
+vectomancy video input.mp4 -o output.mp4
+
+# Process with Chaikin mode
+vectomancy video input.mp4 -o output.mp4
+```
+
+### Supported Output Formats
+
+| Format | Codec | Transparency | Audio | Notes |
+|--------|-------|--------------|-------|-------|
+| `.mp4` | H.264 | ❌ | ✅ AAC | Default, best compatibility |
+| `.mkv` | H.264 | ❌ | ✅ AAC | Matroska container |
+| `.webm` | VP9 | ✅ | ✅ Opus | Supports alpha channel |
+| `.avi` | H.264 | ❌ | ✅ AAC | AVI container |
+| `.mov` | H.264 | ❌ | ✅ AAC | QuickTime container |
+| `.gif` | - | ❌ | ❌ | Animated GIF |
+
+### Audio Preservation
+
+The original video's audio stream is automatically extracted and merged into the output. The audio is encoded with AAC codec and mapped using `-shortest` flag to ensure sync.
+
+```bash
+# Audio is preserved automatically
+vectomancy video input_with_audio.mp4 -o output.mp4
+```
+
+### Transparent Background
+
+For transparent video output, use `.webm` format with VP9 codec and enable `bg_transparent` in config:
+
+```toml
+# config.toml
+bg_transparent = true
+```
+
+```bash
+# Output as WebM with alpha channel
+vectomancy video input.mp4 -o output.webm
+```
+
+**Note:** Only `.webm` format supports transparency. MP4/H.264 does not support alpha channels.
+
+### Video Processing Parameters
+
+Video processing reads all parameters from the `[image]` section of `config.toml`:
+
+```toml
+[image]
+mode = "spline"           # Algorithm: spline, fourier, chaikin
+color = true              # Enable color sampling
+gpu = true                # GPU acceleration (recommended for video)
+threads = 4               # CPU threads
+detail = 60               # Detail level (1-100)
+min_path_len = 5          # Minimum path length
+bg_transparent = false    # Transparent background (use with .webm)
+```
+
+### Performance Tips
+
+| Setting | Impact |
+|---------|--------|
+| `gpu = true` | ~2x faster for 1080p video (8-10 fps vs 4 fps) |
+| `detail = 30` | Faster processing, less detail |
+| `detail = 80` | Slower processing, more detail |
+| `min_path_len = 10` | Skip small noise, faster processing |
+
+**Example processing times (1920x1080, 30fps):**
+
+| Video Length | GPU Mode | CPU Mode |
+|--------------|----------|----------|
+| 5 seconds (150 frames) | ~20 seconds | ~40 seconds |
+| 90 seconds (2700 frames) | ~5 minutes | ~11 minutes |
+| 219 seconds (6572 frames) | ~1.5 minutes | ~3 minutes |
+
+### Example: Full Configuration for Video
+
+```toml
+[image]
+mode = "spline"
+format = "html"
+color = true
+gpu = true
+threads = 4
+detail = 50
+tolerance = 0.5
+min_path_len = 5
+bg_transparent = false
+bit_depth = 16
+color_space = "sRGB"
+
+[video]
+enabled = true
+
+[text]
+font = "default"
+```
+
+### Command Line Examples
+
+```bash
+# Basic conversion
+vectomancy video input.mp4 -o output.mp4
+
+# High detail processing
+# (set detail = 80 in config.toml first)
+vectomancy video input.mp4 -o output_hd.mp4
+
+# Transparent WebM output
+# (set bg_transparent = true in config.toml first)
+vectomancy video input.mp4 -o output.webm
+
+# Process with custom config
+vectomancy video input.mp4 -o output.mp4 --config /path/to/custom.toml
+
+# Verbose output for debugging
+vectomancy video input.mp4 -o output.mp4 -v
+```

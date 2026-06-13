@@ -6,6 +6,101 @@ use lyon_tessellation::{
     VertexBuffers,
 };
 use std::path::Path;
+use std::sync::OnceLock;
+
+struct RenderGpuContext {
+    device: wgpu::Device,
+    queue: wgpu::Queue,
+    pipeline: wgpu::RenderPipeline,
+}
+
+static RENDER_GPU_CONTEXT: OnceLock<Result<RenderGpuContext, String>> = OnceLock::new();
+
+fn get_or_init_render_context(
+    target_dimensions: (u32, u32),
+) -> Result<&'static RenderGpuContext, VectomancyError> {
+    let ctx =
+        RENDER_GPU_CONTEXT.get_or_init(|| pollster::block_on(init_render_gpu(target_dimensions)));
+    ctx.as_ref()
+        .map_err(|e| VectomancyError::InvalidInput(format!("GPU context error: {}", e)))
+}
+
+async fn init_render_gpu(_target_dimensions: (u32, u32)) -> Result<RenderGpuContext, String> {
+    let instance = wgpu::Instance::default();
+
+    let adapter = instance
+        .request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::LowPower,
+            compatible_surface: None,
+            force_fallback_adapter: false,
+        })
+        .await
+        .map_err(|e| format!("Failed to request GPU adapter: {}", e))?;
+
+    let (device, queue) = adapter
+        .request_device(&wgpu::DeviceDescriptor::default())
+        .await
+        .map_err(|e| format!("Failed to request device: {}", e))?;
+
+    let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+        label: Some("Shader"),
+        source: wgpu::ShaderSource::Wgsl(include_str!("shader.wgsl").into()),
+    });
+
+    let render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+        label: Some("Render Pipeline Layout"),
+        bind_group_layouts: &[],
+        immediate_size: 0,
+    });
+
+    let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        label: Some("Render Pipeline"),
+        layout: Some(&render_pipeline_layout),
+        vertex: wgpu::VertexState {
+            module: &shader,
+            entry_point: Some("vs_main"),
+            compilation_options: Default::default(),
+            buffers: &[wgpu::VertexBufferLayout {
+                array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
+                step_mode: wgpu::VertexStepMode::Vertex,
+                attributes: &wgpu::vertex_attr_array![0 => Float32x2, 1 => Float32x4],
+            }],
+        },
+        fragment: Some(wgpu::FragmentState {
+            module: &shader,
+            entry_point: Some("fs_main"),
+            compilation_options: Default::default(),
+            targets: &[Some(wgpu::ColorTargetState {
+                format: wgpu::TextureFormat::Rgba8UnormSrgb,
+                blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                write_mask: wgpu::ColorWrites::ALL,
+            })],
+        }),
+        primitive: wgpu::PrimitiveState {
+            topology: wgpu::PrimitiveTopology::TriangleList,
+            strip_index_format: None,
+            front_face: wgpu::FrontFace::Ccw,
+            cull_mode: None,
+            unclipped_depth: false,
+            polygon_mode: wgpu::PolygonMode::Fill,
+            conservative: false,
+        },
+        depth_stencil: None,
+        multisample: wgpu::MultisampleState {
+            count: 4,
+            mask: !0,
+            alpha_to_coverage_enabled: false,
+        },
+        multiview_mask: None,
+        cache: None,
+    });
+
+    Ok(RenderGpuContext {
+        device,
+        queue,
+        pipeline,
+    })
+}
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
@@ -73,21 +168,10 @@ async fn render_wgpu(
     stroke_width: f32,
     bit_depth: Option<u8>,
 ) -> Result<(), VectomancyError> {
-    let instance = wgpu::Instance::default();
-
-    let adapter = instance
-        .request_adapter(&wgpu::RequestAdapterOptions {
-            power_preference: wgpu::PowerPreference::LowPower,
-            compatible_surface: None,
-            force_fallback_adapter: false,
-        })
-        .await
-        .map_err(|e| VectomancyError::MathError(format!("Failed to request GPU adapter: {}", e)))?;
-
-    let (device, queue) = adapter
-        .request_device(&wgpu::DeviceDescriptor::default())
-        .await
-        .map_err(|e| VectomancyError::InvalidInput(format!("Failed to request device: {}", e)))?;
+    let ctx = get_or_init_render_context(target_dimensions)?;
+    let device = &ctx.device;
+    let queue = &ctx.queue;
+    let render_pipeline = &ctx.pipeline;
 
     let texture_desc = wgpu::TextureDescriptor {
         size: wgpu::Extent3d {
@@ -134,59 +218,6 @@ async fn render_wgpu(
         mapped_at_creation: false,
     };
     let output_buffer = device.create_buffer(&output_buffer_desc);
-
-    let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-        label: Some("Shader"),
-        source: wgpu::ShaderSource::Wgsl(include_str!("shader.wgsl").into()),
-    });
-
-    let render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-        label: Some("Render Pipeline Layout"),
-        bind_group_layouts: &[],
-        immediate_size: 0,
-    });
-
-    let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-        label: Some("Render Pipeline"),
-        layout: Some(&render_pipeline_layout),
-        vertex: wgpu::VertexState {
-            module: &shader,
-            entry_point: Some("vs_main"),
-            compilation_options: Default::default(),
-            buffers: &[wgpu::VertexBufferLayout {
-                array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
-                step_mode: wgpu::VertexStepMode::Vertex,
-                attributes: &wgpu::vertex_attr_array![0 => Float32x2, 1 => Float32x4],
-            }],
-        },
-        fragment: Some(wgpu::FragmentState {
-            module: &shader,
-            entry_point: Some("fs_main"),
-            compilation_options: Default::default(),
-            targets: &[Some(wgpu::ColorTargetState {
-                format: wgpu::TextureFormat::Rgba8UnormSrgb,
-                blend: Some(wgpu::BlendState::ALPHA_BLENDING),
-                write_mask: wgpu::ColorWrites::ALL,
-            })],
-        }),
-        primitive: wgpu::PrimitiveState {
-            topology: wgpu::PrimitiveTopology::TriangleList,
-            strip_index_format: None,
-            front_face: wgpu::FrontFace::Ccw,
-            cull_mode: None,
-            unclipped_depth: false,
-            polygon_mode: wgpu::PolygonMode::Fill,
-            conservative: false,
-        },
-        depth_stencil: None,
-        multisample: wgpu::MultisampleState {
-            count: 4,
-            mask: !0,
-            alpha_to_coverage_enabled: false,
-        },
-        multiview_mask: None,
-        cache: None,
-    });
 
     let mut geometry: VertexBuffers<Vertex, u32> = VertexBuffers::new();
     let mut tessellator = StrokeTessellator::new();
@@ -394,7 +425,7 @@ async fn render_wgpu(
         });
 
         if !geometry.indices.is_empty() {
-            render_pass.set_pipeline(&render_pipeline);
+            render_pass.set_pipeline(render_pipeline);
             render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
             render_pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint32);
             render_pass.draw_indexed(0..geometry.indices.len() as u32, 0, 0..1);
