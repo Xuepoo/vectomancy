@@ -7,7 +7,7 @@ license = "MIT"
 repository = "https://github.com/Xuepoo/vectomancy"
 
 [dependencies]
-vectomancy = { path = "..", version = "5.0.14" }
+vectomancy = { path = "..", version = "6.0.0" }
 ab_glyph = "0.2"
 thiserror = "1.0"
 woff2 = "0.3"
