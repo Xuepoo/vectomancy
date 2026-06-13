@@ -1,4 +1,4 @@
-use crossbeam_channel::{bounded, Receiver, TrySendError};
+use crossbeam_channel::{bounded, Receiver};
 use ffmpeg_next::ffi::*;
 use std::path::Path;
 use std::thread;
@@ -175,7 +175,6 @@ pub fn decode_video_to_channel(
     let (sender, receiver) = bounded::<AVFrameWrap>(capacity);
 
     let sender_clone = sender.clone();
-    let receiver_clone = receiver.clone();
 
     let join_handle = thread::spawn(move || -> Result<(), VideoError> {
         let mut ictx = ffmpeg_next::format::input(&video_path)
@@ -201,18 +200,10 @@ pub fn decode_video_to_channel(
 
         let push_frame = |frame: &ffmpeg_next::util::frame::Video| -> Result<bool, VideoError> {
             let wrap = AVFrameWrap::new(frame);
-            loop {
-                match sender_clone.try_send(wrap.clone()) {
-                    Ok(_) => return Ok(true),
-                    Err(TrySendError::Full(_)) => {
-                        // Drop the oldest frame to maintain the sliding window
-                        let _ = receiver_clone.try_recv();
-                    }
-                    Err(TrySendError::Disconnected(_)) => {
-                        return Ok(false); // Receiver disconnected, stop decoding
-                    }
-                }
-            }
+            sender_clone
+                .send(wrap)
+                .map_err(|_| VideoError::Decoder("Channel disconnected".to_string()))?;
+            Ok(true)
         };
 
         for (stream, packet) in ictx.packets() {
