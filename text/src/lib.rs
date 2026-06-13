@@ -55,8 +55,7 @@ mod tests {
 
     #[test]
     fn test_pressstart2p_woff2() {
-        let font_data_woff2 =
-            include_bytes!("../../../vectomancy-web/zola-site/static/fonts/pressstart2p.woff2");
+        let font_data_woff2 = include_bytes!("../../test-fixtures/fonts/pressstart2p.woff2");
         assert!(
             woff2::decode::is_woff2(font_data_woff2),
             "pressstart2p should be recognized as WOFF2"
