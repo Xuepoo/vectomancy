@@ -524,6 +524,8 @@ fn main() -> Result<(), VectomancyError> {
                 format
             };
 
+            let bg_transparent = image_config.bg_transparent.unwrap_or(false);
+
             let mut frame_idx = 0;
             while let Ok(frame_wrap) = receiver.recv() {
                 frame_idx += 1;
@@ -637,7 +639,6 @@ fn main() -> Result<(), VectomancyError> {
 
                 match format {
                     OutputFormat::Png | OutputFormat::Jpg | OutputFormat::Webp => {
-                        let bg_transparent = image_config.bg_transparent.unwrap_or(false);
                         let stroke_width = 1.0;
                         let bit_depth = image_config.bit_depth;
                         let color_space = image_config.color_space.clone();
@@ -670,18 +671,55 @@ fn main() -> Result<(), VectomancyError> {
 
             if is_video_output {
                 info!("Stitching frames into video: {:?}", out_target);
-                let status = std::process::Command::new("ffmpeg")
-                    .arg("-y")
+
+                let ext = out_target
+                    .extension()
+                    .and_then(|e| e.to_str())
+                    .unwrap_or("")
+                    .to_lowercase();
+                let is_webm = ext == "webm";
+
+                let mut cmd = std::process::Command::new("ffmpeg");
+                cmd.arg("-y")
                     .arg("-framerate")
                     .arg("30")
                     .arg("-i")
-                    .arg(temp_dir.join("frame_%04d.png").to_string_lossy().as_ref())
-                    .arg("-c:v")
-                    .arg("libx264")
-                    .arg("-pix_fmt")
-                    .arg("yuv420p")
-                    .arg(&out_target)
-                    .status();
+                    .arg(temp_dir.join("frame_%04d.png").to_string_lossy().as_ref());
+
+                // Add original video as audio source if it exists
+                let has_audio = args.input.exists();
+                if has_audio {
+                    cmd.arg("-i").arg(&args.input);
+                }
+
+                if is_webm {
+                    // WebM with VP9 supports alpha channel
+                    cmd.arg("-c:v").arg("libvpx-vp9");
+                    if bg_transparent {
+                        cmd.arg("-pix_fmt").arg("yuva420p");
+                    } else {
+                        cmd.arg("-pix_fmt").arg("yuv420p");
+                    }
+                    cmd.arg("-b:v").arg("2M");
+                } else {
+                    // MP4/MKV/AVI/MOV with H.264
+                    cmd.arg("-c:v").arg("libx264");
+                    cmd.arg("-pix_fmt").arg("yuv420p");
+                }
+
+                if has_audio {
+                    cmd.arg("-map")
+                        .arg("0:v")
+                        .arg("-map")
+                        .arg("1:a")
+                        .arg("-c:a")
+                        .arg("aac")
+                        .arg("-shortest");
+                }
+
+                cmd.arg(&out_target);
+
+                let status = cmd.status();
 
                 match status {
                     Ok(s) if s.success() => {
