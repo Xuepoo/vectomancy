@@ -1,6 +1,6 @@
 [package]
 name = "vectomancy-cli"
-version = "5.0.14"
+version = "6.0.0"
 edition = "2021"
 description = "Vectomancy - CLI tool"
 license = "MIT"
