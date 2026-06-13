@@ -7,7 +7,7 @@ license = "MIT"
 repository = "https://github.com/Xuepoo/vectomancy"
 
 [dependencies]
-vectomancy = { path = "..", version = "5.0.14" }
+vectomancy = { path = "..", version = "6.0.0" }
 ffmpeg-next = "8.1"
 crossbeam-channel = "0.5"
 thiserror = "1.0"
