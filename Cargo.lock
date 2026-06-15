@@ -3074,9 +3074,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.149"
+version = "1.0.150"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "83fc039473c5595ace860d8c4fafa220ff474b3fc6bfdb4293327f1a37e94d86"
+checksum = "e8014e44b4736ed0538adeecded0fce2a272f22dc9578a7eb6b2d9993c74cfb9"
 dependencies = [
  "itoa",
  "memchr",
@@ -3752,7 +3752,7 @@ checksum = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426"
 
 [[package]]
 name = "vectomancy"
-version = "6.0.0"
+version = "6.0.1"
 dependencies = [
  "base64 0.22.1",
  "bytemuck",
@@ -3780,7 +3780,7 @@ dependencies = [
 
 [[package]]
 name = "vectomancy-cli"
-version = "6.0.0"
+version = "6.0.1"
 dependencies = [
  "clap",
  "clap_complete",
@@ -3798,7 +3798,7 @@ dependencies = [
 
 [[package]]
 name = "vectomancy-text"
-version = "6.0.0"
+version = "6.0.1"
 dependencies = [
  "ab_glyph",
  "bytes",
@@ -3810,7 +3810,7 @@ dependencies = [
 
 [[package]]
 name = "vectomancy-video"
-version = "6.0.0"
+version = "6.0.1"
 dependencies = [
  "crossbeam-channel",
  "ffmpeg-next",
