@@ -3573,9 +3573,9 @@ checksum = "d2df906b07856748fa3f6e0ad0cbaa047052d4a7dd609e231c4f72cee8c36f31"
 
 [[package]]
 name = "ttf2woff2"
-version = "0.12.0"
+version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "506210b990e44cedf6b298ca97a99f820bfa052b23b9c10be21cc7710d292645"
+checksum = "9aad329745cf05b9d7e5ad2f4fd2d4b837d2c094b90ec72d0bf6956055053634"
 dependencies = [
  "brotli 8.0.3",
  "byteorder",
@@ -3752,7 +3752,7 @@ checksum = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426"
 
 [[package]]
 name = "vectomancy"
-version = "6.0.0"
+version = "6.0.1"
 dependencies = [
  "base64 0.22.1",
  "bytemuck",
@@ -3780,7 +3780,7 @@ dependencies = [
 
 [[package]]
 name = "vectomancy-cli"
-version = "6.0.0"
+version = "6.0.1"
 dependencies = [
  "clap",
  "clap_complete",
@@ -3798,7 +3798,7 @@ dependencies = [
 
 [[package]]
 name = "vectomancy-text"
-version = "6.0.0"
+version = "6.0.1"
 dependencies = [
  "ab_glyph",
  "bytes",
@@ -3810,7 +3810,7 @@ dependencies = [
 
 [[package]]
 name = "vectomancy-video"
-version = "6.0.0"
+version = "6.0.1"
 dependencies = [
  "crossbeam-channel",
  "ffmpeg-next",
