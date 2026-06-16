@@ -107,3 +107,14 @@ Configuration loads from `~/.config/vectomancy/config.toml` following the XDG Ba
 ## License
 
 This project is licensed under the MIT License.
+
+## Sponsor
+
+If you find Vectomancy useful, consider supporting its development:
+
+[![Open Collective backers](https://img.shields.io/opencollective/backers/vectomancy?style=flat-square)](https://opencollective.com/vectomancy)
+[![Open Collective sponsors](https://img.shields.io/opencollective/sponsors/vectomancy?style=flat-square)](https://opencollective.com/vectomancy)
+
+<a href="https://opencollective.com/vectomancy/donate" target="_blank">
+  <img src="https://opencollective.com/vectomancy/donate/button@2x.png?color=blue" width=200 />
+</a>

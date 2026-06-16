@@ -107,3 +107,14 @@ vectomancy video --output <OUTPUT> <INPUT_VIDEO>
 ## 许可证
 
 本项目采用 MIT 许可证。
+
+## 赞助
+
+如果你觉得 Vectomancy 有用，可以考虑支持它的开发：
+
+[![Open Collective backers](https://img.shields.io/opencollective/backers/vectomancy?style=flat-square)](https://opencollective.com/vectomancy)
+[![Open Collective sponsors](https://img.shields.io/opencollective/sponsors/vectomancy?style=flat-square)](https://opencollective.com/vectomancy)
+
+<a href="https://opencollective.com/vectomancy/donate" target="_blank">
+  <img src="https://opencollective.com/vectomancy/donate/button@2x.png?color=blue" width=200 />
+</a>
