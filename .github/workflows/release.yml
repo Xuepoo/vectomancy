@@ -46,7 +46,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4.1.7
+        uses: actions/checkout@v7.0.0
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -138,7 +138,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4.1.7
+        uses: actions/checkout@v7.0.0
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -254,7 +254,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
       - name: Checkout tap repository
-        uses: actions/checkout@v4.1.7
+        uses: actions/checkout@v7.0.0
         with:
           repository: Xuepoo/homebrew-tap
           token: ${{ secrets.GH_PAT }}
@@ -309,7 +309,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
       - name: Checkout scoop repository
-        uses: actions/checkout@v4.1.7
+        uses: actions/checkout@v7.0.0
         with:
           repository: Xuepoo/scoop-bucket
           token: ${{ secrets.GH_PAT }}
