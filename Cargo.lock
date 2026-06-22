@@ -475,9 +475,9 @@ checksum = "8f1fe948ff07f4bd06c30984e69f5b4899c516a3ef74f34df92a2df2ab535495"
 
 [[package]]
 name = "bytes"
-version = "1.5.0"
+version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a2bd12c1caf447e69cd4528f47f94d203fd2582878ecb9e9465484c4148a8223"
+checksum = "8ae3f5d315924270530207e2a68396c3cc547f6dca3fbdca317cfb1a51edb593"
 
 [[package]]
 name = "bzip2"
@@ -3752,7 +3752,7 @@ checksum = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426"
 
 [[package]]
 name = "vectomancy"
-version = "6.0.0"
+version = "6.0.1"
 dependencies = [
  "base64 0.22.1",
  "bytemuck",
@@ -3780,7 +3780,7 @@ dependencies = [
 
 [[package]]
 name = "vectomancy-cli"
-version = "6.0.0"
+version = "6.0.1"
 dependencies = [
  "clap",
  "clap_complete",
@@ -3798,7 +3798,7 @@ dependencies = [
 
 [[package]]
 name = "vectomancy-text"
-version = "6.0.0"
+version = "6.0.1"
 dependencies = [
  "ab_glyph",
  "bytes",
@@ -3810,7 +3810,7 @@ dependencies = [
 
 [[package]]
 name = "vectomancy-video"
-version = "6.0.0"
+version = "6.0.1"
 dependencies = [
  "crossbeam-channel",
  "ffmpeg-next",
