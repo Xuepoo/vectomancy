@@ -64,9 +64,20 @@ jobs:
         run: |
           brew install ffmpeg pkg-config
 
+      - name: Cache vcpkg binaries
+        if: matrix.os_name == 'windows'
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/vcpkg-cache
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('.github/workflows/release.yml') }}
+          restore-keys: |
+            vcpkg-${{ runner.os }}-
+
       - name: Install FFmpeg Headers (Windows)
         if: matrix.os_name == 'windows'
         shell: pwsh
+        env:
+          VCPKG_BINARY_SOURCES: "clear;files,${{ github.workspace }}/vcpkg-cache,readwrite"
         run: |
           choco install pkgconfiglite -y
           vcpkg integrate install
