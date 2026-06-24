@@ -147,7 +147,7 @@ fn test_video_decoding_and_fitting_e2e() {
                     let reduced = vectomancy::math::simplify_rdp(&path.data, 1.0);
                     if reduced.len() > 2 {
                         let segments = vectomancy::math::spline::fit_cubic_bezier(&reduced);
-                        let _equations = vectomancy::math::spline::build_splines(&segments);
+                        let _equations = vectomancy::math::spline::build_splines(&segments, false);
                         spline_count += 1;
                     }
                 }

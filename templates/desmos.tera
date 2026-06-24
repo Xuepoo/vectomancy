@@ -30,7 +30,7 @@
                 '{% for eq in path.data %}' +
                 '{% set eq_index = loop.index0 %}' +
                 '{{ eq_index }} \\le t < {{ loop.index }}: ' +
-                '{% for c in eq.x_poly %}{{ c }}{% if loop.index0 == 1 %}*(t-{{ eq_index }}){% elif loop.index0 > 1 %}*(t-{{ eq_index }})^{{ loop.index0 }}{% endif %}{% if not loop.last %} + {% endif %}{% endfor %}' +
+                '{% set has_content = false %}{% for c in eq.x_poly %}{% if c != 0.0 %}{% if has_content %} + {% endif %}{{ c }}{% if loop.index0 == 1 %}*(t-{{ eq_index }}){% elif loop.index0 > 1 %}*(t-{{ eq_index }})^{{ loop.index0 }}{% endif %}{% set_global has_content = true %}{% endif %}{% endfor %}{% if not has_content %}0{% endif %}' +
                 '{% if not loop.last %}, {% endif %}' +
                 '{% endfor %}' +
                 ' \\right\\}, ' +
@@ -38,7 +38,7 @@
                 '{% for eq in path.data %}' +
                 '{% set eq_index = loop.index0 %}' +
                 '{{ eq_index }} \\le t < {{ loop.index }}: ' +
-                '{% for c in eq.y_poly %}{{ c }}{% if loop.index0 == 1 %}*(t-{{ eq_index }}){% elif loop.index0 > 1 %}*(t-{{ eq_index }})^{{ loop.index0 }}{% endif %}{% if not loop.last %} + {% endif %}{% endfor %}' +
+                '{% set has_content = false %}{% for c in eq.y_poly %}{% if c != 0.0 %}{% if has_content %} + {% endif %}{{ c }}{% if loop.index0 == 1 %}*(t-{{ eq_index }}){% elif loop.index0 > 1 %}*(t-{{ eq_index }})^{{ loop.index0 }}{% endif %}{% set_global has_content = true %}{% endif %}{% endfor %}{% if not has_content %}0{% endif %}' +
                 '{% if not loop.last %}, {% endif %}' +
                 '{% endfor %}' +
                 ' \\right\\} \\right)' +

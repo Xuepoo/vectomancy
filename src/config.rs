@@ -41,11 +41,13 @@ pub struct ImageConfig {
     pub bg_transparent: Option<bool>,
     pub threads: Option<usize>,
     pub gpu_power: Option<String>,
+    pub simplify_math: Option<bool>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Default, Clone)]
 pub struct VideoConfig {
     pub enabled: Option<bool>,
+    pub simplify_math: Option<bool>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Default, Clone)]
@@ -58,6 +60,7 @@ pub struct TextConfig {
     pub width: Option<u32>,
     pub height: Option<u32>,
     pub dpi: Option<f32>,
+    pub simplify_math: Option<bool>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Default, Clone)]
