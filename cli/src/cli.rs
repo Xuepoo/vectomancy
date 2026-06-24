@@ -153,6 +153,10 @@ pub struct ImageArgs {
     /// GPU Power Preference (HighPerformance, LowPower, None)
     #[arg(long)]
     pub gpu_power: Option<String>,
+
+    /// Do not simplify math coordinates and equations (retains original high precision)
+    #[arg(long)]
+    pub no_simplify_math: bool,
 }
 
 #[derive(Args, Debug)]
@@ -163,6 +167,10 @@ pub struct VideoArgs {
     /// Output file path
     #[arg(short, long)]
     pub output: Option<PathBuf>,
+
+    /// Do not simplify math coordinates and equations (retains original high precision)
+    #[arg(long)]
+    pub no_simplify_math: bool,
 }
 
 #[derive(Args, Debug)]
@@ -209,4 +217,8 @@ pub struct TextArgs {
     /// Letter spacing in pixels (can be negative, default: 0.0)
     #[arg(long, default_value_t = 0.0)]
     pub letter_spacing: f32,
+
+    /// Do not simplify math coordinates and equations (retains original high precision)
+    #[arg(long)]
+    pub no_simplify_math: bool,
 }

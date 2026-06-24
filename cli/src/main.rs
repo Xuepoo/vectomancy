@@ -196,6 +196,11 @@ fn main() -> Result<(), VectomancyError> {
                             .map(Mode::from)
                             .or(image_config.mode)
                             .unwrap_or(Mode::Spline);
+                        let simplify_math = if args.no_simplify_math {
+                            false
+                        } else {
+                            image_config.simplify_math.unwrap_or(true)
+                        };
                         let ast = match mode {
                             Mode::Fourier => {
                                 let mut valid_paths = Vec::new();
@@ -239,7 +244,10 @@ fn main() -> Result<(), VectomancyError> {
                                         let reduced = math::simplify_rdp(&path.data, tolerance);
                                         if reduced.len() > 2 {
                                             let segments = math::spline::fit_cubic_bezier(&reduced);
-                                            let equations = math::spline::build_splines(&segments);
+                                            let equations = math::spline::build_splines(
+                                                &segments,
+                                                simplify_math,
+                                            );
                                             Some(models::ColoredPath {
                                                 color_style: path.color_style.clone(),
                                                 data: equations,
@@ -292,12 +300,18 @@ fn main() -> Result<(), VectomancyError> {
                             .map(Mode::from)
                             .or(image_config.mode)
                             .unwrap_or(Mode::Spline);
+                        let simplify_math = if args.no_simplify_math {
+                            false
+                        } else {
+                            image_config.simplify_math.unwrap_or(true)
+                        };
                         let ast = match mode {
                             Mode::Spline => {
                                 let all_equations: Vec<_> = segs
                                     .into_par_iter()
                                     .map(|seg| {
-                                        let equations = math::spline::build_splines(&seg.data);
+                                        let equations =
+                                            math::spline::build_splines(&seg.data, simplify_math);
                                         models::ColoredPath {
                                             color_style: seg.color_style.clone(),
                                             data: equations,
@@ -484,6 +498,11 @@ fn main() -> Result<(), VectomancyError> {
                 .map_err(|e| VectomancyError::ImageProcessing(e.to_string()))?;
 
             let image_config = config.image.unwrap_or_default();
+            let simplify_math = if args.no_simplify_math {
+                false
+            } else {
+                image_config.simplify_math.unwrap_or(true)
+            };
             let mode = image_config.mode.unwrap_or(Mode::Spline);
             let detail_val = image_config.detail.unwrap_or(50);
             let tolerance = image_config.tolerance.unwrap_or_else(|| {
@@ -550,7 +569,8 @@ fn main() -> Result<(), VectomancyError> {
                                 let reduced = math::simplify_rdp(&path.data, tolerance);
                                 if reduced.len() > 2 {
                                     let segments = math::spline::fit_cubic_bezier(&reduced);
-                                    let equations = math::spline::build_splines(&segments);
+                                    let equations =
+                                        math::spline::build_splines(&segments, simplify_math);
                                     Some(models::ColoredPath {
                                         color_style: path.color_style.clone(),
                                         data: equations,
@@ -734,6 +754,11 @@ fn main() -> Result<(), VectomancyError> {
 
         Commands::Text(args) => {
             let text_config = config.text.clone().unwrap_or_default();
+            let simplify_math = if args.no_simplify_math {
+                false
+            } else {
+                text_config.simplify_math.unwrap_or(true)
+            };
             info!("Running Text Subcommand with {:?}", args.text);
 
             let font_path = args
@@ -809,7 +834,7 @@ fn main() -> Result<(), VectomancyError> {
             let all_equations: Vec<_> = segs
                 .into_par_iter()
                 .map(|seg| {
-                    let equations = math::spline::build_splines(&seg.data);
+                    let equations = math::spline::build_splines(&seg.data, simplify_math);
                     models::ColoredPath {
                         color_style: final_color_style
                             .clone()

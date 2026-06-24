@@ -1,6 +1,6 @@
 use crate::models::{BezierSegment, Point2D, SplineEquation};
 
-pub fn build_splines(segments: &[BezierSegment]) -> Vec<SplineEquation> {
+pub fn build_splines(segments: &[BezierSegment], simplify: bool) -> Vec<SplineEquation> {
     let mut equations = Vec::new();
     let mut current_t = 0.0;
     let mut current_point = Point2D { x: 0.0, y: 0.0 };
@@ -24,8 +24,22 @@ pub fn build_splines(segments: &[BezierSegment]) -> Vec<SplineEquation> {
                 equations.push(SplineEquation {
                     start_t: current_t,
                     end_t: current_t + 1.0,
-                    x_poly,
-                    y_poly,
+                    x_poly: if simplify {
+                        x_poly
+                            .into_iter()
+                            .map(|v| (v * 10000.0).round() / 10000.0)
+                            .collect()
+                    } else {
+                        x_poly
+                    },
+                    y_poly: if simplify {
+                        y_poly
+                            .into_iter()
+                            .map(|v| (v * 10000.0).round() / 10000.0)
+                            .collect()
+                    } else {
+                        y_poly
+                    },
                 });
 
                 current_point = *p;
@@ -45,8 +59,22 @@ pub fn build_splines(segments: &[BezierSegment]) -> Vec<SplineEquation> {
                 equations.push(SplineEquation {
                     start_t: current_t,
                     end_t: current_t + 1.0,
-                    x_poly,
-                    y_poly,
+                    x_poly: if simplify {
+                        x_poly
+                            .into_iter()
+                            .map(|v| (v * 10000.0).round() / 10000.0)
+                            .collect()
+                    } else {
+                        x_poly
+                    },
+                    y_poly: if simplify {
+                        y_poly
+                            .into_iter()
+                            .map(|v| (v * 10000.0).round() / 10000.0)
+                            .collect()
+                    } else {
+                        y_poly
+                    },
                 });
 
                 current_point = *p2;
@@ -78,8 +106,22 @@ pub fn build_splines(segments: &[BezierSegment]) -> Vec<SplineEquation> {
                 equations.push(SplineEquation {
                     start_t: current_t,
                     end_t: current_t + 1.0,
-                    x_poly,
-                    y_poly,
+                    x_poly: if simplify {
+                        x_poly
+                            .into_iter()
+                            .map(|v| (v * 10000.0).round() / 10000.0)
+                            .collect()
+                    } else {
+                        x_poly
+                    },
+                    y_poly: if simplify {
+                        y_poly
+                            .into_iter()
+                            .map(|v| (v * 10000.0).round() / 10000.0)
+                            .collect()
+                    } else {
+                        y_poly
+                    },
                 });
 
                 current_point = *p3;
@@ -97,8 +139,22 @@ pub fn build_splines(segments: &[BezierSegment]) -> Vec<SplineEquation> {
                 equations.push(SplineEquation {
                     start_t: current_t,
                     end_t: current_t + 1.0,
-                    x_poly,
-                    y_poly,
+                    x_poly: if simplify {
+                        x_poly
+                            .into_iter()
+                            .map(|v| (v * 10000.0).round() / 10000.0)
+                            .collect()
+                    } else {
+                        x_poly
+                    },
+                    y_poly: if simplify {
+                        y_poly
+                            .into_iter()
+                            .map(|v| (v * 10000.0).round() / 10000.0)
+                            .collect()
+                    } else {
+                        y_poly
+                    },
                 });
 
                 current_point = first_point;
@@ -180,7 +236,7 @@ pub fn sample_subpaths(segments: &[BezierSegment], points_per_segment: usize) ->
 }
 
 pub fn sample_segments(segments: &[BezierSegment], points_per_segment: usize) -> Vec<Point2D> {
-    let equations = build_splines(segments);
+    let equations = build_splines(segments, false);
     let mut points = Vec::new();
 
     for eq in equations {
