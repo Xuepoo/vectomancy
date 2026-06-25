@@ -209,12 +209,23 @@ pub fn perform_fft(
             Ok(all_terms) => {
                 if adaptive && !all_terms.is_empty() {
                     let mut terms_vec = Vec::new();
-                    let total_energy: f64 =
-                        all_terms.iter().map(|t| t.amplitude * t.amplitude).sum();
+                    let dc_term = all_terms.iter().find(|t| t.frequency.abs() < 1e-5).cloned();
+                    let total_ac_energy: f64 = all_terms
+                        .iter()
+                        .filter(|t| t.frequency.abs() >= 1e-5)
+                        .map(|t| t.amplitude * t.amplitude)
+                        .sum();
+                    let target_energy = total_ac_energy * energy_threshold;
                     let mut accum_energy = 0.0;
-                    let target_energy = total_energy * energy_threshold;
+
+                    if let Some(dc) = dc_term {
+                        terms_vec.push(dc);
+                    }
 
                     for term in all_terms {
+                        if term.frequency.abs() < 1e-5 {
+                            continue;
+                        }
                         accum_energy += term.amplitude * term.amplitude;
                         terms_vec.push(term);
                         if accum_energy >= target_energy || terms_vec.len() >= terms {
@@ -271,11 +282,23 @@ pub fn perform_fft(
     });
 
     if adaptive && !all_terms.is_empty() {
-        let total_energy: f64 = all_terms.iter().map(|t| t.amplitude * t.amplitude).sum();
+        let dc_term = all_terms.iter().find(|t| t.frequency.abs() < 1e-5).cloned();
+        let total_ac_energy: f64 = all_terms
+            .iter()
+            .filter(|t| t.frequency.abs() >= 1e-5)
+            .map(|t| t.amplitude * t.amplitude)
+            .sum();
+        let target_energy = total_ac_energy * energy_threshold;
         let mut accum_energy = 0.0;
-        let target_energy = total_energy * energy_threshold;
+
+        if let Some(dc) = dc_term {
+            terms_vec.push(dc);
+        }
 
         for term in all_terms {
+            if term.frequency.abs() < 1e-5 {
+                continue;
+            }
             accum_energy += term.amplitude * term.amplitude;
             terms_vec.push(term);
             if accum_energy >= target_energy || terms_vec.len() >= terms {
@@ -342,12 +365,24 @@ pub fn perform_fft_batch(
                     for all_terms in all_batch_terms {
                         if !all_terms.is_empty() {
                             let mut terms_vec = Vec::new();
-                            let total_energy: f64 =
-                                all_terms.iter().map(|t| t.amplitude * t.amplitude).sum();
+                            let dc_term =
+                                all_terms.iter().find(|t| t.frequency.abs() < 1e-5).cloned();
+                            let total_ac_energy: f64 = all_terms
+                                .iter()
+                                .filter(|t| t.frequency.abs() >= 1e-5)
+                                .map(|t| t.amplitude * t.amplitude)
+                                .sum();
+                            let target_energy = total_ac_energy * energy_threshold;
                             let mut accum_energy = 0.0;
-                            let target_energy = total_energy * energy_threshold;
+
+                            if let Some(dc) = dc_term {
+                                terms_vec.push(dc);
+                            }
 
                             for term in all_terms {
+                                if term.frequency.abs() < 1e-5 {
+                                    continue;
+                                }
                                 accum_energy += term.amplitude * term.amplitude;
                                 terms_vec.push(term);
                                 if accum_energy >= target_energy || terms_vec.len() >= terms {
@@ -459,5 +494,25 @@ mod tests {
             .collect::<Vec<_>>();
         let res = perform_fft(&points, 3, false, true, 0.995).unwrap();
         assert_eq!(res.len(), 3);
+    }
+
+    #[test]
+    fn test_perform_fft_adaptive_offset() {
+        let points = (0..100)
+            .map(|i| Point2D {
+                x: (i as f64).cos() + 500.0,
+                y: (i as f64).sin() + 500.0,
+            })
+            .collect::<Vec<_>>();
+        let res = perform_fft(&points, 50, false, true, 0.995).unwrap();
+        assert!(
+            res.len() >= 2,
+            "Offset circle must keep at least 2 terms, got {}",
+            res.len()
+        );
+        assert!(res.iter().any(|t| t.frequency.abs() < 1e-5));
+        assert!(res
+            .iter()
+            .any(|t| t.frequency.abs() - 1.0 < 1e-5 || t.frequency.abs() + 1.0 < 1e-5));
     }
 }
