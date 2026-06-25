@@ -200,11 +200,32 @@ pub fn perform_fft(
     points: &[Point2D],
     terms: usize,
     #[allow(unused_variables)] use_gpu: bool,
+    adaptive: bool,
+    energy_threshold: f64,
 ) -> Result<Vec<crate::models::FourierTerm>, VectomancyError> {
     #[cfg(all(feature = "gpu", not(target_arch = "wasm32")))]
     if use_gpu {
         match wgpu_math::perform_fft_gpu(points, terms) {
-            Ok(res) => return Ok(res),
+            Ok(all_terms) => {
+                if adaptive && !all_terms.is_empty() {
+                    let mut terms_vec = Vec::new();
+                    let total_energy: f64 =
+                        all_terms.iter().map(|t| t.amplitude * t.amplitude).sum();
+                    let mut accum_energy = 0.0;
+                    let target_energy = total_energy * energy_threshold;
+
+                    for term in all_terms {
+                        accum_energy += term.amplitude * term.amplitude;
+                        terms_vec.push(term);
+                        if accum_energy >= target_energy || terms_vec.len() >= terms {
+                            break;
+                        }
+                    }
+                    return Ok(terms_vec);
+                } else {
+                    return Ok(all_terms);
+                }
+            }
             Err(e) => {
                 tracing::warn!("GPU FFT failed: {}. Falling back to CPU.", e);
             }
@@ -249,12 +270,26 @@ pub fn perform_fft(
             .unwrap_or(std::cmp::Ordering::Equal)
     });
 
-    for term in all_terms
-        .into_iter()
-        .filter(|t| t.amplitude > 0.001)
-        .take(terms)
-    {
-        terms_vec.push(term);
+    if adaptive && !all_terms.is_empty() {
+        let total_energy: f64 = all_terms.iter().map(|t| t.amplitude * t.amplitude).sum();
+        let mut accum_energy = 0.0;
+        let target_energy = total_energy * energy_threshold;
+
+        for term in all_terms {
+            accum_energy += term.amplitude * term.amplitude;
+            terms_vec.push(term);
+            if accum_energy >= target_energy || terms_vec.len() >= terms {
+                break;
+            }
+        }
+    } else {
+        for term in all_terms
+            .into_iter()
+            .filter(|t| t.amplitude > 0.001)
+            .take(terms)
+        {
+            terms_vec.push(term);
+        }
     }
 
     Ok(terms_vec)
@@ -295,11 +330,40 @@ pub fn perform_fft_batch(
     paths: &[&[Point2D]],
     terms: usize,
     #[allow(unused_variables)] use_gpu: bool,
+    adaptive: bool,
+    energy_threshold: f64,
 ) -> Result<Vec<Vec<crate::models::FourierTerm>>, VectomancyError> {
     #[cfg(all(feature = "gpu", not(target_arch = "wasm32")))]
     if use_gpu {
         match wgpu_math::perform_fft_batch_gpu(paths, terms) {
-            Ok(res) => return Ok(res),
+            Ok(all_batch_terms) => {
+                if adaptive {
+                    let mut filtered_batch = Vec::with_capacity(all_batch_terms.len());
+                    for all_terms in all_batch_terms {
+                        if !all_terms.is_empty() {
+                            let mut terms_vec = Vec::new();
+                            let total_energy: f64 =
+                                all_terms.iter().map(|t| t.amplitude * t.amplitude).sum();
+                            let mut accum_energy = 0.0;
+                            let target_energy = total_energy * energy_threshold;
+
+                            for term in all_terms {
+                                accum_energy += term.amplitude * term.amplitude;
+                                terms_vec.push(term);
+                                if accum_energy >= target_energy || terms_vec.len() >= terms {
+                                    break;
+                                }
+                            }
+                            filtered_batch.push(terms_vec);
+                        } else {
+                            filtered_batch.push(all_terms);
+                        }
+                    }
+                    return Ok(filtered_batch);
+                } else {
+                    return Ok(all_batch_terms);
+                }
+            }
             Err(e) => {
                 tracing::warn!("GPU Batch FFT failed: {}. Falling back to CPU.", e);
             }
@@ -317,14 +381,20 @@ pub fn perform_fft_batch(
         use rayon::prelude::*;
         paths
             .par_iter()
-            .map(|points| perform_fft(points, terms, false))
+            .map(|points| perform_fft(points, terms, false, adaptive, energy_threshold))
             .collect::<Result<Vec<_>, _>>()
     }
     #[cfg(not(feature = "parallel"))]
     {
         let mut all_results = Vec::with_capacity(paths.len());
         for points in paths {
-            all_results.push(perform_fft(points, terms, false)?);
+            all_results.push(perform_fft(
+                points,
+                terms,
+                false,
+                adaptive,
+                energy_threshold,
+            )?);
         }
         Ok(all_results)
     }
@@ -349,5 +419,45 @@ mod tests {
         assert_eq!(smoothed[3], Point2D { x: 10.0, y: 2.5 });
         assert_eq!(smoothed[4], Point2D { x: 10.0, y: 7.5 });
         assert_eq!(smoothed[5], Point2D { x: 10.0, y: 10.0 });
+    }
+
+    #[test]
+    fn test_perform_fft_adaptive_off() {
+        let points = (0..100)
+            .map(|i| Point2D {
+                x: (i as f64).cos(),
+                y: (i as f64).sin(),
+            })
+            .collect::<Vec<_>>();
+        let res = perform_fft(&points, 10, false, false, 0.995).unwrap();
+        assert_eq!(res.len(), 10);
+    }
+
+    #[test]
+    fn test_perform_fft_adaptive_on_simple() {
+        let points = (0..100)
+            .map(|i| Point2D {
+                x: (i as f64).cos(),
+                y: (i as f64).sin(),
+            })
+            .collect::<Vec<_>>();
+        let res = perform_fft(&points, 50, false, true, 0.995).unwrap();
+        assert!(
+            res.len() < 10,
+            "Simple circle should require few terms, got {}",
+            res.len()
+        );
+    }
+
+    #[test]
+    fn test_perform_fft_adaptive_on_ceiling() {
+        let points = (0..100)
+            .map(|i| Point2D {
+                x: (i as f64).cos(),
+                y: (i as f64).sin(),
+            })
+            .collect::<Vec<_>>();
+        let res = perform_fft(&points, 3, false, true, 0.995).unwrap();
+        assert_eq!(res.len(), 3);
     }
 }

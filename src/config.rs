@@ -42,12 +42,16 @@ pub struct ImageConfig {
     pub threads: Option<usize>,
     pub gpu_power: Option<String>,
     pub simplify_math: Option<bool>,
+    pub fourier_adaptive: Option<bool>,
+    pub fourier_energy_threshold: Option<f64>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Default, Clone)]
 pub struct VideoConfig {
     pub enabled: Option<bool>,
     pub simplify_math: Option<bool>,
+    pub fourier_adaptive: Option<bool>,
+    pub fourier_energy_threshold: Option<f64>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Default, Clone)]
@@ -61,6 +65,8 @@ pub struct TextConfig {
     pub height: Option<u32>,
     pub dpi: Option<f32>,
     pub simplify_math: Option<bool>,
+    pub fourier_adaptive: Option<bool>,
+    pub fourier_energy_threshold: Option<f64>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Default, Clone)]
