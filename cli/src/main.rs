@@ -219,8 +219,21 @@ fn main() -> Result<(), VectomancyError> {
                                 let path_refs: Vec<&[models::Point2D]> =
                                     valid_paths.iter().map(|p| p.as_slice()).collect();
                                 let terms = args.terms.or(image_config.terms).unwrap_or(1000);
-                                let batch_results =
-                                    math::perform_fft_batch(&path_refs, terms, use_gpu)?;
+                                let fourier_adaptive = args
+                                    .fourier_adaptive
+                                    .or(image_config.fourier_adaptive)
+                                    .unwrap_or(true);
+                                let fourier_energy = args
+                                    .fourier_energy
+                                    .or(image_config.fourier_energy_threshold)
+                                    .unwrap_or(0.995);
+                                let batch_results = math::perform_fft_batch(
+                                    &path_refs,
+                                    terms,
+                                    use_gpu,
+                                    fourier_adaptive,
+                                    fourier_energy,
+                                )?;
 
                                 let mut strokes = Vec::new();
                                 for (terms, color) in batch_results.into_iter().zip(valid_colors) {
@@ -336,8 +349,21 @@ fn main() -> Result<(), VectomancyError> {
                                 let path_refs: Vec<&[models::Point2D]> =
                                     valid_paths.iter().map(|p| p.as_slice()).collect();
                                 let terms = args.terms.or(image_config.terms).unwrap_or(1000);
-                                let batch_results =
-                                    math::perform_fft_batch(&path_refs, terms, use_gpu)?;
+                                let fourier_adaptive = args
+                                    .fourier_adaptive
+                                    .or(image_config.fourier_adaptive)
+                                    .unwrap_or(true);
+                                let fourier_energy = args
+                                    .fourier_energy
+                                    .or(image_config.fourier_energy_threshold)
+                                    .unwrap_or(0.995);
+                                let batch_results = math::perform_fft_batch(
+                                    &path_refs,
+                                    terms,
+                                    use_gpu,
+                                    fourier_adaptive,
+                                    fourier_energy,
+                                )?;
 
                                 let mut strokes = Vec::new();
                                 for (terms, color) in batch_results.into_iter().zip(valid_colors) {
@@ -498,6 +524,7 @@ fn main() -> Result<(), VectomancyError> {
                 .map_err(|e| VectomancyError::ImageProcessing(e.to_string()))?;
 
             let image_config = config.image.unwrap_or_default();
+            let video_config = config.video.unwrap_or_default();
             let simplify_math = if args.no_simplify_math {
                 false
             } else {
@@ -603,7 +630,23 @@ fn main() -> Result<(), VectomancyError> {
                             valid_paths.iter().map(|p| p.as_slice()).collect();
                         let terms = image_config.terms.unwrap_or(100);
                         let use_gpu = image_config.gpu.unwrap_or(false);
-                        let batch_results = math::perform_fft_batch(&path_refs, terms, use_gpu)?;
+                        let fourier_adaptive = args
+                            .fourier_adaptive
+                            .or(video_config.fourier_adaptive)
+                            .or(image_config.fourier_adaptive)
+                            .unwrap_or(true);
+                        let fourier_energy = args
+                            .fourier_energy
+                            .or(video_config.fourier_energy_threshold)
+                            .or(image_config.fourier_energy_threshold)
+                            .unwrap_or(0.995);
+                        let batch_results = math::perform_fft_batch(
+                            &path_refs,
+                            terms,
+                            use_gpu,
+                            fourier_adaptive,
+                            fourier_energy,
+                        )?;
 
                         let mut strokes = Vec::new();
                         for (terms, color) in batch_results.into_iter().zip(valid_colors) {

@@ -98,6 +98,14 @@ pub struct ImageArgs {
     #[arg(short = 'n', long)]
     pub terms: Option<usize>,
 
+    /// Enable adaptive Fourier compression to dynamically select terms
+    #[arg(long, action = clap::ArgAction::Set)]
+    pub fourier_adaptive: Option<bool>,
+
+    /// Cumulative energy threshold (0.0 to 1.0) for adaptive compression
+    #[arg(long)]
+    pub fourier_energy: Option<f64>,
+
     /// Number of Chaikin smoothing iterations (applies to Chaikin mode)
     #[arg(short = 'c', long)]
     pub chaikin_iters: Option<usize>,
@@ -167,6 +175,14 @@ pub struct VideoArgs {
     /// Output file path
     #[arg(short, long)]
     pub output: Option<PathBuf>,
+
+    /// Enable adaptive Fourier compression to dynamically select terms
+    #[arg(long, action = clap::ArgAction::Set)]
+    pub fourier_adaptive: Option<bool>,
+
+    /// Cumulative energy threshold (0.0 to 1.0) for adaptive compression
+    #[arg(long)]
+    pub fourier_energy: Option<f64>,
 
     /// Do not simplify math coordinates and equations (retains original high precision)
     #[arg(long)]
