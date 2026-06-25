@@ -3787,6 +3787,8 @@ dependencies = [
  "image",
  "log",
  "rayon",
+ "serde",
+ "serde_json",
  "tempfile",
  "tracing",
  "tracing-subscriber",
