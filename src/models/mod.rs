@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-#[derive(Debug, Clone, Copy, PartialEq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct Point2D {
     pub x: f64,
     pub y: f64,
@@ -452,7 +452,7 @@ mod tests {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ColoredPath<T> {
     #[serde(rename = "color_rgb")]
     pub color_style: Option<ColorStyle>,
