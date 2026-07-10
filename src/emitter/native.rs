@@ -33,6 +33,7 @@ async fn init_render_gpu(_target_dimensions: (u32, u32)) -> Result<RenderGpuCont
             power_preference: wgpu::PowerPreference::LowPower,
             compatible_surface: None,
             force_fallback_adapter: false,
+            apply_limit_buckets: false,
         })
         .await
         .map_err(|e| format!("Failed to request GPU adapter: {}", e))?;
@@ -60,11 +61,11 @@ async fn init_render_gpu(_target_dimensions: (u32, u32)) -> Result<RenderGpuCont
             module: &shader,
             entry_point: Some("vs_main"),
             compilation_options: Default::default(),
-            buffers: &[wgpu::VertexBufferLayout {
+            buffers: &[Some(wgpu::VertexBufferLayout {
                 array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
                 step_mode: wgpu::VertexStepMode::Vertex,
                 attributes: &wgpu::vertex_attr_array![0 => Float32x2, 1 => Float32x4],
-            }],
+            })],
         },
         fragment: Some(wgpu::FragmentState {
             module: &shader,
@@ -469,7 +470,9 @@ async fn render_wgpu(
         .unwrap()
         .map_err(|e| VectomancyError::InvalidInput(format!("Buffer map error: {}", e)))?;
 
-    let data = buffer_slice.get_mapped_range();
+    let data = buffer_slice
+        .get_mapped_range()
+        .map_err(|e| VectomancyError::InvalidInput(format!("Buffer map range error: {}", e)))?;
     let mut pixels = Vec::with_capacity((target_dimensions.0 * target_dimensions.1 * 4) as usize);
     for row in 0..target_dimensions.1 {
         let start = (row * bytes_per_row) as usize;
