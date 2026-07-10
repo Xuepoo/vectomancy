@@ -46,6 +46,7 @@ async fn init_gpu(power_preference: wgpu::PowerPreference) -> Result<GpuContext,
             power_preference,
             force_fallback_adapter: false,
             compatible_surface: None,
+            apply_limit_buckets: false,
         })
         .await
         .map_err(|_| "Failed to find an appropriate GPU adapter".to_string())?;
@@ -269,7 +270,9 @@ async fn perform_fft_gpu_async(
     });
     receiver.recv().unwrap().unwrap();
 
-    let data = buffer_slice.get_mapped_range();
+    let data = buffer_slice
+        .get_mapped_range()
+        .expect("Failed to map GPU buffer range");
     let gpu_result: &[ComplexF32] = bytemuck::cast_slice(&data);
 
     let mut all_terms = Vec::with_capacity(n);
@@ -538,7 +541,9 @@ async fn perform_fft_batch_gpu_async(
     });
     receiver.recv().unwrap().unwrap();
 
-    let data = buffer_slice.get_mapped_range();
+    let data = buffer_slice
+        .get_mapped_range()
+        .expect("Failed to map GPU batch buffer range");
     let gpu_result: &[ComplexF32] = bytemuck::cast_slice(&data);
 
     let mut all_results = Vec::with_capacity(num_paths);
