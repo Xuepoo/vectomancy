@@ -89,11 +89,13 @@ vectomancy text --font <FONT_PATH> --output <OUTPUT> <TEXT>
 
 ### 3. 视频处理子命令 (video)
 
-按顺序提取视频帧并进行多帧连续拟合，导出参数化动画脚本：
+解码视频帧并提取参数化运动方程。帧会按批次并行矢量化处理，充分利用多核 CPU（并发数由 `--threads` 控制，默认使用全部可用核心）：
 
 ```bash
 vectomancy video --output <OUTPUT> <INPUT_VIDEO>
 ```
+
+支持与 `image` 子命令相同的 `--gpu`、`--gpu-power`、`--threads` 参数。
 
 系统配置默认从 `~/.config/vectomancy/config.toml` 中加载，遵循 XDG 规范。
 
