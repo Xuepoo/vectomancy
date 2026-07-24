@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.0.0] - 2026-07-24
+
+### Changed
+- **Raster Pipeline Performance Overhaul**: The `image`/`video` raster-to-skeleton pipeline (Sobel edge detection, Zhang-Suen thinning) was almost entirely single-threaded despite `--threads`/rayon being available — profiling showed these two stages alone accounted for 90%+ of per-frame processing time on multi-megapixel inputs, and multithreading had no measurable effect on total runtime regardless of `--threads`. Sobel gradients now use `imageproc`'s parallel filter primitives across all cores; Zhang-Suen thinning was rewritten against a flat row-major grid (replacing nested `Vec<Vec<bool>>`) with per-iteration candidate scanning parallelized across rows. On a 6000x3375 test image this cuts single-frame processing from ~1.4s to ~0.5s on a 24-core machine (and remains correct: identical skeleton path/point counts before and after on all test images).
+- **Video Frame-Level Parallelism**: The `video` subcommand previously processed frames strictly one at a time. Frames are now batched (up to `min(threads, 8)` concurrent) and processed via `std::thread::scope`, in addition to the raster pipeline's own internal parallelism. Combined with the raster pipeline rewrite, a 10s/301-frame 1920x1080 test clip (Fourier mode) went from 22.4s to 4.5s on a 24-core machine — a 4.98x improvement. `--threads 1` remains available for single-core-constrained environments, though the underlying parallel primitives carry some overhead at threads=1 (video: ~32s vs ~22s previously) — this is an intentional and expected multithreading-first tradeoff, not a regression to fix.
+- **GPU FFT Pipeline Caching**: `perform_fft_gpu`/`perform_fft_batch_gpu` previously recompiled both compute pipelines (bind group layout, pipeline layout, and two `ComputePipeline`s) on every single call. These are now built once in `GpuContext` and reused. This is a correctness/efficiency fix on its own merits, but benchmarking confirms it does **not** change the GPU-vs-CPU performance picture: for Vectomancy's typical path sizes and counts, the CPU FFT path remains 2-270x faster than GPU (the bottleneck is the unavoidable per-call `device.poll(Wait)` CPU↔GPU synchronization round-trip, not pipeline setup). `--gpu` remains available and unchanged in behavior; it is not recommended for typical image/video workloads and its GPU-vs-CPU tradeoffs are unchanged by this release.
+
+### Verification
+- All raster pipeline changes preserve identical output: skeleton path counts, point counts, and rendered geometry were confirmed unchanged on all benchmark images (verified via extracted-path-count logging and visual rendering comparison).
+- `cargo test --workspace` and `cargo clippy --workspace --all-targets` pass with no warnings.
+
 ## [6.4.0] - 2026-07-24
 
 ### Added

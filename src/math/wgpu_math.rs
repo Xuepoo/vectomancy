@@ -30,7 +30,9 @@ pub fn perform_fft_gpu(
 struct GpuContext {
     device: wgpu::Device,
     queue: wgpu::Queue,
-    shader: wgpu::ShaderModule,
+    bind_group_layout: wgpu::BindGroupLayout,
+    bit_rev_pipeline: wgpu::ComputePipeline,
+    butterfly_pipeline: wgpu::ComputePipeline,
 }
 
 static GPU_CONTEXT: std::sync::OnceLock<Result<GpuContext, String>> = std::sync::OnceLock::new();
@@ -61,10 +63,68 @@ async fn init_gpu(power_preference: wgpu::PowerPreference) -> Result<GpuContext,
         source: wgpu::ShaderSource::Wgsl(include_str!("fft.wgsl").into()),
     });
 
+    // Bind group layout, pipeline layout, and compute pipelines depend only on
+    // the shader/bindings shape, not on any per-call data size. Building them
+    // once here (instead of on every perform_fft_gpu/perform_fft_batch_gpu
+    // call) avoids repeated shader compilation / PSO creation, which was the
+    // dominant cost of each GPU call — often exceeding the CPU cost of the
+    // FFT itself for typical path sizes.
+    let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        label: Some("FFT Bind Group Layout"),
+        entries: &[
+            wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::COMPUTE,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Storage { read_only: false },
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            },
+            wgpu::BindGroupLayoutEntry {
+                binding: 1,
+                visibility: wgpu::ShaderStages::COMPUTE,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            },
+        ],
+    });
+
+    let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+        label: Some("FFT Pipeline Layout"),
+        bind_group_layouts: &[Some(&bind_group_layout)],
+        immediate_size: 0,
+    });
+
+    let bit_rev_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+        label: Some("Bit Reversal Pipeline"),
+        layout: Some(&pipeline_layout),
+        module: &shader,
+        entry_point: Some("bit_reversal"),
+        compilation_options: Default::default(),
+        cache: None,
+    });
+
+    let butterfly_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+        label: Some("Butterfly Pipeline"),
+        layout: Some(&pipeline_layout),
+        module: &shader,
+        entry_point: Some("butterfly"),
+        compilation_options: Default::default(),
+        cache: None,
+    });
+
     Ok(GpuContext {
         device,
         queue,
-        shader,
+        bind_group_layout,
+        bit_rev_pipeline,
+        butterfly_pipeline,
     })
 }
 
@@ -83,7 +143,9 @@ async fn perform_fft_gpu_async(
     };
     let device = &gpu_ctx.device;
     let queue = &gpu_ctx.queue;
-    let shader = &gpu_ctx.shader;
+    let bind_group_layout = &gpu_ctx.bind_group_layout;
+    let bit_rev_pipeline = &gpu_ctx.bit_rev_pipeline;
+    let butterfly_pipeline = &gpu_ctx.butterfly_pipeline;
 
     let original_n = points.len();
     let n = original_n.next_power_of_two();
@@ -132,35 +194,9 @@ async fn perform_fft_gpu_async(
         mapped_at_creation: false,
     });
 
-    let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-        label: Some("Bind Group Layout"),
-        entries: &[
-            wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::COMPUTE,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Storage { read_only: false },
-                    has_dynamic_offset: false,
-                    min_binding_size: None,
-                },
-                count: None,
-            },
-            wgpu::BindGroupLayoutEntry {
-                binding: 1,
-                visibility: wgpu::ShaderStages::COMPUTE,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Uniform,
-                    has_dynamic_offset: false,
-                    min_binding_size: None,
-                },
-                count: None,
-            },
-        ],
-    });
-
     let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some("Bind Group"),
-        layout: &bind_group_layout,
+        layout: bind_group_layout,
         entries: &[
             wgpu::BindGroupEntry {
                 binding: 0,
@@ -171,30 +207,6 @@ async fn perform_fft_gpu_async(
                 resource: params_buffer.as_entire_binding(),
             },
         ],
-    });
-
-    let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-        label: Some("Pipeline Layout"),
-        bind_group_layouts: &[Some(&bind_group_layout)],
-        immediate_size: 0,
-    });
-
-    let bit_rev_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-        label: Some("Bit Reversal Pipeline"),
-        layout: Some(&pipeline_layout),
-        module: shader,
-        entry_point: Some("bit_reversal"),
-        compilation_options: Default::default(),
-        cache: None,
-    });
-
-    let butterfly_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-        label: Some("Butterfly Pipeline"),
-        layout: Some(&pipeline_layout),
-        module: shader,
-        entry_point: Some("butterfly"),
-        compilation_options: Default::default(),
-        cache: None,
     });
 
     let mut initial_params = FFTParams {
@@ -213,7 +225,7 @@ async fn perform_fft_gpu_async(
             label: Some("Bit Reversal Pass"),
             timestamp_writes: None,
         });
-        cpass.set_pipeline(&bit_rev_pipeline);
+        cpass.set_pipeline(bit_rev_pipeline);
         cpass.set_bind_group(0, &bind_group, &[]);
         let workgroups = (n as u32).div_ceil(256);
         cpass.dispatch_workgroups(workgroups, 1, 1);
@@ -233,7 +245,7 @@ async fn perform_fft_gpu_async(
                 label: Some("Butterfly Pass"),
                 timestamp_writes: None,
             });
-            cpass.set_pipeline(&butterfly_pipeline);
+            cpass.set_pipeline(butterfly_pipeline);
             cpass.set_bind_group(0, &bind_group, &[]);
             let workgroups = (n as u32 / 2).div_ceil(256);
             cpass.dispatch_workgroups(workgroups, 1, 1);
@@ -345,7 +357,9 @@ async fn perform_fft_batch_gpu_async(
     };
     let device = &gpu_ctx.device;
     let queue = &gpu_ctx.queue;
-    let shader = &gpu_ctx.shader;
+    let bind_group_layout = &gpu_ctx.bind_group_layout;
+    let bit_rev_pipeline = &gpu_ctx.bit_rev_pipeline;
+    let butterfly_pipeline = &gpu_ctx.butterfly_pipeline;
 
     let max_original_n = paths.iter().map(|p| p.len()).max().unwrap_or(0);
     if max_original_n == 0 {
@@ -403,35 +417,9 @@ async fn perform_fft_batch_gpu_async(
         mapped_at_creation: false,
     });
 
-    let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-        label: Some("Batch Bind Group Layout"),
-        entries: &[
-            wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::COMPUTE,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Storage { read_only: false },
-                    has_dynamic_offset: false,
-                    min_binding_size: None,
-                },
-                count: None,
-            },
-            wgpu::BindGroupLayoutEntry {
-                binding: 1,
-                visibility: wgpu::ShaderStages::COMPUTE,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Uniform,
-                    has_dynamic_offset: false,
-                    min_binding_size: None,
-                },
-                count: None,
-            },
-        ],
-    });
-
     let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some("Batch Bind Group"),
-        layout: &bind_group_layout,
+        layout: bind_group_layout,
         entries: &[
             wgpu::BindGroupEntry {
                 binding: 0,
@@ -442,30 +430,6 @@ async fn perform_fft_batch_gpu_async(
                 resource: params_buffer.as_entire_binding(),
             },
         ],
-    });
-
-    let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-        label: Some("Batch Pipeline Layout"),
-        bind_group_layouts: &[Some(&bind_group_layout)],
-        immediate_size: 0,
-    });
-
-    let bit_rev_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-        label: Some("Batch Bit Reversal Pipeline"),
-        layout: Some(&pipeline_layout),
-        module: shader,
-        entry_point: Some("bit_reversal"),
-        compilation_options: Default::default(),
-        cache: None,
-    });
-
-    let butterfly_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-        label: Some("Batch Butterfly Pipeline"),
-        layout: Some(&pipeline_layout),
-        module: shader,
-        entry_point: Some("butterfly"),
-        compilation_options: Default::default(),
-        cache: None,
     });
 
     let mut initial_params = FFTParams {
@@ -484,7 +448,7 @@ async fn perform_fft_batch_gpu_async(
             label: Some("Batch Bit Reversal Pass"),
             timestamp_writes: None,
         });
-        cpass.set_pipeline(&bit_rev_pipeline);
+        cpass.set_pipeline(bit_rev_pipeline);
         cpass.set_bind_group(0, &bind_group, &[]);
         let workgroups_x = (n as u32).div_ceil(256);
         cpass.dispatch_workgroups(workgroups_x, num_paths as u32, 1);
@@ -504,7 +468,7 @@ async fn perform_fft_batch_gpu_async(
                 label: Some("Batch Butterfly Pass"),
                 timestamp_writes: None,
             });
-            cpass.set_pipeline(&butterfly_pipeline);
+            cpass.set_pipeline(butterfly_pipeline);
             cpass.set_bind_group(0, &bind_group, &[]);
             let workgroups_x = (n as u32 / 2).div_ceil(256);
             cpass.dispatch_workgroups(workgroups_x, num_paths as u32, 1);

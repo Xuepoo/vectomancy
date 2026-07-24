@@ -622,157 +622,226 @@ fn main() -> Result<(), VectomancyError> {
 
             let bg_transparent = image_config.bg_transparent.unwrap_or(false);
 
-            let mut frame_idx = 0;
-            while let Ok(frame_wrap) = receiver.recv() {
-                frame_idx += 1;
-                info!("Processing video frame {}", frame_idx);
+            // Frames are decoded strictly in order (decode_video_to_channel produces
+            // them sequentially), but once decoded, each frame's raster/math pipeline
+            // is fully independent of every other frame. Processing them one at a
+            // time serially (as before) left most of the machine idle: even after
+            // parallelizing the raster pipeline internally (Sobel, thinning), a
+            // single frame's per-pixel/per-row work doesn't saturate a many-core
+            // machine end-to-end (allocation, path extraction, and small serial
+            // segments in between still bottleneck throughput). Batching a small
+            // number of frames and processing them concurrently via std::thread::scope
+            // fills those gaps; each frame's own rayon calls still share the global
+            // pool (deliberately allowed to oversubscribe slightly - benchmarking
+            // showed this beats manually partitioning the pool per frame).
+            let frame_concurrency = num_threads.clamp(1, 8);
 
-                let img = frame_wrap
-                    .to_image()
-                    .map_err(|e| VectomancyError::ImageProcessing(e.to_string()))?;
-
-                let (paths, original_dimensions) =
-                    parser::raster::process_raster_image_core(img, color)?;
-
-                let bbox = math::compute_bounding_box(&paths);
-                let ast = match mode {
-                    Mode::Spline => {
-                        let all_equations: Vec<_> = paths
-                            .into_par_iter()
-                            .filter_map(|path| {
-                                if path.data.len() < min_path_len {
-                                    return None;
-                                }
-                                let reduced = math::simplify_rdp(&path.data, tolerance);
-                                if reduced.len() > 2 {
-                                    let segments = math::spline::fit_cubic_bezier(&reduced);
-                                    let equations =
-                                        math::spline::build_splines(&segments, simplify_math);
-                                    Some(models::ColoredPath {
-                                        color_style: path.color_style.clone(),
-                                        data: equations,
-                                    })
-                                } else {
-                                    None
-                                }
-                            })
-                            .collect();
-                        MathExpressionAST::Spline {
-                            equations: all_equations,
-                            bounding_box: bbox,
+            let mut frame_idx = 0usize;
+            'batches: loop {
+                let mut batch = Vec::with_capacity(frame_concurrency);
+                for _ in 0..frame_concurrency {
+                    match receiver.recv() {
+                        Ok(frame_wrap) => {
+                            frame_idx += 1;
+                            batch.push((frame_idx, frame_wrap));
                         }
-                    }
-                    Mode::Fourier => {
-                        let mut valid_paths = Vec::new();
-                        let mut valid_colors = Vec::new();
-                        for path in paths {
-                            if path.data.len() < min_path_len {
-                                continue;
-                            }
-                            let reduced = math::simplify_rdp(&path.data, tolerance);
-                            if reduced.len() > 3 {
-                                valid_paths.push(reduced);
-                                valid_colors.push(path.color_style.clone());
-                            }
-                        }
-
-                        let path_refs: Vec<&[models::Point2D]> =
-                            valid_paths.iter().map(|p| p.as_slice()).collect();
-                        let terms = image_config.terms.unwrap_or(100);
-                        let fourier_adaptive = args
-                            .fourier_adaptive
-                            .or(video_config.fourier_adaptive)
-                            .or(image_config.fourier_adaptive)
-                            .unwrap_or(true);
-                        let fourier_energy = args
-                            .fourier_energy
-                            .or(video_config.fourier_energy_threshold)
-                            .or(image_config.fourier_energy_threshold)
-                            .unwrap_or(0.995);
-                        let batch_results = math::perform_fft_batch(
-                            &path_refs,
-                            terms,
-                            use_gpu,
-                            fourier_adaptive,
-                            fourier_energy,
-                        )?;
-
-                        let mut strokes = Vec::new();
-                        for (terms, color) in batch_results.into_iter().zip(valid_colors) {
-                            strokes.push(models::ColoredPath {
-                                color_style: color,
-                                data: terms,
-                            });
-                        }
-                        MathExpressionAST::Fourier {
-                            strokes,
-                            bounding_box: [0.0, 0.0, 0.0, 0.0],
-                        }
-                    }
-                    Mode::Chaikin => {
-                        let iters = image_config.chaikin_iters.unwrap_or(0);
-                        let smoothed_paths: Vec<_> = paths
-                            .into_par_iter()
-                            .filter_map(|path| {
-                                if path.data.len() < min_path_len {
-                                    return None;
-                                }
-                                let reduced = math::simplify_rdp(&path.data, tolerance);
-                                let smoothed = if iters > 0 {
-                                    math::chaikin_smooth(&reduced, iters)
-                                } else {
-                                    reduced
-                                };
-                                Some(models::ColoredPath {
-                                    color_style: path.color_style.clone(),
-                                    data: smoothed,
-                                })
-                            })
-                            .collect();
-                        MathExpressionAST::Polyline {
-                            paths: smoothed_paths,
-                            bounding_box: bbox,
-                        }
-                    }
-                };
-
-                let ext = match format {
-                    OutputFormat::Png => "png",
-                    OutputFormat::Jpg => "jpg",
-                    OutputFormat::Webp => "webp",
-                    OutputFormat::Python => "py",
-                    OutputFormat::Html => "html",
-                    OutputFormat::Json => "json",
-                    OutputFormat::Desmos => "html",
-                    OutputFormat::Svg => "svg",
-                };
-
-                let frame_filename = format!("frame_{:04}.{}", frame_idx, ext);
-                let final_output = temp_dir.join(&frame_filename);
-
-                match format {
-                    OutputFormat::Png | OutputFormat::Jpg | OutputFormat::Webp => {
-                        let stroke_width = 1.0;
-                        let bit_depth = image_config.bit_depth;
-                        let color_space = image_config.color_space.clone();
-
-                        emitter::native::render_to_image(
-                            &ast,
-                            &final_output,
-                            &format,
-                            bg_transparent,
-                            original_dimensions,
-                            original_dimensions,
-                            stroke_width,
-                            bit_depth,
-                            color_space,
-                        )?;
-                    }
-                    _ => {
-                        emitter::emit_file(&ast, &format, &final_output, original_dimensions)?;
+                        Err(_) => break,
                     }
                 }
-                info!("Saved video frame to {:?}", final_output);
+                if batch.is_empty() {
+                    break 'batches;
+                }
+
+                let temp_dir_ref = &temp_dir;
+                let image_config_ref = &image_config;
+                let video_config_ref = &video_config;
+                let args_ref = &args;
+                let format_ref = &format;
+
+                let results: Vec<Result<(), VectomancyError>> = std::thread::scope(|scope| {
+                    let handles: Vec<_> = batch
+                        .into_iter()
+                        .map(|(idx, frame_wrap)| {
+                            scope.spawn(move || -> Result<(), VectomancyError> {
+                                info!("Processing video frame {}", idx);
+
+                                let img = frame_wrap
+                                    .to_image()
+                                    .map_err(|e| VectomancyError::ImageProcessing(e.to_string()))?;
+
+                                let (paths, original_dimensions) =
+                                    parser::raster::process_raster_image_core(img, color)?;
+
+                                let bbox = math::compute_bounding_box(&paths);
+                                let ast = match mode {
+                                    Mode::Spline => {
+                                        let all_equations: Vec<_> = paths
+                                            .into_par_iter()
+                                            .filter_map(|path| {
+                                                if path.data.len() < min_path_len {
+                                                    return None;
+                                                }
+                                                let reduced =
+                                                    math::simplify_rdp(&path.data, tolerance);
+                                                if reduced.len() > 2 {
+                                                    let segments =
+                                                        math::spline::fit_cubic_bezier(&reduced);
+                                                    let equations = math::spline::build_splines(
+                                                        &segments,
+                                                        simplify_math,
+                                                    );
+                                                    Some(models::ColoredPath {
+                                                        color_style: path.color_style.clone(),
+                                                        data: equations,
+                                                    })
+                                                } else {
+                                                    None
+                                                }
+                                            })
+                                            .collect();
+                                        MathExpressionAST::Spline {
+                                            equations: all_equations,
+                                            bounding_box: bbox,
+                                        }
+                                    }
+                                    Mode::Fourier => {
+                                        let mut valid_paths = Vec::new();
+                                        let mut valid_colors = Vec::new();
+                                        for path in paths {
+                                            if path.data.len() < min_path_len {
+                                                continue;
+                                            }
+                                            let reduced = math::simplify_rdp(&path.data, tolerance);
+                                            if reduced.len() > 3 {
+                                                valid_paths.push(reduced);
+                                                valid_colors.push(path.color_style.clone());
+                                            }
+                                        }
+
+                                        let path_refs: Vec<&[models::Point2D]> =
+                                            valid_paths.iter().map(|p| p.as_slice()).collect();
+                                        let terms = image_config_ref.terms.unwrap_or(100);
+                                        let fourier_adaptive = args_ref
+                                            .fourier_adaptive
+                                            .or(video_config_ref.fourier_adaptive)
+                                            .or(image_config_ref.fourier_adaptive)
+                                            .unwrap_or(true);
+                                        let fourier_energy = args_ref
+                                            .fourier_energy
+                                            .or(video_config_ref.fourier_energy_threshold)
+                                            .or(image_config_ref.fourier_energy_threshold)
+                                            .unwrap_or(0.995);
+                                        let batch_results = math::perform_fft_batch(
+                                            &path_refs,
+                                            terms,
+                                            use_gpu,
+                                            fourier_adaptive,
+                                            fourier_energy,
+                                        )?;
+
+                                        let mut strokes = Vec::new();
+                                        for (terms, color) in
+                                            batch_results.into_iter().zip(valid_colors)
+                                        {
+                                            strokes.push(models::ColoredPath {
+                                                color_style: color,
+                                                data: terms,
+                                            });
+                                        }
+                                        MathExpressionAST::Fourier {
+                                            strokes,
+                                            bounding_box: [0.0, 0.0, 0.0, 0.0],
+                                        }
+                                    }
+                                    Mode::Chaikin => {
+                                        let iters = image_config_ref.chaikin_iters.unwrap_or(0);
+                                        let smoothed_paths: Vec<_> = paths
+                                            .into_par_iter()
+                                            .filter_map(|path| {
+                                                if path.data.len() < min_path_len {
+                                                    return None;
+                                                }
+                                                let reduced =
+                                                    math::simplify_rdp(&path.data, tolerance);
+                                                let smoothed = if iters > 0 {
+                                                    math::chaikin_smooth(&reduced, iters)
+                                                } else {
+                                                    reduced
+                                                };
+                                                Some(models::ColoredPath {
+                                                    color_style: path.color_style.clone(),
+                                                    data: smoothed,
+                                                })
+                                            })
+                                            .collect();
+                                        MathExpressionAST::Polyline {
+                                            paths: smoothed_paths,
+                                            bounding_box: bbox,
+                                        }
+                                    }
+                                };
+
+                                let ext = match format_ref {
+                                    OutputFormat::Png => "png",
+                                    OutputFormat::Jpg => "jpg",
+                                    OutputFormat::Webp => "webp",
+                                    OutputFormat::Python => "py",
+                                    OutputFormat::Html => "html",
+                                    OutputFormat::Json => "json",
+                                    OutputFormat::Desmos => "html",
+                                    OutputFormat::Svg => "svg",
+                                };
+
+                                let frame_filename = format!("frame_{:04}.{}", idx, ext);
+                                let final_output = temp_dir_ref.join(&frame_filename);
+
+                                match format_ref {
+                                    OutputFormat::Png | OutputFormat::Jpg | OutputFormat::Webp => {
+                                        let stroke_width = 1.0;
+                                        let bit_depth = image_config_ref.bit_depth;
+                                        let color_space = image_config_ref.color_space.clone();
+
+                                        emitter::native::render_to_image(
+                                            &ast,
+                                            &final_output,
+                                            format_ref,
+                                            bg_transparent,
+                                            original_dimensions,
+                                            original_dimensions,
+                                            stroke_width,
+                                            bit_depth,
+                                            color_space,
+                                        )?;
+                                    }
+                                    _ => {
+                                        emitter::emit_file(
+                                            &ast,
+                                            format_ref,
+                                            &final_output,
+                                            original_dimensions,
+                                        )?;
+                                    }
+                                }
+                                info!("Saved video frame to {:?}", final_output);
+                                Ok(())
+                            })
+                        })
+                        .collect();
+                    handles
+                        .into_iter()
+                        .map(|h| {
+                            h.join().unwrap_or_else(|_| {
+                                Err(VectomancyError::ImageProcessing(
+                                    "Frame worker thread panicked".to_string(),
+                                ))
+                            })
+                        })
+                        .collect()
+                });
+
+                for result in results {
+                    result?;
+                }
             }
 
             join_handle

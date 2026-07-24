@@ -89,11 +89,13 @@ vectomancy text --font <FONT_PATH> --output <OUTPUT> <TEXT>
 
 ### 3. Video Subcommand
 
-Process video frames sequentially to extract parametric motion formulas:
+Decode video frames and extract parametric motion formulas. Frames are batched and vectorized concurrently across CPU cores (bounded by `--threads`, defaulting to all available cores):
 
 ```bash
 vectomancy video --output <OUTPUT> <INPUT_VIDEO>
 ```
+
+Supports the same `--gpu`, `--gpu-power`, and `--threads` flags as the `image` subcommand.
 
 Configuration loads from `~/.config/vectomancy/config.toml` following the XDG Base Directory specification.
 
