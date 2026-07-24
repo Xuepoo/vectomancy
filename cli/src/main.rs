@@ -743,6 +743,7 @@ fn main() -> Result<(), VectomancyError> {
                     .unwrap_or("")
                     .to_lowercase();
                 let is_webm = ext == "webm";
+                let is_gif = ext == "gif";
 
                 let mut cmd = std::process::Command::new("ffmpeg");
                 cmd.arg("-y")
@@ -751,13 +752,19 @@ fn main() -> Result<(), VectomancyError> {
                     .arg("-i")
                     .arg(temp_dir.join("frame_%04d.png").to_string_lossy().as_ref());
 
-                // Add original video as audio source if it exists
-                let has_audio = args.input.exists();
+                // GIF has no audio track and uses a palette-based codec, not a
+                // general-purpose video codec (libx264/libvpx-vp9 cannot mux into
+                // a .gif container). Route it through its own encoding path.
+                let has_audio = !is_gif && vectomancy_video::has_audio_stream(&args.input);
                 if has_audio {
                     cmd.arg("-i").arg(&args.input);
                 }
 
-                if is_webm {
+                if is_gif {
+                    cmd.arg("-vf")
+                        .arg("split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse");
+                    cmd.arg("-c:v").arg("gif");
+                } else if is_webm {
                     // WebM with VP9 supports alpha channel
                     cmd.arg("-c:v").arg("libvpx-vp9");
                     if bg_transparent {
