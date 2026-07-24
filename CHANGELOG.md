@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.3.1] - 2026-07-24
+
+### Fixed
+- **GIF Video Output**: `vectomancy video -o out.gif` previously accepted `.gif` as a valid output extension but always encoded frames with `libx264`, which the GIF muxer rejects (`gif muxer supports only codec gif for type video`), so every GIF export failed. Frames are now encoded with the native `gif` codec through a palette-optimized filter chain (`palettegen`/`paletteuse`).
+- **Audio Detection**: The video re-encoding pipeline previously treated any existing input file as having an audio track (`args.input.exists()`), which crashed on silent inputs with `Failed to set value '1:a' for option 'map'`. Audio presence is now probed via `ffmpeg`'s stream list (`vectomancy_video::has_audio_stream`), and GIF outputs never attempt to map audio (the format doesn't support it).
+
 ## [6.3.0] - 2026-07-24
 
 ### Added

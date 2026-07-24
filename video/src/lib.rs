@@ -7,6 +7,18 @@ pub fn init() {
     let _ = ffmpeg_next::init();
 }
 
+/// Probes whether the given media file contains at least one audio stream.
+/// Used to decide whether the re-encoding pipeline should map/copy audio,
+/// since some inputs (e.g. GIFs, silent screen recordings) have none.
+pub fn has_audio_stream(path: &Path) -> bool {
+    let Ok(ictx) = ffmpeg_next::format::input(&path) else {
+        return false;
+    };
+    ictx.streams()
+        .best(ffmpeg_next::media::Type::Audio)
+        .is_some()
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum VideoError {
     #[error("Decoder error: {0}")]
