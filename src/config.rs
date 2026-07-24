@@ -53,6 +53,9 @@ pub struct VideoConfig {
     pub simplify_math: Option<bool>,
     pub fourier_adaptive: Option<bool>,
     pub fourier_energy_threshold: Option<f64>,
+    pub gpu: Option<bool>,
+    pub threads: Option<usize>,
+    pub gpu_power: Option<String>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Default, Clone)]

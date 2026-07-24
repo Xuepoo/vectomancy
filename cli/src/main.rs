@@ -521,11 +521,60 @@ fn main() -> Result<(), VectomancyError> {
                 )));
             }
 
+            let image_config = config.image.unwrap_or_default();
+            let video_config = config.video.unwrap_or_default();
+
+            let use_gpu = args
+                .gpu
+                .or(video_config.gpu)
+                .unwrap_or_else(|| image_config.gpu.unwrap_or(false));
+            if use_gpu {
+                tracing::info!("GPU acceleration (wgpu) is enabled.");
+
+                let power_pref_str = args
+                    .gpu_power
+                    .clone()
+                    .or_else(|| video_config.gpu_power.clone())
+                    .or_else(|| image_config.gpu_power.clone())
+                    .unwrap_or_else(|| "HighPerformance".to_string());
+
+                let power_pref = match power_pref_str.to_lowercase().as_str() {
+                    "lowpower" => wgpu::PowerPreference::LowPower,
+                    "none" => wgpu::PowerPreference::None,
+                    _ => wgpu::PowerPreference::HighPerformance,
+                };
+                #[cfg(not(target_arch = "wasm32"))]
+                vectomancy::math::wgpu_math::init_context(power_pref);
+            }
+
+            let requested_threads = args
+                .threads
+                .or(video_config.threads)
+                .or(image_config.threads)
+                .unwrap_or(1);
+            let max_threads = std::thread::available_parallelism()
+                .map(|n| n.get())
+                .unwrap_or(1);
+            let num_threads = if requested_threads == 0 {
+                max_threads
+            } else {
+                requested_threads.clamp(1, max_threads)
+            };
+
+            if let Err(e) = rayon::ThreadPoolBuilder::new()
+                .num_threads(num_threads)
+                .build_global()
+            {
+                tracing::warn!("Failed to initialize rayon thread pool: {}", e);
+            } else if num_threads > 1 {
+                tracing::info!("CPU Multithreading enabled with {} threads.", num_threads);
+            } else {
+                tracing::info!("Running in single-threaded CPU mode.");
+            }
+
             let (receiver, join_handle) = vectomancy_video::decode_video_to_channel(&args.input)
                 .map_err(|e| VectomancyError::ImageProcessing(e.to_string()))?;
 
-            let image_config = config.image.unwrap_or_default();
-            let video_config = config.video.unwrap_or_default();
             let simplify_math = if args.no_simplify_math {
                 false
             } else {
@@ -630,7 +679,6 @@ fn main() -> Result<(), VectomancyError> {
                         let path_refs: Vec<&[models::Point2D]> =
                             valid_paths.iter().map(|p| p.as_slice()).collect();
                         let terms = image_config.terms.unwrap_or(100);
-                        let use_gpu = image_config.gpu.unwrap_or(false);
                         let fourier_adaptive = args
                             .fourier_adaptive
                             .or(video_config.fourier_adaptive)

@@ -189,6 +189,18 @@ pub struct VideoArgs {
     /// Do not simplify math coordinates and equations (retains original high precision)
     #[arg(long)]
     pub no_simplify_math: bool,
+
+    /// Enable GPU acceleration (wgpu) for Fourier FFT batches - Defaults to CPU
+    #[arg(long, action = clap::ArgAction::Set)]
+    pub gpu: Option<bool>,
+
+    /// Number of threads for CPU multithreading (default: 1)
+    #[arg(long)]
+    pub threads: Option<usize>,
+
+    /// GPU Power Preference (HighPerformance, LowPower, None)
+    #[arg(long)]
+    pub gpu_power: Option<String>,
 }
 
 #[derive(Args, Debug)]

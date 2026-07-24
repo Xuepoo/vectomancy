@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.4.0] - 2026-07-24
+
+### Added
+- **Video GPU/Threading Controls**: The `video` subcommand now exposes `--gpu`, `--gpu-power`, and `--threads` flags (plus matching `gpu`/`gpu_power`/`threads` keys under `[video]` in `config.toml`), mirroring the `image` subcommand. Previously these were silently ignored on `video`: the CPU thread pool was never explicitly initialized (relying on rayon's default) and there was no way to enable `wgpu` GPU acceleration for Fourier FFT batches when processing video frames.
+
 ## [6.3.1] - 2026-07-24
 
 ### Fixed
