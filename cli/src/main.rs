@@ -442,6 +442,7 @@ fn main() -> Result<(), VectomancyError> {
                     OutputFormat::Html => "html",
                     OutputFormat::Json => "json",
                     OutputFormat::Desmos => "html",
+                    OutputFormat::Svg => "svg",
                 };
 
                 let base_name = input_path.file_stem().unwrap().to_string_lossy();
@@ -695,6 +696,7 @@ fn main() -> Result<(), VectomancyError> {
                     OutputFormat::Html => "html",
                     OutputFormat::Json => "json",
                     OutputFormat::Desmos => "html",
+                    OutputFormat::Svg => "svg",
                 };
 
                 let frame_filename = format!("frame_{:04}.{}", frame_idx, ext);
@@ -907,6 +909,7 @@ fn main() -> Result<(), VectomancyError> {
                     "png" => OutputFormat::Png,
                     "jpg" | "jpeg" => OutputFormat::Jpg,
                     "webp" => OutputFormat::Webp,
+                    "svg" => OutputFormat::Svg,
                     _ => OutputFormat::Json,
                 }
             } else {

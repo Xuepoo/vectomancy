@@ -11,6 +11,7 @@ pub enum OutputFormat {
     Png,
     Jpg,
     Webp,
+    Svg,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]

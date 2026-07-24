@@ -71,7 +71,7 @@ vectomancy image [OPTIONS] <INPUTS...>
 
 Key Options:
 - `-o, --output <OUTPUT>`: Path for the generated output file.
-- `-f, --format <FORMAT>`: Output format (`python`, `html`, `json`, `desmos`, `png`, `jpg`, `webp`).
+- `-f, --format <FORMAT>`: Output format (`python`, `html`, `json`, `desmos`, `png`, `jpg`, `webp`, `svg`).
 - `-m, --mode <MODE>`: Fitting mode (`fourier`, `spline`, `chaikin`).
 - `-n, --terms <TERMS>`: Number of Fourier terms.
 - `-c, --chaikin-iters <ITERS>`: Number of Chaikin smoothing iterations.

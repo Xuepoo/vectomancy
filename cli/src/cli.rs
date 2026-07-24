@@ -12,6 +12,7 @@ pub enum CliOutputFormat {
     Png,
     Jpg,
     Webp,
+    Svg,
 }
 
 impl From<CliOutputFormat> for OutputFormat {
@@ -24,6 +25,7 @@ impl From<CliOutputFormat> for OutputFormat {
             CliOutputFormat::Png => OutputFormat::Png,
             CliOutputFormat::Jpg => OutputFormat::Jpg,
             CliOutputFormat::Webp => OutputFormat::Webp,
+            CliOutputFormat::Svg => OutputFormat::Svg,
         }
     }
 }

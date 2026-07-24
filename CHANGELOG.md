@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.3.0] - 2026-07-24
+
+### Added
+- **SVG Export Format**: New `--format svg` output for `image`, `video`, and `text` subcommands. Flattens Spline, Fourier, and Polyline/Chaikin AST curves into `<path>` elements in a standalone, viewBox-scoped SVG document. Solid colors and linear gradients are preserved via `<linearGradient>` defs.
+- **CLI**: Added `svg` variant to `--format`/`-f` and automatic `.svg` extension detection for the `text` subcommand's output path.
+
 ## [6.2.0] - 2026-06-25
 
 ### Added

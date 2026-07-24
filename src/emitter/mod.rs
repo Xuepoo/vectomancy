@@ -1,5 +1,6 @@
 #[cfg(feature = "gpu")]
 pub mod native;
+pub mod svg;
 
 use crate::config::OutputFormat;
 use crate::error::VectomancyError;
@@ -106,6 +107,14 @@ pub fn emit_file(
         return Ok(());
     }
 
+    if let OutputFormat::Svg = format {
+        info!("Rendering AST to SVG");
+        let svg_output = svg::to_svg_string(ast, original_dimensions)?;
+        info!("Writing output to {:?}", output_path);
+        fs::write(output_path, svg_output)?;
+        return Ok(());
+    }
+
     let template_name = match format {
         OutputFormat::Python => {
             tera.add_raw_template("python", include_str!("../../templates/python.tera"))?;
@@ -119,7 +128,11 @@ pub fn emit_file(
             tera.add_raw_template("desmos", include_str!("../../templates/desmos.tera"))?;
             "desmos"
         }
-        OutputFormat::Json | OutputFormat::Png | OutputFormat::Jpg | OutputFormat::Webp => {
+        OutputFormat::Json
+        | OutputFormat::Svg
+        | OutputFormat::Png
+        | OutputFormat::Jpg
+        | OutputFormat::Webp => {
             unreachable!()
         }
     };
