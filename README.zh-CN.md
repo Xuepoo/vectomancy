@@ -71,7 +71,7 @@ vectomancy image [OPTIONS] <INPUTS...>
 
 常用选项:
 - `-o, --output <OUTPUT>`: 导出文件路径或目录。
-- `-f, --format <FORMAT>`: 输出格式 (`python`, `html`, `json`, `desmos`, `png`, `jpg`, `webp`)。
+- `-f, --format <FORMAT>`: 输出格式 (`python`, `html`, `json`, `desmos`, `png`, `jpg`, `webp`, `svg`)。
 - `-m, --mode <MODE>`: 拟合模式 (`fourier`, `spline`, `chaikin`)。
 - `-n, --terms <TERMS>`: 傅里叶级数逼近项数。
 - `-c, --chaikin-iters <ITERS>`: Chaikin 平滑迭代次数。
