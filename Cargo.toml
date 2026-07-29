@@ -21,6 +21,7 @@ members = [
     "crates/vectomancy-transform",
     "crates/vectomancy-raster",
     "crates/vectomancy-svg",
+    "crates/vectomancy-export",
     "cli",
     "video",
     "text"
@@ -31,6 +32,7 @@ default-members = [
     "crates/vectomancy-transform",
     "crates/vectomancy-raster",
     "crates/vectomancy-svg",
+    "crates/vectomancy-export",
     "cli",
     "video",
     "text"
