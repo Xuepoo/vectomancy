@@ -3816,6 +3816,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "vectomancy-raster"
+version = "7.1.0"
+dependencies = [
+ "image",
+ "imageproc",
+ "rayon",
+ "serde",
+ "tracing",
+ "vectomancy-geometry",
+]
+
+[[package]]
+name = "vectomancy-svg"
+version = "7.1.0"
+dependencies = [
+ "serde",
+ "usvg",
+ "vectomancy-geometry",
+ "vectomancy-transform",
+]
+
+[[package]]
 name = "vectomancy-text"
 version = "7.0.0"
 dependencies = [
