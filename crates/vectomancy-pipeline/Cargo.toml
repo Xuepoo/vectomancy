@@ -1,0 +1,29 @@
+[package]
+name = "vectomancy-pipeline"
+version = "7.1.0"
+edition = "2021"
+description = "High-level conversion pipeline orchestrator for Vectomancy"
+license = "MIT"
+repository = "https://github.com/Xuepoo/vectomancy"
+
+[dependencies]
+vectomancy-geometry = { path = "../vectomancy-geometry" }
+vectomancy-transform = { path = "../vectomancy-transform" }
+vectomancy-raster = { path = "../vectomancy-raster" }
+vectomancy-svg = { path = "../vectomancy-svg" }
+vectomancy-export = { path = "../vectomancy-export" }
+tracing = "0.1"
+serde = { version = "1.0", features = ["derive"], optional = true }
+
+[dev-dependencies]
+image = { version = "0.25", features = ["webp"] }
+
+[features]
+default = ["serde"]
+serde = [
+    "dep:serde",
+    "vectomancy-geometry/serde",
+    "vectomancy-transform/serde",
+    "vectomancy-raster/serde",
+    "vectomancy-svg/serde"
+]

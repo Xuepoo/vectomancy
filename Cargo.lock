@@ -3829,6 +3829,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "vectomancy-pipeline"
+version = "7.1.0"
+dependencies = [
+ "image",
+ "serde",
+ "tracing",
+ "vectomancy-export",
+ "vectomancy-geometry",
+ "vectomancy-raster",
+ "vectomancy-svg",
+ "vectomancy-transform",
+]
+
+[[package]]
 name = "vectomancy-raster"
 version = "7.1.0"
 dependencies = [
