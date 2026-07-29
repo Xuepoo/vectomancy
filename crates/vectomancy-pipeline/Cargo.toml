@@ -7,11 +7,11 @@ license = "MIT"
 repository = "https://github.com/Xuepoo/vectomancy"
 
 [dependencies]
-vectomancy-geometry = { path = "../vectomancy-geometry" }
-vectomancy-transform = { path = "../vectomancy-transform" }
-vectomancy-raster = { path = "../vectomancy-raster" }
-vectomancy-svg = { path = "../vectomancy-svg" }
-vectomancy-export = { path = "../vectomancy-export" }
+vectomancy-geometry = { path = "../vectomancy-geometry", version = "7.1.0" }
+vectomancy-transform = { path = "../vectomancy-transform", version = "7.1.0" }
+vectomancy-raster = { path = "../vectomancy-raster", version = "7.1.0" }
+vectomancy-svg = { path = "../vectomancy-svg", version = "7.1.0" }
+vectomancy-export = { path = "../vectomancy-export", version = "7.1.0" }
 tracing = "0.1"
 serde = { version = "1.0", features = ["derive"], optional = true }
 

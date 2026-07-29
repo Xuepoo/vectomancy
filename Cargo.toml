@@ -61,12 +61,12 @@ zip = "8.6.0"
 kiddo = "5.3.1"
 
 # Workspace subcrates
-vectomancy-geometry = { path = "crates/vectomancy-geometry" }
-vectomancy-transform = { path = "crates/vectomancy-transform" }
-vectomancy-raster = { path = "crates/vectomancy-raster" }
-vectomancy-svg = { path = "crates/vectomancy-svg" }
-vectomancy-export = { path = "crates/vectomancy-export" }
-vectomancy-pipeline = { path = "crates/vectomancy-pipeline" }
+vectomancy-geometry = { path = "crates/vectomancy-geometry", version = "7.1.0" }
+vectomancy-transform = { path = "crates/vectomancy-transform", version = "7.1.0" }
+vectomancy-raster = { path = "crates/vectomancy-raster", version = "7.1.0" }
+vectomancy-svg = { path = "crates/vectomancy-svg", version = "7.1.0" }
+vectomancy-export = { path = "crates/vectomancy-export", version = "7.1.0" }
+vectomancy-pipeline = { path = "crates/vectomancy-pipeline", version = "7.1.0" }
 
 # Workspace dependencies inherited
 serde = { workspace = true }

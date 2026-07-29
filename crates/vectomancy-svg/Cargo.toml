@@ -7,8 +7,8 @@ license = "MIT"
 repository = "https://github.com/Xuepoo/vectomancy"
 
 [dependencies]
-vectomancy-geometry = { path = "../vectomancy-geometry" }
-vectomancy-transform = { path = "../vectomancy-transform" }
+vectomancy-geometry = { path = "../vectomancy-geometry", version = "7.1.0" }
+vectomancy-transform = { path = "../vectomancy-transform", version = "7.1.0" }
 usvg = "0.38"
 serde = { version = "1.0", features = ["derive"], optional = true }
 
