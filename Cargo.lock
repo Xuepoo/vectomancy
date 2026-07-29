@@ -3809,6 +3809,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "vectomancy-geometry"
+version = "7.1.0"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "vectomancy-text"
 version = "7.0.0"
 dependencies = [

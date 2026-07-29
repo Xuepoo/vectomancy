@@ -1,0 +1,14 @@
+[package]
+name = "vectomancy-geometry"
+version = "7.1.0"
+edition = "2021"
+description = "Lightweight primitive geometry types and algorithms for Vectomancy"
+license = "MIT"
+repository = "https://github.com/Xuepoo/vectomancy"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"], optional = true }
+
+[features]
+default = ["serde"]
+serde = ["dep:serde"]

@@ -17,12 +17,14 @@ exclude = [
 resolver = "2"
 members = [
     ".",
+    "crates/vectomancy-geometry",
     "cli",
     "video",
     "text"
 ]
 default-members = [
     ".",
+    "crates/vectomancy-geometry",
     "cli",
     "video",
     "text"
