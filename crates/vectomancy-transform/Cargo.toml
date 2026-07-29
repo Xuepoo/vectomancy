@@ -1,0 +1,18 @@
+[package]
+name = "vectomancy-transform"
+version = "7.1.0"
+edition = "2021"
+description = "Mathematical transforms (Spline, Fourier, TSP) for Vectomancy"
+license = "MIT"
+repository = "https://github.com/Xuepoo/vectomancy"
+
+[dependencies]
+vectomancy-geometry = { path = "../vectomancy-geometry" }
+rustfft = "6.4"
+kiddo = "5.3"
+tracing = "0.1"
+serde = { version = "1.0", features = ["derive"], optional = true }
+
+[features]
+default = ["serde"]
+serde = ["dep:serde", "vectomancy-geometry/serde"]

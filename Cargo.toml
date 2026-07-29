@@ -1,6 +1,6 @@
 [package]
 name = "vectomancy"
-version = "7.0.0"
+version = "7.1.0"
 edition = "2021"
 description = "Vectomancy - Image to vector math CLI core"
 license = "MIT"
@@ -17,12 +17,24 @@ exclude = [
 resolver = "2"
 members = [
     ".",
+    "crates/vectomancy-geometry",
+    "crates/vectomancy-transform",
+    "crates/vectomancy-raster",
+    "crates/vectomancy-svg",
+    "crates/vectomancy-export",
+    "crates/vectomancy-pipeline",
     "cli",
     "video",
     "text"
 ]
 default-members = [
     ".",
+    "crates/vectomancy-geometry",
+    "crates/vectomancy-transform",
+    "crates/vectomancy-raster",
+    "crates/vectomancy-svg",
+    "crates/vectomancy-export",
+    "crates/vectomancy-pipeline",
     "cli",
     "video",
     "text"
@@ -47,6 +59,14 @@ flate2 = "1.0"
 base64 = "0.22"
 zip = "8.6.0"
 kiddo = "5.3.1"
+
+# Workspace subcrates
+vectomancy-geometry = { path = "crates/vectomancy-geometry" }
+vectomancy-transform = { path = "crates/vectomancy-transform" }
+vectomancy-raster = { path = "crates/vectomancy-raster" }
+vectomancy-svg = { path = "crates/vectomancy-svg" }
+vectomancy-export = { path = "crates/vectomancy-export" }
+vectomancy-pipeline = { path = "crates/vectomancy-pipeline" }
 
 # Workspace dependencies inherited
 serde = { workspace = true }

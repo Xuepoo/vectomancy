@@ -1,0 +1,17 @@
+[package]
+name = "vectomancy-svg"
+version = "7.1.0"
+edition = "2021"
+description = "SVG path parsing and vector segment extraction for Vectomancy"
+license = "MIT"
+repository = "https://github.com/Xuepoo/vectomancy"
+
+[dependencies]
+vectomancy-geometry = { path = "../vectomancy-geometry" }
+vectomancy-transform = { path = "../vectomancy-transform" }
+usvg = "0.38"
+serde = { version = "1.0", features = ["derive"], optional = true }
+
+[features]
+default = ["serde"]
+serde = ["dep:serde", "vectomancy-geometry/serde", "vectomancy-transform/serde"]
