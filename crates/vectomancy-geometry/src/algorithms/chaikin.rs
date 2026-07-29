@@ -1,17 +1,15 @@
 use crate::types::{Point2D, Polyline};
 
-/// Chaikin corner-cutting algorithm for polyline smoothing.
-pub fn chaikin_smooth(polyline: &Polyline, iterations: usize) -> Polyline {
-    let points = &polyline.points;
+pub fn chaikin_smooth_points(points: &[Point2D], iterations: usize, closed: bool) -> Vec<Point2D> {
     if points.len() < 3 || iterations == 0 {
-        return polyline.clone();
+        return points.to_vec();
     }
 
     let mut current = points.to_vec();
     for _ in 0..iterations {
         let mut next = Vec::with_capacity(current.len() * 2);
 
-        if polyline.closed {
+        if closed {
             let n = current.len();
             for i in 0..n {
                 let p0 = current[i];
@@ -51,9 +49,14 @@ pub fn chaikin_smooth(polyline: &Polyline, iterations: usize) -> Polyline {
         }
         current = next;
     }
+    current
+}
 
+/// Chaikin corner-cutting algorithm for polyline smoothing.
+pub fn chaikin_smooth(polyline: &Polyline, iterations: usize) -> Polyline {
+    let smoothed = chaikin_smooth_points(&polyline.points, iterations, polyline.closed);
     Polyline {
-        points: current,
+        points: smoothed,
         closed: polyline.closed,
     }
 }
