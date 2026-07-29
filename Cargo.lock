@@ -3828,6 +3828,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "vectomancy-transform"
+version = "7.1.0"
+dependencies = [
+ "kiddo",
+ "rustfft",
+ "serde",
+ "tracing",
+ "vectomancy-geometry",
+]
+
+[[package]]
 name = "vectomancy-video"
 version = "7.0.0"
 dependencies = [

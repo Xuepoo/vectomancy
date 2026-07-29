@@ -18,6 +18,7 @@ resolver = "2"
 members = [
     ".",
     "crates/vectomancy-geometry",
+    "crates/vectomancy-transform",
     "cli",
     "video",
     "text"
@@ -25,6 +26,7 @@ members = [
 default-members = [
     ".",
     "crates/vectomancy-geometry",
+    "crates/vectomancy-transform",
     "cli",
     "video",
     "text"
