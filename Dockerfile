@@ -20,6 +20,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY Cargo.toml Cargo.lock ./
 COPY src ./src
 COPY cli ./cli
+COPY crates ./crates
 COPY text ./text
 COPY video ./video
 COPY benches ./benches
