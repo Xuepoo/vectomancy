@@ -1,6 +1,6 @@
 [package]
 name = "vectomancy-geometry"
-version = "7.1.1"
+version = "7.1.2"
 edition = "2021"
 description = "Lightweight primitive geometry types and algorithms for Vectomancy"
 license = "MIT"
