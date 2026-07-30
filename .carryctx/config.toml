@@ -1,0 +1,38 @@
+schema_version = 1
+
+[project]
+id = "01KYABV1P890KTCVC162ADV55A"
+name = "vectomancy"
+task_prefix = "CTX"
+
+[git]
+main_branch = "fix/wgpu-30-compat"
+branch_template = "carryctx/{task_id}-{slug}"
+
+[session]
+stale_after = "2h"
+single_active_session_per_agent = true
+
+[task]
+single_active_task_per_agent = true
+strict_completion = false
+
+[context]
+default_mode = "compact"
+max_events = 10
+lookback = "7d"
+include_git_status = true
+
+[checkpoint]
+require_before_session_end = true
+capture_diff_stats = true
+capture_untracked_files = true
+
+[output]
+color = "auto"
+unicode = true
+
+[agent]
+
+[verification]
+commands = []

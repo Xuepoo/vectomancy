@@ -181,19 +181,43 @@ jobs:
           VERSION="${TAG_NAME#v}"
           echo "Extracted publish version: $VERSION"
 
-          # 1. Publish core
-          cargo publish --manifest-path Cargo.toml --package vectomancy --token ${{ secrets.CRATES_TOKEN }}
+          # 1. Publish geometry
+          cargo publish --manifest-path crates/vectomancy-geometry/Cargo.toml --package vectomancy-geometry --token ${{ secrets.CRATES_TOKEN }} --no-verify
+          wait_for_crate "vectomancy-geometry" "$VERSION"
+
+          # 2. Publish transform
+          cargo publish --manifest-path crates/vectomancy-transform/Cargo.toml --package vectomancy-transform --token ${{ secrets.CRATES_TOKEN }} --no-verify
+          wait_for_crate "vectomancy-transform" "$VERSION"
+
+          # 3. Publish raster
+          cargo publish --manifest-path crates/vectomancy-raster/Cargo.toml --package vectomancy-raster --token ${{ secrets.CRATES_TOKEN }} --no-verify
+          wait_for_crate "vectomancy-raster" "$VERSION"
+
+          # 4. Publish svg
+          cargo publish --manifest-path crates/vectomancy-svg/Cargo.toml --package vectomancy-svg --token ${{ secrets.CRATES_TOKEN }} --no-verify
+          wait_for_crate "vectomancy-svg" "$VERSION"
+
+          # 5. Publish export
+          cargo publish --manifest-path crates/vectomancy-export/Cargo.toml --package vectomancy-export --token ${{ secrets.CRATES_TOKEN }} --no-verify
+          wait_for_crate "vectomancy-export" "$VERSION"
+
+          # 6. Publish pipeline
+          cargo publish --manifest-path crates/vectomancy-pipeline/Cargo.toml --package vectomancy-pipeline --token ${{ secrets.CRATES_TOKEN }} --no-verify
+          wait_for_crate "vectomancy-pipeline" "$VERSION"
+
+          # 7. Publish core
+          cargo publish --manifest-path Cargo.toml --package vectomancy --token ${{ secrets.CRATES_TOKEN }} --no-verify
           wait_for_crate "vectomancy" "$VERSION"
 
-          # 2. Publish text
+          # 8. Publish text
           cargo publish --manifest-path text/Cargo.toml --package vectomancy-text --token ${{ secrets.CRATES_TOKEN }} --no-verify
           wait_for_crate "vectomancy-text" "$VERSION"
 
-          # 3. Publish video
+          # 9. Publish video
           cargo publish --manifest-path video/Cargo.toml --package vectomancy-video --token ${{ secrets.CRATES_TOKEN }} --no-verify
           wait_for_crate "vectomancy-video" "$VERSION"
 
-          # 4. Publish cli
+          # 10. Publish cli
           cargo publish --manifest-path cli/Cargo.toml --package vectomancy-cli --token ${{ secrets.CRATES_TOKEN }} --no-verify
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_TOKEN }}
@@ -207,6 +231,7 @@ jobs:
     steps:
       - name: Install Arch build dependencies
         run: |
+          pacman-key --init
           pacman -Syu --noconfirm git openssh pacman-contrib sudo fakeroot binutils make gcc pkgconf
 
       - name: Configure SSH Key
