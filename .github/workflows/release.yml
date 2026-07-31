@@ -181,6 +181,38 @@ jobs:
           VERSION="${TAG_NAME#v}"
           echo "Extracted publish version: $VERSION"
 
+          # Fail fast, before publishing anything, if any manifest's version
+          # doesn't match the release tag. Every crate in this workspace is
+          # meant to ship in lockstep (see AGENTS.md's "Known Architecture
+          # Debt": text/video previously drifted to a stale 7.0.0 while the
+          # rest of the workspace moved to 7.1.2, which made `cargo publish`
+          # for vectomancy-text fail here with "crate already exists" only
+          # *after* geometry/transform/raster/svg/export/pipeline/core had
+          # already been published for the new version — leaving the
+          # release half-published with no easy rollback). Catching the
+          # mismatch up front means a partial publish never gets a chance to
+          # start.
+          check_version() {
+            local manifest=$1
+            local actual
+            actual=$(grep -m1 '^version' "$manifest" | sed -E 's/version = "(.*)"/\1/')
+            if [ "$actual" != "$VERSION" ]; then
+              echo "::error::$manifest has version $actual, but the release tag is $VERSION. Bump it before releasing."
+              exit 1
+            fi
+          }
+          check_version "crates/vectomancy-geometry/Cargo.toml"
+          check_version "crates/vectomancy-transform/Cargo.toml"
+          check_version "crates/vectomancy-raster/Cargo.toml"
+          check_version "crates/vectomancy-svg/Cargo.toml"
+          check_version "crates/vectomancy-export/Cargo.toml"
+          check_version "crates/vectomancy-pipeline/Cargo.toml"
+          check_version "Cargo.toml"
+          check_version "text/Cargo.toml"
+          check_version "video/Cargo.toml"
+          check_version "cli/Cargo.toml"
+          echo "All manifest versions match release tag $VERSION."
+
           # 1. Publish geometry
           cargo publish --manifest-path crates/vectomancy-geometry/Cargo.toml --package vectomancy-geometry --token ${{ secrets.CRATES_TOKEN }} --no-verify
           wait_for_crate "vectomancy-geometry" "$VERSION"

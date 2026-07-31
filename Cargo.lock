@@ -3728,7 +3728,7 @@ checksum = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426"
 
 [[package]]
 name = "vectomancy"
-version = "7.1.2"
+version = "7.1.3"
 dependencies = [
  "base64 0.22.1",
  "bytemuck",
@@ -3762,7 +3762,7 @@ dependencies = [
 
 [[package]]
 name = "vectomancy-cli"
-version = "7.1.2"
+version = "7.1.3"
 dependencies = [
  "clap",
  "clap_complete",
@@ -3780,7 +3780,7 @@ dependencies = [
 
 [[package]]
 name = "vectomancy-export"
-version = "7.1.2"
+version = "7.1.3"
 dependencies = [
  "base64 0.23.0",
  "flate2",
@@ -3793,14 +3793,14 @@ dependencies = [
 
 [[package]]
 name = "vectomancy-geometry"
-version = "7.1.2"
+version = "7.1.3"
 dependencies = [
  "serde",
 ]
 
 [[package]]
 name = "vectomancy-pipeline"
-version = "7.1.2"
+version = "7.1.3"
 dependencies = [
  "image",
  "serde",
@@ -3814,7 +3814,7 @@ dependencies = [
 
 [[package]]
 name = "vectomancy-raster"
-version = "7.1.2"
+version = "7.1.3"
 dependencies = [
  "image",
  "imageproc",
@@ -3826,7 +3826,7 @@ dependencies = [
 
 [[package]]
 name = "vectomancy-svg"
-version = "7.1.2"
+version = "7.1.3"
 dependencies = [
  "serde",
  "usvg",
@@ -3836,7 +3836,7 @@ dependencies = [
 
 [[package]]
 name = "vectomancy-text"
-version = "7.0.0"
+version = "7.1.3"
 dependencies = [
  "ab_glyph",
  "bytes",
@@ -3848,7 +3848,7 @@ dependencies = [
 
 [[package]]
 name = "vectomancy-transform"
-version = "7.1.2"
+version = "7.1.3"
 dependencies = [
  "kiddo",
  "rustfft",
@@ -3859,7 +3859,7 @@ dependencies = [
 
 [[package]]
 name = "vectomancy-video"
-version = "7.0.0"
+version = "7.1.3"
 dependencies = [
  "crossbeam-channel",
  "ffmpeg-next",
