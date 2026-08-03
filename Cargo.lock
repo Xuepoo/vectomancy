@@ -1718,9 +1718,9 @@ checksum = "e2db585e1d738fc771bf08a151420d3ed193d9d895a36df7f6f8a9456b911ddc"
 
 [[package]]
 name = "kiddo"
-version = "5.3.2"
+version = "5.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "da26797630e4a7511fa95300ecb03250d8d91f7e44fe756d61febefbce1ea3be"
+checksum = "5195aa4f0d1224a7baf95ce80e5a1b14e991c0eb25fa95a0c4ce81053fbcac55"
 dependencies = [
  "aligned-vec",
  "array-init",
