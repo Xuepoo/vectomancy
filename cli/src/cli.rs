@@ -187,6 +187,10 @@ pub struct VideoArgs {
     #[arg(long)]
     pub fourier_energy: Option<f64>,
 
+    /// Stroke width for native frame rendering (supports very low values, e.g. 0.005)
+    #[arg(long)]
+    pub stroke_width: Option<f32>,
+
     /// Do not simplify math coordinates and equations (retains original high precision)
     #[arg(long)]
     pub no_simplify_math: bool,
