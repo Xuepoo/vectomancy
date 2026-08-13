@@ -8,7 +8,7 @@ repository = "https://github.com/Xuepoo/vectomancy"
 
 [dependencies]
 vectomancy = { path = "..", version = "7.1.3" }
-ffmpeg-next = "8.1"
+ffmpeg-next = "9.0"
 crossbeam-channel = "0.5"
 thiserror = "1.0"
 image = { version = "0.25", features = ["webp"] }
