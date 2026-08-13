@@ -76,7 +76,7 @@ Used when exporting native `Image` formats or embedding color data to Python/Htm
 - **`bg_transparent`** (`bool`, Default: `false`)
   - _CLI Equivalent:_ `--bg-transparent`
   - _Description:_ For native image output, defines whether the canvas background should be completely transparent (Alpha 0) instead of solid white.
-- **`stroke_width`** (`f32`, Default: `1.0`)
+- **`stroke_width`** (`f32`, Default: `2.0`)
   - _CLI Equivalent:_ `--stroke-width`
   - _Description:_ Sets the line thickness for native image rendering.
 - **`width` / `height`** (`u32`, Default: `None`)
@@ -206,18 +206,38 @@ vectomancy video input.mp4 -o output.webm
 
 ### Video Processing Parameters
 
-Video processing reads all parameters from the `[image]` section of `config.toml`:
+Video processing reads parameters from the dedicated `[video]` section of `config.toml`, falling back to `[image]` for any field not set there. Since v7.1.5, the CLI also exposes a subset of these as flags (`--stroke-width`, `--gpu`, `--threads`, `--gpu-power`, `--fourier-adaptive`, `--fourier-energy`, `--no-simplify-math`) which take precedence over both config sections.
 
 ```toml
 [image]
 mode = "spline"           # Algorithm: spline, fourier, chaikin
 color = true              # Enable color sampling
-gpu = true                # GPU acceleration (recommended for video)
-threads = 4               # CPU threads
 detail = 60               # Detail level (1-100)
 min_path_len = 5          # Minimum path length
 bg_transparent = false    # Transparent background (use with .webm)
+
+[video]
+gpu = true                # GPU acceleration (recommended for video)
+threads = 4               # CPU threads
+simplify_math = true      # Simplify math coordinates/equations (false keeps original precision)
+fourier_adaptive = true   # Dynamically select Fourier term count
+fourier_energy_threshold = 0.99  # Cumulative energy threshold (0.0-1.0) for adaptive compression
 ```
+
+**CLI flags supported on `vectomancy video` (v7.1.5+):**
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `-o, --output` | — | Output file path or directory |
+| `--stroke-width <f32>` | `2.0` | Native frame stroke width (supports very low values like `0.005`) |
+| `--gpu <bool>` | config | GPU acceleration (wgpu) for Fourier FFT batches |
+| `--threads <N>` | `1` | CPU thread count |
+| `--gpu-power <...>` | config | `HighPerformance`, `LowPower`, or `None` |
+| `--fourier-adaptive <bool>` | config | Dynamically select Fourier terms |
+| `--fourier-energy <0.0-1.0>` | config | Cumulative energy threshold for adaptive compression |
+| `--no-simplify-math` | `false` | Retain original high precision instead of simplifying equations |
+
+Note: `vectomancy video` still does NOT accept `--mode`, `--detail`, `--color`, or `-f/--format` — algorithm mode and rendering detail come from config only. To change mode for video, edit the `[image]` section of `config.toml` before running.
 
 ### Performance Tips
 
@@ -243,8 +263,6 @@ bg_transparent = false    # Transparent background (use with .webm)
 mode = "spline"
 format = "html"
 color = true
-gpu = true
-threads = 4
 detail = 50
 tolerance = 0.5
 min_path_len = 5
@@ -254,6 +272,11 @@ color_space = "sRGB"
 
 [video]
 enabled = true
+gpu = true
+threads = 4
+simplify_math = true
+fourier_adaptive = true
+fourier_energy_threshold = 0.99
 
 [text]
 font = "default"
