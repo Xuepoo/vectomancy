@@ -1,5 +1,5 @@
 use std::path::Path;
-use usvg::{Options, Tree, TreeParsing};
+use usvg::{Options, Tree};
 use vectomancy_geometry::{Point2D, StyledPath};
 use vectomancy_transform::BezierSegment;
 
@@ -17,13 +17,13 @@ pub fn decode_svg_memory(
     let opt = Options::default();
     let tree = Tree::from_data(svg_data, &opt).map_err(|e| e.to_string())?;
 
-    let width = tree.size.width() as u32;
-    let height = tree.size.height() as u32;
+    let width = tree.size().width() as u32;
+    let height = tree.size().height() as u32;
 
     let mut raw_paths = Vec::new();
 
     fn traverse(group: &usvg::Group, all_segments: &mut Vec<SvgSegmentRaw>, color: bool) {
-        for child in &group.children {
+        for child in group.children() {
             match child {
                 usvg::Node::Group(g) => {
                     traverse(g, all_segments, color);
@@ -31,20 +31,20 @@ pub fn decode_svg_memory(
                 usvg::Node::Path(p) => {
                     let mut color_rgb = None;
                     if color {
-                        if let Some(stroke) = &p.stroke {
-                            if let usvg::Paint::Color(c) = stroke.paint {
+                        if let Some(stroke) = p.stroke() {
+                            if let usvg::Paint::Color(c) = stroke.paint() {
                                 color_rgb = Some((c.red, c.green, c.blue));
                             }
-                        } else if let Some(fill) = &p.fill {
-                            if let usvg::Paint::Color(c) = fill.paint {
+                        } else if let Some(fill) = p.fill() {
+                            if let usvg::Paint::Color(c) = fill.paint() {
                                 color_rgb = Some((c.red, c.green, c.blue));
                             }
                         }
                     }
 
-                    let segments: Vec<_> = p.data.segments().collect();
+                    let segments: Vec<_> = p.data().segments().collect();
                     if !segments.is_empty() {
-                        all_segments.push((color_rgb, segments, p.abs_transform));
+                        all_segments.push((color_rgb, segments, p.abs_transform()));
                     }
                 }
                 _ => {}
@@ -52,35 +52,36 @@ pub fn decode_svg_memory(
         }
     }
 
-    traverse(&tree.root, &mut raw_paths, color);
+    traverse(tree.root(), &mut raw_paths, color);
 
     let styled_paths: Vec<_> = raw_paths
         .into_iter()
         .map(|(color_rgb, segments, transform)| {
+            let map_point = |pt: usvg::tiny_skia_path::Point| {
+                let mut p = pt;
+                transform.map_point(&mut p);
+                p
+            };
             let mut bezier_segments = Vec::new();
             for seg in segments {
                 match seg {
                     usvg::tiny_skia_path::PathSegment::MoveTo(pt) => {
-                        let mut pt = pt;
-                        transform.map_point(&mut pt);
+                        let pt = map_point(pt);
                         bezier_segments.push(BezierSegment::MoveTo(Point2D {
                             x: pt.x as f64,
                             y: pt.y as f64,
                         }));
                     }
                     usvg::tiny_skia_path::PathSegment::LineTo(pt) => {
-                        let mut pt = pt;
-                        transform.map_point(&mut pt);
+                        let pt = map_point(pt);
                         bezier_segments.push(BezierSegment::LineTo(Point2D {
                             x: pt.x as f64,
                             y: pt.y as f64,
                         }));
                     }
                     usvg::tiny_skia_path::PathSegment::QuadTo(pt1, pt2) => {
-                        let mut pt1 = pt1;
-                        let mut pt2 = pt2;
-                        transform.map_point(&mut pt1);
-                        transform.map_point(&mut pt2);
+                        let pt1 = map_point(pt1);
+                        let pt2 = map_point(pt2);
                         bezier_segments.push(BezierSegment::QuadraticTo(
                             Point2D {
                                 x: pt1.x as f64,
@@ -93,12 +94,9 @@ pub fn decode_svg_memory(
                         ));
                     }
                     usvg::tiny_skia_path::PathSegment::CubicTo(pt1, pt2, pt3) => {
-                        let mut pt1 = pt1;
-                        let mut pt2 = pt2;
-                        let mut pt3 = pt3;
-                        transform.map_point(&mut pt1);
-                        transform.map_point(&mut pt2);
-                        transform.map_point(&mut pt3);
+                        let pt1 = map_point(pt1);
+                        let pt2 = map_point(pt2);
+                        let pt3 = map_point(pt3);
                         bezier_segments.push(BezierSegment::CubicTo(
                             Point2D {
                                 x: pt1.x as f64,

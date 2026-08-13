@@ -58,7 +58,7 @@ rustfft = "6.1"
 flate2 = "1.0"
 base64 = "0.22"
 zip = "8.6.0"
-kiddo = "5.3.1"
+kiddo = "6"
 
 # Workspace subcrates
 vectomancy-geometry = { path = "crates/vectomancy-geometry", version = "7.1.3" }
@@ -83,7 +83,7 @@ bytemuck = { version = "1.25.0", features = ["derive"], optional = true }
 lyon_tessellation = { version = "1.0.20", features = ["std"], optional = true }
 image = { version = "0.25", features = ["webp"], optional = true }
 imageproc = { version = "0.26.2", optional = true }
-usvg = { version = "0.38", optional = true }
+usvg = { version = "0.48", optional = true }
 
 [dev-dependencies]
 criterion = "0.5"

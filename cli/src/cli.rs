@@ -73,6 +73,7 @@ pub enum Commands {
     Image(ImageArgs),
 
     /// Process video files
+    #[cfg(feature = "video")]
     Video(VideoArgs),
 
     /// Process text input
