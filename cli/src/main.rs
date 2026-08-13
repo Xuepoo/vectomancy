@@ -798,7 +798,7 @@ fn main() -> Result<(), VectomancyError> {
 
                                 match format_ref {
                                     OutputFormat::Png | OutputFormat::Jpg | OutputFormat::Webp => {
-                                        let stroke_width = 2.0;
+                                        let stroke_width = args_ref.stroke_width.unwrap_or(2.0);
                                         let bit_depth = image_config_ref.bit_depth;
                                         let color_space = image_config_ref.color_space.clone();
 
