@@ -21,10 +21,10 @@ jobs:
         with:
           components: clippy, rustfmt
 
-      - name: Install LLVM/Clang & FFmpeg Headers
+      - name: Install LLVM/Clang
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev libavdevice-dev libavfilter-dev pkg-config
+          sudo apt-get install -y clang pkg-config
 
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
@@ -33,10 +33,20 @@ jobs:
         run: cargo fmt -- --check
 
       - name: Lint with Clippy
-        run: cargo clippy -- -D warnings
+        # Exclude vectomancy-video and vectomancy-cli from the workspace pass:
+        # vectomancy-video requires ffmpeg-next 9 headers (Ubuntu noble ships 6.1).
+        # vectomancy-cli default features pull in vectomancy-video via the "video"
+        # feature; lint it separately without default features.
+        run: |
+          cargo clippy --workspace --exclude vectomancy-video --exclude vectomancy-cli -- -D warnings
+          cargo clippy -p vectomancy-cli --no-default-features -- -D warnings
 
       - name: Build
-        run: cargo build --verbose
+        run: |
+          cargo build --workspace --exclude vectomancy-video --exclude vectomancy-cli --verbose
+          cargo build -p vectomancy-cli --no-default-features --verbose
 
       - name: Run tests
-        run: cargo test --verbose
+        run: |
+          cargo test --workspace --exclude vectomancy-video --exclude vectomancy-cli --verbose
+          cargo test -p vectomancy-cli --no-default-features --verbose

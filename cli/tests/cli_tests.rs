@@ -116,6 +116,7 @@ fn test_text_subcommand_workflow() {
     assert!(!json_content.is_empty(), "Output JSON is empty");
 }
 
+#[cfg(feature = "video")]
 #[test]
 fn test_video_decoding_and_fitting_e2e() {
     let video_path = std::path::Path::new("/home/fuyu/Videos/YouTube/bad-apple.mp4");

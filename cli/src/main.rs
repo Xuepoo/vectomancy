@@ -491,7 +491,7 @@ fn main() -> Result<(), VectomancyError> {
                             .color_space
                             .clone()
                             .or_else(|| image_config.color_space.clone());
-                        let stroke_width = args.stroke_width.unwrap_or(1.0);
+                        let stroke_width = args.stroke_width.unwrap_or(2.0);
 
                         emitter::native::render_to_image(
                             &ast,
@@ -512,6 +512,7 @@ fn main() -> Result<(), VectomancyError> {
                 info!("Saved output to {:?}", final_output);
             }
         }
+        #[cfg(feature = "video")]
         Commands::Video(args) => {
             info!("Running Video Subcommand on {:?}", args.input);
             if !args.input.exists() {
@@ -797,7 +798,7 @@ fn main() -> Result<(), VectomancyError> {
 
                                 match format_ref {
                                     OutputFormat::Png | OutputFormat::Jpg | OutputFormat::Webp => {
-                                        let stroke_width = 1.0;
+                                        let stroke_width = 2.0;
                                         let bit_depth = image_config_ref.bit_depth;
                                         let color_space = image_config_ref.color_space.clone();
 
@@ -1050,7 +1051,7 @@ fn main() -> Result<(), VectomancyError> {
                     let stroke_width = args
                         .stroke_width
                         .or(text_config.stroke_width)
-                        .unwrap_or(1.0);
+                        .unwrap_or(2.0);
                     let bit_depth = image_config.bit_depth;
                     let color_space = image_config.color_space.clone();
 

@@ -12,7 +12,7 @@ path = "src/main.rs"
 
 [dependencies]
 vectomancy = { path = "..", version = "7.1.3", features = ["gpu"] }
-vectomancy-video = { path = "../video", version = "7.1.3" }
+vectomancy-video = { path = "../video", version = "7.1.3", optional = true }
 vectomancy-text = { path = "../text", version = "7.1.3" }
 clap_complete = "4.4"
 log = "0.4"
@@ -23,6 +23,10 @@ clap = { workspace = true }
 rayon = { workspace = true }
 wgpu = { workspace = true }
 tracing = { workspace = true }
+
+[features]
+default = ["video"]
+video = ["dep:vectomancy-video"]
 
 [dev-dependencies]
 image = { version = "0.25", features = ["png"] }

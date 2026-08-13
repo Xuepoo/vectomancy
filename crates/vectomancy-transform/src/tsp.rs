@@ -1,4 +1,4 @@
-use kiddo::KdTree;
+use kiddo::MutableKdTree;
 use tracing::debug;
 use vectomancy_geometry::Point2D;
 
@@ -8,26 +8,28 @@ pub fn solve_tsp_nearest_neighbor(points: Vec<Point2D>) -> Vec<Point2D> {
     }
 
     debug!("Solving TSP (Nearest Neighbor) for {} points", points.len());
-    let mut tree: KdTree<f64, 2> = KdTree::new();
+    let mut tree: MutableKdTree<f64, 2> = MutableKdTree::default();
 
     for (i, p) in points.iter().enumerate() {
-        tree.add(&[p.x, p.y], i as u64);
+        tree.add(&[p.x, p.y], i as u32).expect("kiddo add");
     }
 
     let mut ordered = Vec::with_capacity(points.len());
 
     let mut current_idx = 0;
     let mut current_point = points[current_idx];
-    tree.remove(&[current_point.x, current_point.y], current_idx as u64);
+    tree.remove(&[current_point.x, current_point.y], current_idx as u32);
     ordered.push(current_point);
 
     for _ in 1..points.len() {
-        let nearest =
-            tree.nearest_one::<kiddo::SquaredEuclidean>(&[current_point.x, current_point.y]);
+        let nearest = tree
+            .query(&[current_point.x, current_point.y])
+            .nearest_one::<kiddo::SquaredEuclidean<f64>>()
+            .execute();
         current_idx = nearest.item as usize;
         current_point = points[current_idx];
 
-        tree.remove(&[current_point.x, current_point.y], current_idx as u64);
+        tree.remove(&[current_point.x, current_point.y], current_idx as u32);
         ordered.push(current_point);
     }
 
