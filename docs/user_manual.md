@@ -126,9 +126,9 @@ For full details on advanced global configurations, multi-file batch processing,
 ## 6. Examples
 
 - **High-Quality Python Spline Generation**:
-  `vectomancy run input.png --output out.py --format python --mode spline --chaikin-iters 2`
+  `vectomancy image input.png --output out.py --format python --mode spline --chaikin-iters 2`
 - **Low-Density Math Software Rendering**:
-  `vectomancy run input.png --output out.ggb --format geogebra --mode spline --tolerance 2.0`
+  `vectomancy image input.png --output out.json --format json --mode spline --detail 30`
 
 ## 7. FAQ
 
@@ -143,7 +143,7 @@ When using Vectomancy via Podman or Docker, be aware of the following:
 
 - **Missing Output Files**: Containers run in an isolated filesystem. To access host files, you must mount a volume. For example:
   ```bash
-  podman run --rm -v $(pwd):/data localhost/vectomancy:2.0.2 run /data/input.png --output /data/output.py
+  podman run --rm -v $(pwd):/data localhost/vectomancy:7.1.5 image /data/input.png --output /data/output.py
   ```
 - **XDG_RUNTIME_DIR Warning**: If you see `error: XDG_RUNTIME_DIR is invalid or not set in the environment`, it is a harmless warning from the underlying graphics libraries attempting to query a display server in a headless container. You can silence this by setting the environment variable:
   ```bash
@@ -151,7 +151,7 @@ When using Vectomancy via Podman or Docker, be aware of the following:
   ```
 - **GPU Acceleration**: By default, processing is done on the CPU. To enable `wgpu` hardware acceleration inside a container, pass your GPU to the container and append `--gpu` to the command:
   ```bash
-  podman run --device nvidia.com/gpu=all ... localhost/vectomancy:2.0.2 run --gpu ...
+  podman run --device nvidia.com/gpu=all ... localhost/vectomancy:7.1.5 image --gpu ...
   ```
 - **Custom Configuration**: You can map your local config file to the container:
   ```bash
