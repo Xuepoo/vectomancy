@@ -1,13 +1,13 @@
 [package]
 name = "vectomancy-text"
-version = "7.1.4"
+version = "7.1.5"
 edition = "2021"
 description = "Font outline extraction plugin for Vectomancy"
 license = "MIT"
 repository = "https://github.com/Xuepoo/vectomancy"
 
 [dependencies]
-vectomancy = { path = "..", version = "7.1.4" }
+vectomancy = { path = "..", version = "7.1.5" }
 ab_glyph = "0.2"
 thiserror = "1.0"
 woff2 = { package = "woff2-patched", version = "0.4.0" }
