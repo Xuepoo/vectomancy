@@ -1,17 +1,17 @@
 [package]
 name = "vectomancy-pipeline"
-version = "2.0.0"
+version = "8.0.0"
 edition = "2021"
 description = "High-level conversion pipeline orchestrator for Vectomancy"
 license = "MIT"
 repository = "https://github.com/Xuepoo/vectomancy"
 
 [dependencies]
-vectomancy-geometry = { path = "../vectomancy-geometry", version = "2.0.0" }
-vectomancy-transform = { path = "../vectomancy-transform", version = "2.0.0" }
-vectomancy-raster = { path = "../vectomancy-raster", version = "2.0.0" }
-vectomancy-svg = { path = "../vectomancy-svg", version = "2.0.0" }
-vectomancy-export = { path = "../vectomancy-export", version = "2.0.0" }
+vectomancy-geometry = { path = "../vectomancy-geometry", version = "8.0.0" }
+vectomancy-transform = { path = "../vectomancy-transform", version = "8.0.0" }
+vectomancy-raster = { path = "../vectomancy-raster", version = "8.0.0" }
+vectomancy-svg = { path = "../vectomancy-svg", version = "8.0.0" }
+vectomancy-export = { path = "../vectomancy-export", version = "8.0.0" }
 tracing = "0.1"
 serde = { version = "1.0", features = ["derive"], optional = true }
 
