@@ -1,14 +1,14 @@
 [package]
 name = "vectomancy-svg"
-version = "7.1.5"
+version = "2.0.0"
 edition = "2021"
 description = "SVG path parsing and vector segment extraction for Vectomancy"
 license = "MIT"
 repository = "https://github.com/Xuepoo/vectomancy"
 
 [dependencies]
-vectomancy-geometry = { path = "../vectomancy-geometry", version = "7.1.5" }
-vectomancy-transform = { path = "../vectomancy-transform", version = "7.1.5" }
+vectomancy-geometry = { path = "../vectomancy-geometry", version = "2.0.0" }
+vectomancy-transform = { path = "../vectomancy-transform", version = "2.0.0" }
 usvg = "0.48"
 serde = { version = "1.0", features = ["derive"], optional = true }
 

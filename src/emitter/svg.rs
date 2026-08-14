@@ -103,6 +103,7 @@ fn emit_polyline_paths(
     defs: &mut String,
     next_grad_id: &mut usize,
     body: &mut String,
+    stroke_width: f32,
 ) {
     for path in paths {
         if path.data.is_empty() {
@@ -112,7 +113,8 @@ fn emit_polyline_paths(
         let d = polyline_path(path.data.iter().map(|p| (p.x, p.y)));
         let _ = write!(
             body,
-            r#"<path d="{d}" fill="none" stroke="{stroke}" stroke-width="1"/>"#,
+            r#"<path d="{d}" fill="none" stroke="{stroke}" stroke-width="{}"/>"#,
+            stroke_width
         );
     }
 }
@@ -123,6 +125,7 @@ fn emit_spline_paths(
     defs: &mut String,
     next_grad_id: &mut usize,
     body: &mut String,
+    stroke_width: f32,
 ) {
     for path in equations {
         if path.data.is_empty() {
@@ -147,7 +150,8 @@ fn emit_spline_paths(
         let d = polyline_path(points.into_iter());
         let _ = write!(
             body,
-            r#"<path d="{d}" fill="none" stroke="{stroke}" stroke-width="1"/>"#,
+            r#"<path d="{d}" fill="none" stroke="{stroke}" stroke-width="{}"/>"#,
+            stroke_width
         );
     }
 }
@@ -158,6 +162,7 @@ fn emit_fourier_paths(
     defs: &mut String,
     next_grad_id: &mut usize,
     body: &mut String,
+    stroke_width: f32,
 ) {
     for path in strokes {
         if path.data.is_empty() {
@@ -179,7 +184,8 @@ fn emit_fourier_paths(
         let d = polyline_path(points.into_iter());
         let _ = write!(
             body,
-            r#"<path d="{d}" fill="none" stroke="{stroke}" stroke-width="1"/>"#,
+            r#"<path d="{d}" fill="none" stroke="{stroke}" stroke-width="{}"/>"#,
+            stroke_width
         );
     }
 }
@@ -194,6 +200,7 @@ fn emit_fourier_paths(
 pub fn to_svg_string(
     ast: &MathExpressionAST,
     original_dimensions: (u32, u32),
+    stroke_width: f32,
 ) -> Result<String, VectomancyError> {
     let bbox = match ast {
         MathExpressionAST::Fourier { bounding_box, .. } => *bounding_box,
@@ -207,13 +214,34 @@ pub fn to_svg_string(
 
     match ast {
         MathExpressionAST::Fourier { strokes, .. } => {
-            emit_fourier_paths(strokes, bbox, &mut defs, &mut next_grad_id, &mut body);
+            emit_fourier_paths(
+                strokes,
+                bbox,
+                &mut defs,
+                &mut next_grad_id,
+                &mut body,
+                stroke_width,
+            );
         }
         MathExpressionAST::Spline { equations, .. } => {
-            emit_spline_paths(equations, bbox, &mut defs, &mut next_grad_id, &mut body);
+            emit_spline_paths(
+                equations,
+                bbox,
+                &mut defs,
+                &mut next_grad_id,
+                &mut body,
+                stroke_width,
+            );
         }
         MathExpressionAST::Polyline { paths, .. } => {
-            emit_polyline_paths(paths, bbox, &mut defs, &mut next_grad_id, &mut body);
+            emit_polyline_paths(
+                paths,
+                bbox,
+                &mut defs,
+                &mut next_grad_id,
+                &mut body,
+                stroke_width,
+            );
         }
     }
 
@@ -250,7 +278,7 @@ mod tests {
             }],
             bounding_box: [0.0, 0.0, 10.0, 5.0],
         };
-        let svg = to_svg_string(&ast, (10, 5)).unwrap();
+        let svg = to_svg_string(&ast, (10, 5), 1.0).unwrap();
         assert!(svg.contains("<svg"));
         assert!(svg.contains("M 0 0 L 10 5"));
         assert!(svg.contains("rgb(255, 0, 0)"));
@@ -270,7 +298,7 @@ mod tests {
             }],
             bounding_box: [0.0, 0.0, 10.0, 10.0],
         };
-        let svg = to_svg_string(&ast, (10, 10)).unwrap();
+        let svg = to_svg_string(&ast, (10, 10), 1.0).unwrap();
         assert!(svg.contains("<linearGradient"));
         assert!(svg.contains("url(#vecto-grad-0)"));
     }
@@ -288,7 +316,7 @@ mod tests {
             }],
             bounding_box: [-5.0, -5.0, 5.0, 5.0],
         };
-        let svg = to_svg_string(&ast, (10, 10)).unwrap();
+        let svg = to_svg_string(&ast, (10, 10), 1.0).unwrap();
         assert!(svg.contains("<path d=\"M"));
 
         let ast2 = MathExpressionAST::Spline {
@@ -303,7 +331,7 @@ mod tests {
             }],
             bounding_box: [0.0, 0.0, 10.0, 0.0],
         };
-        let svg2 = to_svg_string(&ast2, (10, 10)).unwrap();
+        let svg2 = to_svg_string(&ast2, (10, 10), 1.0).unwrap();
         assert!(svg2.contains("<path d=\"M"));
     }
 }

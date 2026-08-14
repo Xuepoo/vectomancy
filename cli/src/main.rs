@@ -506,7 +506,14 @@ fn main() -> Result<(), VectomancyError> {
                         )?;
                     }
                     _ => {
-                        emitter::emit_file(&ast, &format, &final_output, original_dimensions)?;
+                        let stroke_width = args.stroke_width.unwrap_or(2.0);
+                        emitter::emit_file(
+                            &ast,
+                            &format,
+                            &final_output,
+                            original_dimensions,
+                            stroke_width,
+                        )?;
                     }
                 }
                 info!("Saved output to {:?}", final_output);
@@ -815,11 +822,13 @@ fn main() -> Result<(), VectomancyError> {
                                         )?;
                                     }
                                     _ => {
+                                        let stroke_width = args_ref.stroke_width.unwrap_or(2.0);
                                         emitter::emit_file(
                                             &ast,
                                             format_ref,
                                             &final_output,
                                             original_dimensions,
+                                            stroke_width,
                                         )?;
                                     }
                                 }
@@ -1041,6 +1050,11 @@ fn main() -> Result<(), VectomancyError> {
                 OutputFormat::Json
             };
 
+            let stroke_width = args
+                .stroke_width
+                .or(text_config.stroke_width)
+                .unwrap_or(2.0);
+
             match format {
                 OutputFormat::Png | OutputFormat::Jpg | OutputFormat::Webp => {
                     let image_config = config.image.unwrap_or_default();
@@ -1048,10 +1062,6 @@ fn main() -> Result<(), VectomancyError> {
                         .bg_transparent
                         .or(text_config.bg_transparent)
                         .unwrap_or_else(|| image_config.bg_transparent.unwrap_or(false));
-                    let stroke_width = args
-                        .stroke_width
-                        .or(text_config.stroke_width)
-                        .unwrap_or(2.0);
                     let bit_depth = image_config.bit_depth;
                     let color_space = image_config.color_space.clone();
 
@@ -1108,10 +1118,138 @@ fn main() -> Result<(), VectomancyError> {
                     )?;
                 }
                 _ => {
-                    emitter::emit_file(&ast, &format, &final_output, original_dimensions)?;
+                    emitter::emit_file(
+                        &ast,
+                        &format,
+                        &final_output,
+                        original_dimensions,
+                        stroke_width,
+                    )?;
                 }
             }
             info!("Saved text output to {:?}", final_output);
+        }
+
+        Commands::Render(args) => {
+            info!("Running Render Subcommand on {:?}", args.input);
+            if !args.input.exists() {
+                return Err(VectomancyError::InvalidInput(format!(
+                    "Input JSON path does not exist: {:?}",
+                    args.input
+                )));
+            }
+
+            let json_str = std::fs::read_to_string(&args.input)?;
+            let ast: MathExpressionAST = serde_json::from_str(&json_str).map_err(|e| {
+                VectomancyError::InvalidInput(format!(
+                    "Failed to parse MathExpressionAST from JSON: {}",
+                    e
+                ))
+            })?;
+
+            // Infer dimensions from bounding box
+            let original_dimensions = match &ast {
+                MathExpressionAST::Fourier { bounding_box, .. } => {
+                    let w = (bounding_box[2] - bounding_box[0]).abs().ceil() as u32;
+                    let h = (bounding_box[3] - bounding_box[1]).abs().ceil() as u32;
+                    (w.max(1), h.max(1))
+                }
+                MathExpressionAST::Spline { bounding_box, .. } => {
+                    let w = (bounding_box[2] - bounding_box[0]).abs().ceil() as u32;
+                    let h = (bounding_box[3] - bounding_box[1]).abs().ceil() as u32;
+                    (w.max(1), h.max(1))
+                }
+                MathExpressionAST::Polyline { bounding_box, .. } => {
+                    let w = (bounding_box[2] - bounding_box[0]).abs().ceil() as u32;
+                    let h = (bounding_box[3] - bounding_box[1]).abs().ceil() as u32;
+                    (w.max(1), h.max(1))
+                }
+            };
+
+            let image_config = config.image.unwrap_or_default();
+
+            let format_arg = args.format.as_ref().map(|f| match f {
+                cli::CliOutputFormat::Svg => OutputFormat::Svg,
+                cli::CliOutputFormat::Png => OutputFormat::Png,
+                cli::CliOutputFormat::Jpg => OutputFormat::Jpg,
+                cli::CliOutputFormat::Webp => OutputFormat::Webp,
+                cli::CliOutputFormat::Json => OutputFormat::Json,
+                cli::CliOutputFormat::Python => OutputFormat::Python,
+                cli::CliOutputFormat::Html => OutputFormat::Html,
+                cli::CliOutputFormat::Desmos => OutputFormat::Desmos,
+            });
+
+            let format = format_arg.unwrap_or(OutputFormat::Svg);
+
+            let stem = args.input.file_stem().unwrap_or_default().to_string_lossy();
+            let ext = match &format {
+                OutputFormat::Svg => "svg",
+                OutputFormat::Png => "png",
+                OutputFormat::Jpg => "jpg",
+                OutputFormat::Webp => "webp",
+                OutputFormat::Json => "json",
+                OutputFormat::Python => "py",
+                OutputFormat::Html => "html",
+                OutputFormat::Desmos => "html",
+            };
+            let default_output = args
+                .input
+                .parent()
+                .unwrap_or(std::path::Path::new("."))
+                .join(format!("{}.{}", stem, ext));
+            let final_output = args.output.clone().unwrap_or(default_output);
+
+            let stroke_width = args.stroke_width.unwrap_or(2.0);
+
+            match format {
+                OutputFormat::Png | OutputFormat::Jpg | OutputFormat::Webp => {
+                    let bg_transparent = args
+                        .bg_transparent
+                        .unwrap_or_else(|| image_config.bg_transparent.unwrap_or(false));
+                    let bit_depth = args.bit_depth.or(image_config.bit_depth);
+                    let color_space = args.color_space.clone().or(image_config.color_space);
+
+                    let target_dimensions = match (args.width, args.height) {
+                        (None, None) => original_dimensions,
+                        (Some(w), None) => {
+                            let h = (w as f32 * original_dimensions.1 as f32
+                                / original_dimensions.0 as f32)
+                                as u32;
+                            (w, h.max(1))
+                        }
+                        (None, Some(h)) => {
+                            let w = (h as f32 * original_dimensions.0 as f32
+                                / original_dimensions.1 as f32)
+                                as u32;
+                            (w.max(1), h)
+                        }
+                        (Some(w), Some(h)) => (w, h),
+                    };
+
+                    emitter::native::render_to_image(
+                        &ast,
+                        &final_output,
+                        &format,
+                        bg_transparent,
+                        original_dimensions,
+                        target_dimensions,
+                        stroke_width,
+                        bit_depth,
+                        color_space,
+                    )?;
+                }
+                _ => {
+                    emitter::emit_file(
+                        &ast,
+                        &format,
+                        &final_output,
+                        original_dimensions,
+                        stroke_width,
+                    )?;
+                }
+            }
+
+            info!("Saved render output to {:?}", final_output);
         }
     }
 

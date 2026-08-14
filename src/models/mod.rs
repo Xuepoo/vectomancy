@@ -1,6 +1,6 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy, PartialEq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct Point2D {
     pub x: f64,
     pub y: f64,
@@ -15,14 +15,14 @@ pub enum BezierSegment {
     Close,
 }
 
-#[derive(Debug, Clone, Copy, Serialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct FourierTerm {
     pub amplitude: f64,
     pub frequency: f64,
     pub phase: f64,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SplineEquation {
     pub start_t: f64,
     pub end_t: f64,
@@ -31,7 +31,6 @@ pub struct SplineEquation {
     pub y_poly: Vec<f64>,
 }
 
-use serde::Deserialize;
 use std::sync::Arc;
 
 #[derive(Debug, Clone, Copy)]
@@ -452,14 +451,14 @@ mod tests {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ColoredPath<T> {
     #[serde(rename = "color_rgb")]
     pub color_style: Option<ColorStyle>,
     pub data: T,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum MathExpressionAST {
     Fourier {

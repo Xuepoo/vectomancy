@@ -90,6 +90,7 @@ pub fn emit_file(
     format: &OutputFormat,
     output_path: &Path,
     original_dimensions: (u32, u32),
+    stroke_width: f32,
 ) -> Result<(), VectomancyError> {
     info!("Initializing Tera template engine");
 
@@ -109,7 +110,7 @@ pub fn emit_file(
 
     if let OutputFormat::Svg = format {
         info!("Rendering AST to SVG");
-        let svg_output = svg::to_svg_string(ast, original_dimensions)?;
+        let svg_output = svg::to_svg_string(ast, original_dimensions, stroke_width)?;
         info!("Writing output to {:?}", output_path);
         fs::write(output_path, svg_output)?;
         return Ok(());

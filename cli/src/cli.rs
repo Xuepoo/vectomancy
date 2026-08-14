@@ -78,6 +78,9 @@ pub enum Commands {
 
     /// Process text input
     Text(TextArgs),
+
+    /// Render JSON math expressions to image formats
+    Render(RenderArgs),
 }
 
 #[derive(Args, Debug)]
@@ -256,4 +259,54 @@ pub struct TextArgs {
     /// Do not simplify math coordinates and equations (retains original high precision)
     #[arg(long)]
     pub no_simplify_math: bool,
+}
+
+#[derive(Args, Debug)]
+pub struct RenderArgs {
+    /// Input JSON file path containing MathExpressionAST
+    pub input: PathBuf,
+
+    /// Output file path
+    #[arg(short, long)]
+    pub output: Option<PathBuf>,
+
+    /// Output format (svg, png, jpg, webp)
+    #[arg(short, long)]
+    pub format: Option<CliOutputFormat>,
+
+    /// Transparent background for native image rendering
+    #[arg(long, action = clap::ArgAction::Set)]
+    pub bg_transparent: Option<bool>,
+
+    /// Target width for native image rendering
+    #[arg(long)]
+    pub width: Option<u32>,
+
+    /// Target height for native image rendering
+    #[arg(long)]
+    pub height: Option<u32>,
+
+    /// Stroke width for native image rendering
+    #[arg(long)]
+    pub stroke_width: Option<f32>,
+
+    /// Bit depth for native rendering (8, 10, 16, 32)
+    #[arg(long)]
+    pub bit_depth: Option<u8>,
+
+    /// Color space for native rendering (sRGB, DisplayP3, CMYK)
+    #[arg(long)]
+    pub color_space: Option<String>,
+
+    /// Enable GPU acceleration (wgpu) - Defaults to CPU
+    #[arg(long, action = clap::ArgAction::Set)]
+    pub gpu: Option<bool>,
+
+    /// Number of threads for CPU multithreading (default: 1)
+    #[arg(long)]
+    pub threads: Option<usize>,
+
+    /// GPU Power Preference (HighPerformance, LowPower, None)
+    #[arg(long)]
+    pub gpu_power: Option<String>,
 }
