@@ -32,7 +32,8 @@ fn test_svg_export() {
         bounds: BoundingBox::new(0.0, 0.0, 10.0, 10.0),
     };
 
-    let svg = encode_svg(&scene);
+    let svg = encode_svg(&scene, 2.0);
     assert!(svg.contains("<svg"));
     assert!(svg.contains("stroke=\"#ff0000\""));
+    assert!(svg.contains("stroke-width=\"2\""));
 }
