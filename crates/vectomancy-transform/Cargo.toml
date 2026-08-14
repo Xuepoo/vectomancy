@@ -1,13 +1,13 @@
 [package]
 name = "vectomancy-transform"
-version = "2.0.0"
+version = "8.0.0"
 edition = "2021"
 description = "Mathematical transforms (Spline, Fourier, TSP) for Vectomancy"
 license = "MIT"
 repository = "https://github.com/Xuepoo/vectomancy"
 
 [dependencies]
-vectomancy-geometry = { path = "../vectomancy-geometry", version = "2.0.0" }
+vectomancy-geometry = { path = "../vectomancy-geometry", version = "8.0.0" }
 rustfft = "6.4"
 kiddo = "6"
 tracing = "0.1"

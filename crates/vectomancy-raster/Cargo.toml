@@ -1,13 +1,13 @@
 [package]
 name = "vectomancy-raster"
-version = "2.0.0"
+version = "8.0.0"
 edition = "2021"
 description = "Raster image skeletonization and edge extraction for Vectomancy"
 license = "MIT"
 repository = "https://github.com/Xuepoo/vectomancy"
 
 [dependencies]
-vectomancy-geometry = { path = "../vectomancy-geometry", version = "2.0.0" }
+vectomancy-geometry = { path = "../vectomancy-geometry", version = "8.0.0" }
 image = { version = "0.25", features = ["webp"] }
 imageproc = "0.26.2"
 rayon = "1.8"
