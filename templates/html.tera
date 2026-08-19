@@ -26,9 +26,11 @@
         ctx.beginPath();
         {
             let first = true;
-            for (let t = 0; t <= 1; t += 0.01) {
-                let x = {% for c in eq.x_poly %}{{ c }}{% if loop.index0 == 1 %}*t{% elif loop.index0 > 1 %}*Math.pow(t, {{ loop.index0 }}){% endif %}{% if not loop.last %} + {% endif %}{% endfor %};
-                let y = {% for c in eq.y_poly %}{{ c }}{% if loop.index0 == 1 %}*t{% elif loop.index0 > 1 %}*Math.pow(t, {{ loop.index0 }}){% endif %}{% if not loop.last %} + {% endif %}{% endfor %};
+            const steps = Math.min(10000, Math.max(1, Math.ceil(({{ eq.end_t }} - {{ eq.start_t }}) / 0.01)));
+            for (let i = 0; i <= steps; i++) {
+                const t = {{ eq.start_t }} + ({{ eq.end_t }} - {{ eq.start_t }}) * i / steps;
+                let x = {{ eq.x_expression_js }}{% if has_x_offset %} - {{ bbox_min_x }}{% endif %};
+                let y = {{ eq.y_expression_js }}{% if has_y_offset %} - {{ bbox_min_y }}{% endif %};
                 if (first) {
                     ctx.moveTo(x, y);
                     first = false;
@@ -50,13 +52,11 @@
         ctx.beginPath();
         {
             let first = true;
-            for (let t = 0; t <= Math.PI * 2; t += 0.01) {
-                let x = 0;
-                let y = 0;
-                {% for term in stroke_path.data %}
-                x += {{ term.amplitude }} * Math.cos({{ term.frequency }} * t + {{ term.phase }});
-                y += {{ term.amplitude }} * Math.sin({{ term.frequency }} * t + {{ term.phase }});
-                {% endfor %}
+            const steps = 629;
+            for (let i = 0; i <= steps; i++) {
+                const t = Math.PI * 2 * i / steps;
+                let x = {{ stroke_path.x_expression_js }}{% if has_x_offset %} - {{ bbox_min_x }}{% endif %};
+                let y = {{ stroke_path.y_expression_js }}{% if has_y_offset %} - {{ bbox_min_y }}{% endif %};
                 if (first) {
                     ctx.moveTo(x, y);
                     first = false;
@@ -76,7 +76,7 @@
         {% endif %}
         ctx.beginPath();
         {% for p in path.data %}
-        {% if loop.first %}ctx.moveTo({{ p.x }}, {{ p.y }});{% else %}ctx.lineTo({{ p.x }}, {{ p.y }});{% endif %}
+        {% if loop.first %}ctx.moveTo({{ p.x }}{% if has_x_offset %} - {{ bbox_min_x }}{% endif %}, {{ p.y }}{% if has_y_offset %} - {{ bbox_min_y }}{% endif %});{% else %}ctx.lineTo({{ p.x }}{% if has_x_offset %} - {{ bbox_min_x }}{% endif %}, {{ p.y }}{% if has_y_offset %} - {{ bbox_min_y }}{% endif %});{% endif %}
         {% endfor %}
         ctx.stroke();
         {% endfor %}

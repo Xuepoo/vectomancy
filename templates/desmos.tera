@@ -17,61 +17,67 @@
             settingsMenu: true,
             zoomButtons: true
         });
+        calculator.setMathBounds({
+            left: 0,
+            right: {{ viewport_width }},
+            bottom: 0,
+            top: {{ viewport_height }}
+        });
 
         var expressions = [];
         var exprId = 1;
 
         {% if equations %}
         {% for path in equations %}
+        {% if path.data | length > 0 %}
         expressions.push({
             id: String(exprId++),
             latex: '\\left(' +
                 '\\left\\{ ' +
                 '{% for eq in path.data %}' +
-                '{% set eq_index = loop.index0 %}' +
-                '{{ eq_index }} \\le t < {{ loop.index }}: ' +
-                '{% set has_content = false %}{% for c in eq.x_poly %}{% if c != 0.0 %}{% if has_content %} + {% endif %}{{ c }}{% if loop.index0 == 1 %}*(t-{{ eq_index }}){% elif loop.index0 > 1 %}*(t-{{ eq_index }})^{{ loop.index0 }}{% endif %}{% set_global has_content = true %}{% endif %}{% endfor %}{% if not has_content %}0{% endif %}' +
+                 '{{ eq.start_t }} \\le t {% if loop.last %}\\le{% else %}<{% endif %} {{ eq.end_t }}: {% if has_x_offset %}({{ eq.x_expression }} - {{ bbox_min_x }}){% else %}{{ eq.x_expression }}{% endif %}' +
                 '{% if not loop.last %}, {% endif %}' +
                 '{% endfor %}' +
                 ' \\right\\}, ' +
-                '{{ height }} - \\left( \\left\\{ ' +
+                '{{ bbox_max_y }} - \\left( \\left\\{ ' +
                 '{% for eq in path.data %}' +
-                '{% set eq_index = loop.index0 %}' +
-                '{{ eq_index }} \\le t < {{ loop.index }}: ' +
-                '{% set has_content = false %}{% for c in eq.y_poly %}{% if c != 0.0 %}{% if has_content %} + {% endif %}{{ c }}{% if loop.index0 == 1 %}*(t-{{ eq_index }}){% elif loop.index0 > 1 %}*(t-{{ eq_index }})^{{ loop.index0 }}{% endif %}{% set_global has_content = true %}{% endif %}{% endfor %}{% if not has_content %}0{% endif %}' +
+                 '{{ eq.start_t }} \\le t {% if loop.last %}\\le{% else %}<{% endif %} {{ eq.end_t }}: {{ eq.y_expression }}' +
                 '{% if not loop.last %}, {% endif %}' +
                 '{% endfor %}' +
                 ' \\right\\} \\right)' +
                 '\\right)',
-            parametricDomain: {min: '0', max: '{{ path.data | length }}'},
+            parametricDomain: {min: '{{ path.domain_start }}', max: '{{ path.domain_end }}'},
             color: '{% if path.color_rgb %}rgb({{ path.color_rgb.0 }}, {{ path.color_rgb.1 }}, {{ path.color_rgb.2 }}){% else %}rgb(0,0,0){% endif %}'
         });
+        {% endif %}
         {% endfor %}
         {% elif strokes %}
         {% for stroke_path in strokes %}
+        {% if stroke_path.data | length > 0 %}
         expressions.push({
             id: String(exprId++),
             latex: '\\left(' +
-                '{% for term in stroke_path.data %}{% if not loop.first %} + {% endif %}{{ term.amplitude }}*\\cos({{ term.frequency }}*t + {{ term.phase }}){% endfor %}' +
-                '{% if stroke_path.data | length == 0 %}0{% endif %}' +
+                 '{% if has_x_offset %}({{ stroke_path.x_expression }} - {{ bbox_min_x }}){% else %}{{ stroke_path.x_expression }}{% endif %}' +
                 ', ' +
-                '{{ height }} - \\left(' +
-                '{% for term in stroke_path.data %}{% if not loop.first %} + {% endif %}{{ term.amplitude }}*\\sin({{ term.frequency }}*t + {{ term.phase }}){% endfor %}' +
-                '{% if stroke_path.data | length == 0 %}0{% endif %}' +
-                '\\right)\\right)',
+                 '{{ bbox_max_y }} - \\left(' +
+                 '{{ stroke_path.y_expression }}' +
+                 '\\right)\\right)',
             parametricDomain: {min: '0', max: '6.28318530718'},
             color: '{% if stroke_path.color_rgb %}rgb({{ stroke_path.color_rgb.0 }}, {{ stroke_path.color_rgb.1 }}, {{ stroke_path.color_rgb.2 }}){% else %}rgb(0,0,0){% endif %}'
         });
+        {% endif %}
         {% endfor %}
         {% elif paths %}
         {% for path in paths %}
+        {% if path.data | length > 0 %}
         expressions.push({
             id: String(exprId++),
-            latex: '\\left[ {% for p in path.data %}\\left({{ p.x }}, {{ height }} - {{ p.y }}\\right){% if not loop.last %},{% endif %}{% endfor %} \\right]',
+            latex: '\\left[ {% for p in path.data %}\\left({{ p.x }}{% if has_x_offset %} - {{ bbox_min_x }}{% endif %}, {{ bbox_max_y }} - {{ p.y }}\\right){% if not loop.last %},{% endif %}{% endfor %} \\right]',
             color: '{% if path.color_rgb %}rgb({{ path.color_rgb.0 }}, {{ path.color_rgb.1 }}, {{ path.color_rgb.2 }}){% else %}rgb(0,0,0){% endif %}',
             lines: true,
             points: false
         });
+        {% endif %}
         {% endfor %}
         {% endif %}
 

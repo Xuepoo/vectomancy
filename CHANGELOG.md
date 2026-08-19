@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [8.1.0] - 2026-08-19
+
+### Fixed
+
+- **Compact textual expressions**: HTML and Desmos exports now generate valid, compact spline and Fourier expressions without malformed coefficient concatenation, redundant zero terms, or identity multiplications.
+- **Spline export domains**: Desmos, HTML, and SVG exports now respect each spline equation's actual parameter interval and include deterministic HTML endpoints.
+- **AST validation**: Text and SVG emitters reject non-finite values, reversed spline intervals, invalid bounding boxes, and non-finite colors instead of producing malformed output.
+- **Desmos viewport**: Desmos exports now derive bounds and coordinate inversion from the AST bounding box, including offset coordinate systems.
+- **SVG Fourier sampling**: SVG flattening adapts its sample count to the highest represented frequency and rejects inputs that exceed the bounded output limit.
+
+## [8.0.0] - 2026-08-15
+
+### Added
+
+- **JSON render workflow**: Added the `render` subcommand to import a serialized `MathExpressionAST` and export it to SVG, raster, Python, HTML, Desmos, or JSON without rerunning image analysis.
+
+### Fixed
+
+- **SVG stroke width**: Threaded `--stroke-width` through image, video, text, and render SVG exports so the requested width is preserved.
+
+### Changed
+
+- **Version alignment**: Updated all workspace crates and internal path dependencies to the unified `8.0.0` version.
+
 ## [7.1.3] - 2026-07-31
 
 ### Fixed
