@@ -21,10 +21,10 @@ jobs:
         with:
           components: clippy, rustfmt
 
-      - name: Install LLVM/Clang
+      - name: Verify LLVM/Clang
         run: |
-          sudo apt-get update
-          sudo apt-get install -y clang pkg-config
+          clang --version
+          pkg-config --version
 
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
